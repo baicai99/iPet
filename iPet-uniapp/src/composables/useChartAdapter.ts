@@ -6,7 +6,6 @@ import MiniRangeSlider from '@/components/widgets/charts/MiniRangeSlider.vue'
 import MiniStatus from '@/components/widgets/charts/MiniStatus.vue'
 import MiniTimeline from '@/components/widgets/charts/MiniTimeline.vue'
 import MiniStatusGrid from '@/components/widgets/charts/MiniStatusGrid.vue'
-import MiniStateGrid from '@/components/widgets/charts/MiniStateGrid.vue'
 import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
 import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
 import ProgressRingChart from '@/components/widgets/charts/ProgressRingChart.vue'
@@ -25,7 +24,7 @@ const MINI_CHART_MAP = {
     status_icon: MiniStatus,
     event_timeline: MiniTimeline,
     status_grid: MiniStatusGrid,
-    state_grid: MiniStateGrid
+    state_grid: MiniStatusGrid
 }
 
 const DETAIL_CHART_MAP = {
@@ -46,8 +45,7 @@ const chartDefaults: Record<string, ChartProps> = {
     range_slider: { height: 100 },
     status_icon: { size: 80 },
     event_timeline: { height: 120 },
-    status_grid: { columns: 4 },
-    state_grid: { columns: 4 }
+    status_grid: { columns: 4 }
 }
 
 export function resolveChartAdapter(chartType: string, options: ChartProps = {}, variant: 'mini' | 'detail' = 'mini') {

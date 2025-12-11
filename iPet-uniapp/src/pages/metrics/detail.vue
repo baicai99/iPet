@@ -32,10 +32,9 @@
                 <text class="section-title">相关科普</text>
             </view>
             <view class="articles-list">
-                <ArticleCard v-for="(article, index) in recommendedArticles" :key="article.id"
-                    :id="article.id" :title="article.title" :summary="article.summary"
-                    :cover="article.cover" :category="article.category"
-                    :isNew="index === 0" :updateTime="article.updateTime" />
+                <ArticleCard v-for="(article, index) in recommendedArticles" :key="article.id" :id="article.id"
+                    :title="article.title" :summary="article.summary" :cover="article.cover"
+                    :category="article.category" :isNew="index === 0" :updateTime="article.updateTime" />
             </view>
         </view>
 
@@ -47,7 +46,7 @@
                     <u-icon :name="metric.icon" :color="metric.color.hex" size="20"></u-icon>
                 </view>
                 <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
-                }}</text>
+                        }}</text>
                 </view>
                 <text class="card-label">{{ metric.title }}</text>
             </view>
@@ -108,7 +107,6 @@ import StatusIconChart from '@/components/widgets/charts/StatusIconChart.vue'
 import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
 import EventTimelineChart from '@/components/widgets/charts/EventTimelineChart.vue'
 import TextChart from '@/components/widgets/charts/TextChart.vue'
-import StateGridChart from '@/components/widgets/charts/StateGridChart.vue'
 
 // Composables & Utils
 import { useMetricDetail } from '@/composables/useMetricDetail'
@@ -180,7 +178,7 @@ const CHART_COMPONENTS = {
     status_grid: StatusGridChart,
     event_timeline: EventTimelineChart,
     text: TextChart,
-    state_grid: StateGridChart
+    state_grid: StatusGridChart
 }
 
 // ============================================================================
@@ -235,19 +233,19 @@ const formattedRelatedMetrics = computed(() => {
 const recommendedArticles = computed(() => {
     const allArticles = articleStore.articles
     if (!allArticles || allArticles.length === 0) return []
-    
+
     const key = metricKey.value
     if (!key) return []
-    
+
     // F-04: 强制置顶 - 查找 ID 与 metricKey 匹配的文章
     const pinnedArticle = allArticles.find(a => a.id === key)
-    
+
     // F-05: 模糊匹配 - 按 tags 交集排序
     const relatedArticles = allArticles
         .filter(a => a.id !== key) // 排除置顶文章
         .map(article => ({
             article,
-            matchCount: (article.tags || []).filter(tag => 
+            matchCount: (article.tags || []).filter(tag =>
                 tag === key || (metricMetadata.value.relatedMetrics || []).includes(tag)
             ).length
         }))
@@ -255,9 +253,9 @@ const recommendedArticles = computed(() => {
         .sort((a, b) => b.matchCount - a.matchCount)
         .slice(0, 2) // 取前2篇相关文章
         .map(item => item.article)
-    
+
     // 组合结果：置顶 + 相关
-    return pinnedArticle 
+    return pinnedArticle
         ? [pinnedArticle, ...relatedArticles]
         : relatedArticles
 })
@@ -692,13 +690,13 @@ async function confirmCompletion(e) {
     .section-header {
         margin-bottom: 24rpx;
     }
-    
+
     .section-title {
         font-size: 32rpx;
         font-weight: 600;
         color: #1e293b;
     }
-    
+
     .articles-list {
         display: flex;
         flex-direction: column;

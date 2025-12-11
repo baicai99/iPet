@@ -1,16 +1,14 @@
 <template>
     <view class="status-grid-container">
         <view class="y-axis-labels">
-            <text class="label">偏干</text>
-            <text class="label">正常</text>
-            <text class="label">偏稀</text>
+            <!-- Dynamic labels from options.levels, reversed for top-to-bottom display -->
+            <text v-for="(label, i) in reversedLevels" :key="i" class="label">{{ label }}</text>
         </view>
         <view class="chart-area">
             <svg width="100%" height="100%" viewBox="0 0 300 160" preserveAspectRatio="none" style="overflow: visible;">
-                <!-- Background Zones -->
-                <rect x="0" y="0" width="300" height="40" :fill="color" fill-opacity="0.1" rx="4" />
-                <rect x="0" y="45" width="300" height="70" fill="#BAE6FD" rx="4" />
-                <rect x="0" y="120" width="300" height="40" :fill="color" fill-opacity="0.1" rx="4" />
+                <!-- Dynamic Background Zones based on levels -->
+                <rect v-for="(level, i) in levelCount" :key="`bg-${i}`" x="0" :y="getRowY(i)" width="300"
+                    :height="getRowHeight(i)" :fill="getRowFill(i)" :fill-opacity="isMiddleRow(i) ? 1 : 0.1" rx="4" />
 
                 <!-- Vertical Grid Lines -->
                 <line v-for="i in 6" :key="i" :x1="i * colWidth" y1="0" :x2="i * colWidth" y2="160" stroke="white"
@@ -32,6 +30,10 @@ const props = defineProps({
         type: Object,
         default: () => ({ values: [] })
     },
+    options: {
+        type: Object,
+        default: () => ({})
+    },
     color: {
         type: String,
         default: '#3b82f6'
@@ -41,6 +43,54 @@ const props = defineProps({
 const width = 300;
 const height = 160;
 const colWidth = width / 7;
+
+// Get levels from options or use default Chinese labels for stool metric
+const levels = computed(() => {
+    const optLevels = props.options?.levels
+    return Array.isArray(optLevels) && optLevels.length > 0
+        ? optLevels
+        : ['偏干', '正常', '偏稀']
+})
+
+// Reversed levels for Y-axis display (highest level at top)
+const reversedLevels = computed(() => [...levels.value].reverse())
+
+// Number of levels for dynamic rendering
+const levelCount = computed(() => levels.value.length)
+
+// Check if a row is the "middle" row (highlighted differently)
+const isMiddleRow = (index) => {
+    const count = levelCount.value
+    if (count <= 2) return false
+    return index === Math.floor(count / 2)
+}
+
+// Calculate row Y position (top-down rendering)
+const getRowY = (index) => {
+    const count = levelCount.value
+    if (count === 3) {
+        // Original fixed layout: top zone, middle zone, bottom zone
+        const positions = [0, 45, 120]
+        return positions[index] || 0
+    }
+    return (index * height) / count
+}
+
+// Calculate row height
+const getRowHeight = (index) => {
+    const count = levelCount.value
+    if (count === 3) {
+        // Original fixed layout for 3 levels
+        const heights = [40, 70, 40]
+        return heights[index] || 40
+    }
+    return height / count - 5
+}
+
+// Get fill color for row
+const getRowFill = (index) => {
+    return isMiddleRow(index) ? '#BAE6FD' : props.color
+}
 
 const validValues = computed(() => {
     // Ensure we only take up to 7 values to fit the grid

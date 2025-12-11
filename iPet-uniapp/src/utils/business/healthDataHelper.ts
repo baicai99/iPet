@@ -110,6 +110,7 @@ export const buildChartData = (visualizationType: string, history: any[] = [], l
             // Then we sort them desc for display.
             return sortRecordsByTime(sorted, 'desc')
         case 'status_grid':
+        case 'state_grid':
             return sorted.map(item => Number(item.value ?? item.gridValue ?? 0))
         case 'status_icon':
             return sorted.length
