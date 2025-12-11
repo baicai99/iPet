@@ -1,0 +1,84 @@
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, NotFoundException } from '@nestjs/common';
+import { HealthService } from './health.service';
+import { CreateHealthRecordDto } from './dto/create-health-record.dto';
+import { UpdateHealthRecordDto } from './dto/update-health-record.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../auth/jwt-auth.guard';
+
+import { TogglePinDto } from './dto/toggle-pin.dto';
+
+@Controller('health')
+@UseGuards(JwtAuthGuard)
+export class HealthController {
+    constructor(private readonly healthService: HealthService) { }
+
+    @Post('metrics/pin')
+    togglePin(@Req() req: AuthenticatedRequest, @Body() togglePinDto: TogglePinDto) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        return this.healthService.toggleMetricPin(userId, togglePinDto.petId, togglePinDto.metricKey, togglePinDto.isPinned);
+    }
+
+    @Post()
+    create(@Req() req: AuthenticatedRequest, @Body() createHealthRecordDto: CreateHealthRecordDto) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        return this.healthService.create(userId, createHealthRecordDto);
+    }
+
+    @Get()
+    findAll(
+        @Req() req: AuthenticatedRequest,
+        @Query('petId') petId?: string,
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+        @Query('type') type?: string
+    ) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        return this.healthService.findAll(userId, petId, page, limit, type);
+    }
+
+    @Get('summary')
+    getSummary(@Req() req: AuthenticatedRequest, @Query('petId') petId: string) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        if (!petId) throw new Error('Pet ID is required');
+        return this.healthService.getSummary(userId, petId);
+    }
+
+    @Get(':id')
+    findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        return this.healthService.findOne(id, userId);
+    }
+
+    @Patch(':id')
+    update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateHealthRecordDto: UpdateHealthRecordDto) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        return this.healthService.update(id, userId, updateHealthRecordDto);
+    }
+
+    @Delete(':id')
+    remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        return this.healthService.remove(id, userId);
+    }
+}

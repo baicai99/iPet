@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Profile fields
+  displayName  String?
+  avatar       String?
+  uid          String   @unique @default(uuid())
+  mbti         String?
+  bio          String?
+  tags         String?
+  
+  // Membership info (flattened or JSON)
+  membershipLevel    String?
+  membershipExpireAt DateTime?
+
+  syncState    UserSyncState?
+  pets         Pet[]
+  
+  // New fields for Profile & Settings
+  isVerified   Boolean  @default(false)
+  realName     String?
+  idCard       String?
+  points       Int      @default(0)
+  settings     String?  // JSON string for settings
+  
+
+  
+  
+
+}
+
+
+
+model UserSyncState {
+  id        String   @id @default(cuid())
+  userId    String      @unique
+  user      User     @relation(fields: [userId], references: [id])
+  snapshot  String   // Legacy snapshot, kept for migration
+  version   Int      @default(1)
+  updatedAt DateTime @updatedAt
+}
+
+model Pet {
+  id        String   @id // UUID from client
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  name      String
+  type      String?
+  breed     String?
+  age       Int?
+  weight    Float?
+  gender    String?
+  avatar    String?
+  birthday  String? // YYYY-MM-DD
+  
+  // New fields
+  personality  String? // JSON string
+  isSterilized Boolean @default(false)
+  chipId       String?
+  toys         String?
+  allergens    String?
+  vaccineDate  String?
+  description  String?
+  
+  updatedAt DateTime @updatedAt
+  deleted   Boolean  @default(false)
+  version   Int      @default(1)
+  
+  healthRecords  HealthRecord[]
+  pinnedMetrics  PinnedMetric[]
+  healthSchedules HealthSchedule[]
+}
+
+model HealthRecord {
+  id        String   @id // UUID from client
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  
+  type      String   // weight, heart_rate, etc.
+  value     Float
+  unit      String
+  date      String   // ISO timestamp or YYYY-MM-DD
+  notes     String?
+  source    String?
+  metadata  Json?    // Flexible metadata: { isScheduled, targetDate, selectedOptions, etc. }
+  
+  updatedAt DateTime @updatedAt
+  deleted   Boolean  @default(false)
+  version   Int      @default(1)
+}
+
+
+
+model Article {
+  id        String   @id @default(cuid())
+  title     String
+  summary   String
+  content   String   // HTML or Markdown
+  cover     String?
+  category  String   // education, recipe, mythbust
+  author    String?
+  views     Int      @default(0)
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PinnedMetric {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  metricKey String
+  
+  createdAt DateTime @default(now())
+
+  @@unique([petId, metricKey])
+}
+
+model HealthSchedule {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  
+  type      String   // Metric key (e.g. 'deworming')
+  date      DateTime // Scheduled date
+  time      String?  // Optional time HH:mm
+  repeat    String?  // Repeat rule (none, month, month_3, etc)
+  note      String?
+  isActive  Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

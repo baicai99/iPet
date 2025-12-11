@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.DS_Store
+data
+package-lock.json
+*.log
+.env
+ipet.db

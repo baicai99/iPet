@@ -1,0 +1,50 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "useDefineForClassFields": true,
+        "module": "esnext",
+        "moduleResolution": "node",
+        "strict": true,
+        "jsx": "preserve",
+        "sourceMap": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "types": [
+            "@dcloudio/types",
+            "@uni-helper/uni-app-types",
+            "@uni-helper/uni-ui-types"
+        ],
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ],
+            "@shared/*": [
+                "../shared/*"
+            ]
+        },
+        "skipLibCheck": true,
+        "allowJs": true,
+        "noEmit": true
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "mock/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "unpackage",
+        "src/components/widgets/QuickAccessGrid.vue",
+        "src/components/widgets/QuickAccessGrid.vue",
+        "src/components/business/health/MetricScheduleList.vue",
+        "src/pages/metrics/schedule.vue"
+    ]
+}

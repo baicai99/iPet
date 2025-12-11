@@ -1,0 +1,106 @@
+<template>
+    <view class="articles-list-page">
+        <!-- Tabs -->
+        <view class="tabs-container">
+            <u-tabs :list="tabList" :current="currentTab" @click="handleTabClick" :activeStyle="{ color: '#3c9cff' }"
+                lineColor="#3c9cff"></u-tabs>
+        </view>
+
+        <!-- Content -->
+        <scroll-view scroll-y class="content-scroll">
+            <view class="content">
+                <!-- Actual Content -->
+                <view class="articles-list">
+                    <ArticleCard v-for="article in filteredArticles" :key="article.id" :id="article.id"
+                        :title="article.title" :summary="article.summary" :cover="article.cover"
+                        :category="article.category" />
+                </view>
+                <u-empty v-if="!loading && filteredArticles.length === 0" mode="data" text="暂无相关文章"></u-empty>
+            </view>
+        </scroll-view>
+    </view>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import ArticleCard from '@/components/business/social/ArticleCard.vue'
+import { useArticleStore } from '../../stores/articleStore'
+import { storeToRefs } from 'pinia'
+import { onLoad } from '@dcloudio/uni-app'
+
+const articleStore = useArticleStore()
+const { articles: allArticles } = storeToRefs(articleStore)
+
+const loading = ref(true)
+
+onLoad(() => {
+    loadArticles()
+})
+
+const loadArticles = async () => {
+    loading.value = true
+    try {
+        await articleStore.fetchArticles(tabList[currentTab.value].value)
+    } catch (error) {
+        console.error('Failed to load articles', error)
+        uni.showToast({
+            title: '加载文章失败',
+            icon: 'none'
+        })
+    } finally {
+        loading.value = false
+    }
+}
+
+const currentTab = ref(0)
+
+const tabList = [
+    { name: '全部', value: 'all' },
+    { name: '科普', value: 'education' },
+    { name: '狗饭', value: 'recipe' },
+    { name: '辟谣', value: 'mythbust' }
+]
+
+const filteredArticles = computed(() => {
+    const activeValue = tabList[currentTab.value].value
+    if (activeValue === 'all') {
+        return allArticles.value
+    }
+    return allArticles.value.filter(article => article.category === activeValue)
+})
+
+const handleTabClick = (item) => {
+    currentTab.value = item.index
+    loadArticles()
+}
+
+</script>
+
+<style scoped>
+.articles-list-page {
+    height: 100vh;
+    background-color: #f8f8f8;
+    display: flex;
+    flex-direction: column;
+}
+
+.tabs-container {
+    background-color: #fff;
+    border-bottom: 1rpx solid #eee;
+}
+
+.content-scroll {
+    flex: 1;
+    height: 0;
+}
+
+.content {
+    padding: 24rpx;
+}
+
+.articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+}
+</style>

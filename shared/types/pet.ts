@@ -1,0 +1,25 @@
+export interface Pet {
+    id: string;
+    updatedAt: number;
+    deleted?: boolean;
+    name: string;
+    breed?: string | null;
+    age?: number | null;
+    weight?: number | null;
+    gender?: 'male' | 'female' | null;
+    avatar?: string | null;
+    birthday?: string | null;
+    birthTimestamp?: number | null;
+    ownerId?: string | null;
+
+    type: 'dog' | 'cat' | 'other';
+    isArchived?: boolean | null;
+    isSterilized?: boolean | null;
+    chipId?: string | null;
+    toys?: string | null;
+    personality?: string[] | null;
+    allergens?: string | null;
+    vaccineDate?: string | null;
+
+    [key: string]: any;
+}

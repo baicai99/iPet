@@ -1,0 +1,169 @@
+@font-face {
+  font-family: "iconfont"; /* Project id  */
+  src: url('iconfont.ttf?t=1764832842023') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-likefill:before {
+  content: "\e668";
+}
+
+.icon-like:before {
+  content: "\e669";
+}
+
+.icon-file:before {
+  content: "\e739";
+}
+
+.icon-sad:before {
+  content: "\e66f";
+}
+
+.icon-temperature:before {
+  content: "\e67a";
+}
+
+.icon-my:before {
+  content: "\e78b";
+}
+
+.icon-myfill:before {
+  content: "\e78c";
+}
+
+.icon-run:before {
+  content: "\e643";
+}
+
+.icon-protein:before {
+  content: "\e6aa";
+}
+
+.icon-walk:before {
+  content: "\e927";
+}
+
+.icon-calculator:before {
+  content: "\e799";
+}
+
+.icon-percentage:before {
+  content: "\e7e2";
+}
+
+.icon-colum-height:before {
+  content: "\e7ef";
+}
+
+.icon-fire:before {
+  content: "\e842";
+}
+
+.icon-bath:before {
+  content: "\e60b";
+}
+
+.icon-bug:before {
+  content: "\e8e8";
+}
+
+.icon-Tooth:before {
+  content: "\e6c9";
+}
+
+.icon-Whistle:before {
+  content: "\eb6b";
+}
+
+.icon-Vomiting:before {
+  content: "\ed76";
+}
+
+.icon-Cheese:before {
+  content: "\e692";
+}
+
+.icon-anxiety:before {
+  content: "\e613";
+}
+
+.icon-diet-waist-:before {
+  content: "\e6a6";
+}
+
+.icon-speed:before {
+  content: "\e7a7";
+}
+
+.icon-Bowl:before {
+  content: "\e63d";
+}
+
+.icon-sleepmode:before {
+  content: "\e6e4";
+}
+
+.icon-vaccine:before {
+  content: "\e743";
+}
+
+.icon-poop:before {
+  content: "\e5b5";
+}
+
+.icon-dumbbell:before {
+  content: "\e6e1";
+}
+
+.icon-weight:before {
+  content: "\e737";
+}
+
+.icon-thermometer:before {
+  content: "\e611";
+}
+
+.icon-water:before {
+  content: "\e6bc";
+}
+
+.icon-vegetable:before {
+  content: "\e63e";
+}
+
+.icon-muscle:before {
+  content: "\eaf9";
+}
+
+.icon-rate-icon5:before {
+  content: "\e552";
+}
+
+.icon-bianmu:before {
+  content: "\e647";
+}
+
+.icon-xianluomao:before {
+  content: "\e64d";
+}
+
+.icon-bone:before {
+  content: "\e992";
+}
+
+.icon-bread:before {
+  content: "\e995";
+}
+
+.icon-fish:before {
+  content: "\e9ef";
+}
+
