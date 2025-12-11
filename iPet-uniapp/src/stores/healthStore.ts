@@ -19,9 +19,23 @@ import { getMetricMetadata } from '@/data/metricMetadata'
 import { healthSummaryService } from '@/services/healthSummaryService'
 import { healthService } from '@/services/health.service'
 import { healthRecordService } from '@/services/healthRecordService'
-import type { HealthRecord } from '@shared/types/health'
-import { parseTimestamp, sortRecordsByTime, getMetricSeries } from '@/utils/business/healthDataHelper'
+import { healthCacheService } from '@/services/healthCacheService'
+import type { HealthRecord, MetricSeriesResponse, MetricSeriesParams } from '@shared/types/health'
+import { parseTimestamp, sortRecordsByTime, getMetricSeries, getMetricSeriesV2 } from '@/utils/business/healthDataHelper'
 import { processPinnedMetrics, processTrendMetrics } from '@/utils/business/healthSummaryHelper'
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/** Series 缓存条目 */
+interface CachedSeries {
+    data: MetricSeriesResponse
+    updatedAt: number
+}
+
+/** Series 缓存 TTL: 10 分钟 */
+const SERIES_CACHE_TTL_MS = 10 * 60 * 1000
 
 // ============================================================================
 // Store Definition (Setup Store)
@@ -43,6 +57,16 @@ export const useHealthStore = defineStore('health', () => {
     const trends = ref<any[]>([])
     const dailySummaries = ref<Record<string, number>>({})
     const lastUpdated = ref<number | null>(null)
+
+    // =========================================================================
+    // Performance Optimization: Index & Cache (PRD 8.1)
+    // =========================================================================
+
+    /** 指标索引：metricKey -> recordIds，减少 O(N) 扫描 */
+    const metricIndex = ref<Record<string, string[]>>({})
+
+    /** Series 缓存：带 TTL 的图表数据缓存 */
+    const seriesCache = ref<Record<string, CachedSeries>>({})
 
     // =========================================================================
     // Getters (computed)
@@ -67,8 +91,16 @@ export const useHealthStore = defineStore('health', () => {
         return map
     })
 
-    /** 获取指定类型的历史记录 (降序) */
+    /** 获取指定类型的历史记录 (降序) - 使用索引加速 */
     const metricHistory = (key: string): HealthRecord[] => {
+        // 优先使用索引
+        const indexedIds = metricIndex.value[key]
+        if (indexedIds && indexedIds.length > 0) {
+            return indexedIds
+                .map(id => entities.value[id])
+                .filter(r => r && !r.deleted)
+        }
+        // 回退到全量扫描（索引未建立时）
         return ids.value
             .map(id => entities.value[id])
             .filter(r => r.type === key && !r.deleted)
@@ -107,6 +139,67 @@ export const useHealthStore = defineStore('health', () => {
         ids.value = sorted.map(r => r.id)
     }
 
+    /** 构建指标索引 */
+    function buildMetricIndex() {
+        const index: Record<string, string[]> = {}
+        ids.value.forEach(id => {
+            const record = entities.value[id]
+            if (record && record.type && !record.deleted) {
+                if (!index[record.type]) {
+                    index[record.type] = []
+                }
+                index[record.type].push(id)
+            }
+        })
+        metricIndex.value = index
+    }
+
+    /** 更新指标索引（新增记录时） */
+    function updateMetricIndex(record: HealthRecord) {
+        if (!record.type || record.deleted) return
+        const list = metricIndex.value[record.type] || []
+        if (!list.includes(record.id)) {
+            metricIndex.value[record.type] = [record.id, ...list]
+        }
+    }
+
+    /** 从索引移除记录 */
+    function removeFromMetricIndex(id: string, type?: string) {
+        if (type && metricIndex.value[type]) {
+            metricIndex.value[type] = metricIndex.value[type].filter(rid => rid !== id)
+        } else {
+            // 如果不知道类型，遍历所有索引
+            Object.keys(metricIndex.value).forEach(key => {
+                metricIndex.value[key] = metricIndex.value[key].filter(rid => rid !== id)
+            })
+        }
+    }
+
+    /** 生成 Series 缓存键 */
+    function makeSeriesKey(metric: string, range: string): string {
+        return `${metric}::${range}`
+    }
+
+    /** 检查 Series 缓存是否过期 */
+    function isSeriesCacheExpired(cached: CachedSeries): boolean {
+        return Date.now() - cached.updatedAt > SERIES_CACHE_TTL_MS
+    }
+
+    /** 使缓存失效（记录变更后调用） */
+    function invalidateSeriesCache(metric?: string) {
+        if (metric) {
+            // 只清除该指标相关的缓存
+            Object.keys(seriesCache.value).forEach(key => {
+                if (key.startsWith(`${metric}::`)) {
+                    delete seriesCache.value[key]
+                }
+            })
+        } else {
+            // 清除所有缓存
+            seriesCache.value = {}
+        }
+    }
+
     /** 应用乐观更新到 pinned metrics */
     function applyPinnedMetricOptimisticUpdate(record: Partial<HealthRecord>) {
         if (!record.type) return
@@ -141,6 +234,11 @@ export const useHealthStore = defineStore('health', () => {
                 return acc
             }, {} as Record<string, HealthRecord>)
             lastUpdated.value = Date.now()
+
+            // 构建指标索引
+            buildMetricIndex()
+            // 清除 Series 缓存（数据已更新）
+            invalidateSeriesCache()
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to fetch health records'
             error.value = message
@@ -178,6 +276,10 @@ export const useHealthStore = defineStore('health', () => {
             }
 
             resortIds()
+
+            // 更新索引和缓存
+            updateMetricIndex(result.serverRecord)
+            invalidateSeriesCache(result.serverRecord.type)
 
             // 刷新 Summary
             if (result.serverRecord.petId) {
@@ -297,11 +399,50 @@ export const useHealthStore = defineStore('health', () => {
     }
 
     /**
-     * 生成图表数据序列
+     * 生成图表数据序列（旧版，保持向后兼容）
      */
     function getMetricSeriesData(key: string, range: string) {
         const history = metricHistory(key) || []
         return getMetricSeries(history, range)
+    }
+
+    /**
+     * 获取指标系列数据 V2（带缓存）
+     * 统一入口，返回 MetricSeriesResponse 结构
+     */
+    function metricSeriesV2(
+        metric: string,
+        range: string,
+        bucket: 'day' | 'calendarWeek' | 'calendarMonth' = 'day'
+    ): MetricSeriesResponse {
+        const cacheKey = makeSeriesKey(metric, `${range}_${bucket}`)
+        const cached = seriesCache.value[cacheKey]
+
+        // 缓存命中且未过期
+        if (cached && !isSeriesCacheExpired(cached)) {
+            return cached.data
+        }
+
+        // 计算新数据
+        const history = metricHistory(metric)
+        const params: MetricSeriesParams = {
+            metric,
+            bucket,
+            mode: 'rolling',
+            range: range as any
+        }
+        const data = getMetricSeriesV2(history, params)
+
+        // 更新缓存
+        seriesCache.value[cacheKey] = {
+            data,
+            updatedAt: Date.now()
+        }
+
+        // 同步到持久化缓存
+        healthCacheService.setSeriesCache(metric, `${range}_${bucket}`, data)
+
+        return data
     }
 
     /**
@@ -374,6 +515,8 @@ export const useHealthStore = defineStore('health', () => {
         trends,
         dailySummaries,
         lastUpdated,
+        metricIndex,
+        seriesCache,
 
         // Getters
         healthRecords,
@@ -392,6 +535,8 @@ export const useHealthStore = defineStore('health', () => {
         resetSummarySnapshot,
         initSummaryPage,
         metricSeries: getMetricSeriesData,  // 保持向后兼容的别名
+        metricSeriesV2,                      // 新版统一入口
+        invalidateSeriesCache,
         fetchHistoryRecords,
         togglePin
     }

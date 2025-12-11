@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
-import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onPullDownRefresh, onShow, onHide } from '@dcloudio/uni-app'
 import { useI18n } from 'vue-i18n'
 import PetSelectorBar from '@/components/profile/PetSelectorBar.vue'
 import PinnedMetricsWidget from '@/components/widgets/PinnedMetricsWidget.vue'
@@ -95,7 +95,7 @@ const { pinnedMetrics: rawPinnedMetrics } = storeToRefs(healthStore)
 // Summary Data (via Composable)
 // ============================================================================
 
-const { stepTrendData, isLoading, loadSummaryData, refresh } = useSummaryData(selectedPetId)
+const { stepTrendData, isLoading, loadSummaryData, refresh, startAutoRefresh, stopAutoRefresh } = useSummaryData(selectedPetId)
 
 // ============================================================================
 // Computed Properties
@@ -189,6 +189,9 @@ const closeSplash = () => {
 }
 
 onShow(() => {
+    // 启动自动刷新（T5.1：连续使用 > 10 分钟自动刷新）
+    startAutoRefresh()
+    
     // 每次页面显示时，如果 App 已准备好，刷新关键数据
     if (appStore.isAppReady) {
         // 强制刷新宠物列表，解决登录后数据不显示的问题
@@ -199,6 +202,11 @@ onShow(() => {
             loadSummaryData(selectedPetId.value)
         }
     }
+})
+
+onHide(() => {
+    // 停止自动刷新
+    stopAutoRefresh()
 })
 
 onMounted(() => {

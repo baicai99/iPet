@@ -220,3 +220,275 @@ export const aggregateDailyData = (history: any[], daysCount: number = 7, method
     }
     return result
 }
+
+// ============================================================================
+// MetricSeries V2 统一协议（PRD 7.3）
+// ============================================================================
+
+import type {
+    DailyPoint,
+    BucketPoint,
+    MetricSeriesResponse,
+    MetricSeriesParams,
+    MetricBucket,
+    MetricRange,
+    MetricStats,
+    AggregationMethod
+} from '@shared/types/health'
+import isoWeek from 'dayjs/plugin/isoWeek'
+
+dayjs.extend(isoWeek)
+
+/**
+ * 将日级数据升维到周/月级别
+ * 
+ * @param days - 日级聚合点数组
+ * @param bucket - 目标粒度 ('calendarWeek' | 'calendarMonth')
+ * @returns BucketPoint 数组
+ */
+export function groupDailyToBucket(
+    days: DailyPoint[],
+    bucket: 'calendarWeek' | 'calendarMonth'
+): BucketPoint[] {
+    if (!days || days.length === 0) return []
+
+    const groups: Record<string, { values: number[]; days: number; ts: number }> = {}
+
+    days.forEach(day => {
+        const d = dayjs(day.date)
+        let period: string
+        let periodTs: number
+
+        if (bucket === 'calendarWeek') {
+            // ISO week: 2024-W01
+            const year = d.isoWeekYear()
+            const week = d.isoWeek()
+            period = `${year}-W${String(week).padStart(2, '0')}`
+            // 周起始时间戳（周一）
+            periodTs = d.startOf('isoWeek').valueOf()
+        } else {
+            // Month: 2024-01
+            period = d.format('YYYY-MM')
+            periodTs = d.startOf('month').valueOf()
+        }
+
+        if (!groups[period]) {
+            groups[period] = { values: [], days: 0, ts: periodTs }
+        }
+        groups[period].values.push(day.value)
+        groups[period].days += 1
+    })
+
+    // 按时间排序
+    return Object.entries(groups)
+        .map(([period, data]) => ({
+            period,
+            ts: data.ts,
+            value: data.values.reduce((a, b) => a + b, 0) / data.values.length, // 默认取平均
+            days: data.days
+        }))
+        .sort((a, b) => a.ts - b.ts)
+}
+
+/**
+ * 构建统一 Series 结果
+ * 
+ * @param points - 日级或周期级聚合点
+ * @returns MetricStats 统计信息
+ */
+export function buildSeriesStats(points: Array<{ value: number }>): MetricStats {
+    if (!points || points.length === 0) {
+        return { min: 0, max: 0, avg: 0 }
+    }
+
+    const values = points.map(p => p.value).filter(v => typeof v === 'number' && !Number.isNaN(v))
+
+    if (values.length === 0) {
+        return { min: 0, max: 0, avg: 0 }
+    }
+
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    const avg = Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2))
+    const total = Number(values.reduce((a, b) => a + b, 0).toFixed(2))
+
+    return { min, max, avg, total, count: values.length, latest: values[values.length - 1] }
+}
+
+/**
+ * 根据 range 计算时间范围
+ */
+function resolveRange(range: MetricRange): { from: dayjs.Dayjs; to: dayjs.Dayjs; daysCount: number } {
+    const to = dayjs()
+    let from: dayjs.Dayjs
+    let daysCount: number
+
+    switch (range) {
+        case 'last7d':
+            from = to.subtract(6, 'day').startOf('day')
+            daysCount = 7
+            break
+        case 'last30d':
+            from = to.subtract(29, 'day').startOf('day')
+            daysCount = 30
+            break
+        case 'last40w':
+            from = to.subtract(40, 'week').startOf('isoWeek')
+            daysCount = 40 * 7
+            break
+        case 'last12m':
+            from = to.subtract(11, 'month').startOf('month')
+            daysCount = 365
+            break
+        default:
+            from = to.subtract(6, 'day').startOf('day')
+            daysCount = 7
+    }
+
+    return { from, to, daysCount }
+}
+
+/**
+ * 根据指标类型推断聚合方式
+ */
+function resolveAggMethod(metric: string): AggregationMethod {
+    // 累加型指标
+    const sumMetrics = ['steps', 'calories', 'water', 'exercise_duration']
+    // 取最新值指标
+    const latestMetrics = ['weight', 'temperature', 'heart_rate', 'mood', 'poop', 'meal']
+
+    if (sumMetrics.includes(metric)) return 'sum'
+    if (latestMetrics.includes(metric)) return 'latest'
+    return 'avg'
+}
+
+/**
+ * 日级聚合（返回 DailyPoint 数组）
+ * 
+ * @param history - 原始记录数组
+ * @param options - 聚合选项
+ * @returns DailyPoint 数组
+ */
+export function aggregateToDailyPoints(
+    history: any[],
+    options: {
+        agg: AggregationMethod
+        from?: dayjs.Dayjs
+        to?: dayjs.Dayjs
+        daysCount?: number
+    }
+): DailyPoint[] {
+    if (!Array.isArray(history)) return []
+
+    const { agg, from, to, daysCount } = options
+    const endDate = to || dayjs()
+    const startDate = from || (daysCount ? endDate.subtract(daysCount - 1, 'day') : endDate.subtract(6, 'day'))
+
+    // 按日期分组
+    const groups: Record<string, any[]> = {}
+    history.forEach(record => {
+        const ts = parseTimestamp(record)
+        if (!ts) return
+
+        const recordDate = dayjs(ts)
+        // 过滤掉不在范围内的记录
+        if (recordDate.isBefore(startDate, 'day') || recordDate.isAfter(endDate, 'day')) return
+        // 过滤掉预约记录
+        if (record.metadata?.isScheduled === true) return
+
+        const dateStr = recordDate.format('YYYY-MM-DD')
+        if (!groups[dateStr]) groups[dateStr] = []
+        groups[dateStr].push(record)
+    })
+
+    const result: DailyPoint[] = []
+    const totalDays = endDate.diff(startDate, 'day') + 1
+
+    // 生成每一天的聚合点
+    for (let i = 0; i < totalDays; i++) {
+        const date = startDate.add(i, 'day')
+        const dateStr = date.format('YYYY-MM-DD')
+        const dayRecords = groups[dateStr] || []
+
+        let value = 0
+        if (dayRecords.length > 0) {
+            const values = dayRecords.map(r => Number(r.value) || 0)
+            switch (agg) {
+                case 'sum':
+                    value = values.reduce((a, b) => a + b, 0)
+                    break
+                case 'avg':
+                    value = Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2))
+                    break
+                case 'max':
+                    value = Math.max(...values)
+                    break
+                case 'min':
+                    value = Math.min(...values)
+                    break
+                case 'latest':
+                default:
+                    const sorted = sortRecordsByTime(dayRecords, 'desc')
+                    value = Number(sorted[0].value) || 0
+                    break
+            }
+        }
+
+        result.push({
+            date: dateStr,
+            ts: date.valueOf(),
+            value,
+            count: dayRecords.length
+        })
+    }
+
+    return result
+}
+
+/**
+ * 获取指标系列数据 V2（统一入口）
+ * 
+ * 该函数对齐 PRD 7.3.1 的 MetricSeriesResponse 结构，
+ * 未来迁移到服务端时，只需在后端按同样语义实现。
+ * 
+ * @param history - 原始健康记录数组
+ * @param params - 查询参数
+ * @returns MetricSeriesResponse 统一响应结构
+ */
+export function getMetricSeriesV2(
+    history: any[],
+    params: MetricSeriesParams
+): MetricSeriesResponse {
+    const { metric, bucket, range } = params
+    const { from, to, daysCount } = resolveRange(range)
+    const agg = resolveAggMethod(metric)
+
+    // 1. 日级聚合
+    const dailyPoints = aggregateToDailyPoints(history, {
+        agg,
+        from,
+        to,
+        daysCount
+    })
+
+    // 2. 如果需要更粗粒度，升维到周/月
+    let finalPoints: Array<{ ts: number; value: number }>
+
+    if (bucket === 'day') {
+        finalPoints = dailyPoints.map(p => ({ ts: p.ts, value: p.value }))
+    } else {
+        const bucketPoints = groupDailyToBucket(dailyPoints, bucket)
+        finalPoints = bucketPoints.map(p => ({ ts: p.ts, value: p.value }))
+    }
+
+    // 3. 构建统计信息
+    const stats = buildSeriesStats(finalPoints)
+
+    return {
+        metric,
+        bucket,
+        range,
+        points: finalPoints,
+        stats
+    }
+}

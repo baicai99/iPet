@@ -14,6 +14,7 @@
 
 import { healthService } from './health.service'
 import { sortRecordsByTime } from '@/utils/business/healthDataHelper'
+import { shouldBlockOfflineHealthWrite, showOfflineToast } from '@/utils/common/networkUtils'
 import type { HealthRecord } from '@shared/types/health'
 
 // ============================================================================
@@ -139,6 +140,16 @@ export async function createRecord(
 ): Promise<CreateRecordResult> {
     const optimisticRecord = buildOptimisticRecord(record)
 
+    // 离线检查：小程序端健康写入不走离线队列（PRD 4.2 节）
+    if (shouldBlockOfflineHealthWrite()) {
+        showOfflineToast('当前为离线模式，暂不支持新增记录')
+        return {
+            success: false,
+            optimisticRecord,
+            error: new Error('OFFLINE_BLOCKED')
+        }
+    }
+
     try {
         const serverRecord = await healthService.createHealthRecord(record)
         const mergedRecord = mergeServerRecord(serverRecord, record)
@@ -168,6 +179,15 @@ export async function updateRecord(
     id: string,
     payload: Partial<HealthRecord>
 ): Promise<UpdateRecordResult> {
+    // 离线检查
+    if (shouldBlockOfflineHealthWrite()) {
+        showOfflineToast('当前为离线模式，暂不支持更新记录')
+        return {
+            success: false,
+            error: new Error('OFFLINE_BLOCKED')
+        }
+    }
+
     try {
         const record = await healthService.updateHealthRecord(id, payload)
         return {
@@ -189,6 +209,16 @@ export async function updateRecord(
  * @returns 删除结果
  */
 export async function deleteRecord(id: string): Promise<DeleteRecordResult> {
+    // 离线检查
+    if (shouldBlockOfflineHealthWrite()) {
+        showOfflineToast('当前为离线模式，暂不支持删除记录')
+        return {
+            success: false,
+            deletedId: id,
+            error: new Error('OFFLINE_BLOCKED')
+        }
+    }
+
     try {
         await healthService.deleteHealthRecord(id)
         return {

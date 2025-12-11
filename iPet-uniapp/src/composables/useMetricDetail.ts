@@ -275,6 +275,7 @@ export function useMetricDetail() {
             let newChartData = { series: [] as any[], stats: {} }
 
             if (isCustomView.value) {
+                // 自定义视图：直接使用历史记录
                 const history = healthStore.metricHistory(metricKey.value)
                 const filteredHistory = (history || []).filter((r: HealthRecord) => r.metadata?.isScheduled !== true)
                 newChartData = {
@@ -282,8 +283,37 @@ export function useMetricDetail() {
                     stats: { avg: '--', min: '--', max: '--' }
                 }
             } else {
-                const res = healthStore.metricSeries(metricKey.value, activeTab.value)
-                newChartData = res
+                // 使用新的 V2 聚合管线（带缓存）
+                const rangeMap: Record<string, 'day' | 'calendarWeek' | 'calendarMonth'> = {
+                    day: 'day',
+                    week: 'day',
+                    month: 'day',
+                    six_month: 'calendarWeek',
+                    year: 'calendarMonth'
+                }
+                const bucket = rangeMap[activeTab.value] || 'day'
+
+                const seriesResponse = healthStore.metricSeriesV2(
+                    metricKey.value,
+                    activeTab.value,
+                    bucket
+                )
+
+                // 转换为现有 chartData 格式以保持兼容性
+                if (seriesResponse && seriesResponse.points) {
+                    newChartData = {
+                        series: seriesResponse.points.map(p => ({
+                            timestamp: p.ts,
+                            value: p.value,
+                            date: new Date(p.ts).toISOString()
+                        })),
+                        stats: seriesResponse.stats
+                    }
+                } else {
+                    // 回退到旧接口
+                    const res = healthStore.metricSeries(metricKey.value, activeTab.value)
+                    newChartData = res
+                }
             }
 
             chartData.value = { series: [], stats: {} }
