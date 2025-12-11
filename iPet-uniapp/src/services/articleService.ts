@@ -1,34 +1,30 @@
-import request from '@/utils/common/request'
 import type { Article } from '@/types/article'
+import { ARTICLES_DATA, getArticleById } from '@/data/articles'
 
-type MaybeWrapped<T> = T | { data: T }
-
-const unwrapData = <T>(payload: MaybeWrapped<T>): T => {
-    if (payload && typeof payload === 'object' && 'data' in (payload as Record<string, any>)) {
-        return (payload as { data: T }).data
-    }
-    return payload as T
-}
-
+/**
+ * 获取文章列表
+ * @param category 分类，'all' 表示所有分类
+ */
 export const getArticles = async (category: string = 'all'): Promise<Article[]> => {
-    const query = category && category !== 'all' ? { category } : undefined
-    const response = await request<MaybeWrapped<Article[]>>({
-        url: '/articles',
-        method: 'GET',
-        data: query
-    })
-    const normalized = unwrapData<Article[] | undefined>(response) || []
-    return Array.isArray(normalized) ? normalized : []
+    // 使用静态数据，符合 PRD 约束：全静态本地资源，秒级加载
+    if (category === 'all') {
+        return ARTICLES_DATA
+    }
+    return ARTICLES_DATA.filter(article => article.category === category)
 }
 
+/**
+ * 获取文章详情
+ * @param id 文章ID
+ */
 export const getArticleDetail = async (id: string): Promise<Article> => {
-    const response = await request<MaybeWrapped<Article>>({
-        url: `/articles/${id}`,
-        method: 'GET'
-    })
-    const normalized = unwrapData<Article | null | undefined>(response)
-    if (!normalized) {
-        throw new Error('Article not found')
+    // 从静态数据中查找
+    const article = getArticleById(id)
+
+    if (!article) {
+        throw new Error(`Article not found: ${id}`)
     }
-    return normalized
+
+    return article
 }
+

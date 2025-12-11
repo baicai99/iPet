@@ -43,8 +43,9 @@
                 <text class="section-title">{{ t('SUMMARY.ARTICLES_TITLE') }}</text>
             </view>
             <view class="articles-list" v-if="articles.length > 0">
-                <ArticleCard v-for="article in articles" :key="article.id" :id="article.id" :title="article.title"
-                    :summary="article.summary" :cover="article.cover" :category="article.category" />
+                <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id" :title="article.title"
+                    :summary="article.summary" :cover="article.cover" :category="article.category"
+                    :isNew="isArticleNew(article.updateTime, index)" :updateTime="article.updateTime" />
             </view>
             <u-empty class="empty" v-else text="暂无推荐文章" mode="list"></u-empty>
             <view class="action-button" v-if="articles.length">
@@ -104,7 +105,19 @@ const pinnedMetricKeys = computed(() => {
     return rawPinnedMetrics.value.map(m => m.key)
 })
 
-const articles = computed<Article[]>(() => articleStore.getRecommendedArticles(2))
+const articles = computed<Article[]>(() => articleStore.getLatestArticles(3))
+
+/**
+ * 判断文章是否为"最新"（updateTime 在7天内，或是第一篇）
+ */
+const isArticleNew = (updateTime: string, index: number): boolean => {
+    if (index === 0) return true // 第一篇总是显示最新标识
+    if (!updateTime) return false
+    const articleDate = new Date(updateTime)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - articleDate.getTime()) / (1000 * 60 * 60 * 24))
+    return diffDays <= 7
+}
 
 // ============================================================================
 // Trend Change Detection (for summary display)
@@ -191,6 +204,8 @@ onShow(() => {
 onMounted(() => {
     const initData = () => {
         petViewModel.ensureHydrated()
+        // 加载静态文章数据
+        articleStore.ensureLoaded()
         // Initial load
         if (selectedPetId.value) {
             healthStore.initSummaryPage(selectedPetId.value, { force: false })

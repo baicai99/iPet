@@ -26,6 +26,19 @@
         <!-- 指标百科卡片 -->
         <MetricWiki :metric-metadata="metricMetadata" />
 
+        <!-- 相关科普文章 -->
+        <view class="section-card articles-section" v-if="recommendedArticles.length > 0">
+            <view class="section-header">
+                <text class="section-title">相关科普</text>
+            </view>
+            <view class="articles-list">
+                <ArticleCard v-for="(article, index) in recommendedArticles" :key="article.id"
+                    :id="article.id" :title="article.title" :summary="article.summary"
+                    :cover="article.cover" :category="article.category"
+                    :isNew="index === 0" :updateTime="article.updateTime" />
+            </view>
+        </view>
+
         <!-- 关联指标卡片 -->
         <view class="secondary-cards" v-if="formattedRelatedMetrics.length > 0">
             <view class="info-card" v-for="metric in formattedRelatedMetrics" :key="metric.key"
@@ -67,6 +80,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { onLoad, onShow, onNavigationBarButtonTap, onUnload } from '@dcloudio/uni-app'
+
+// Article imports for recommendations
+import ArticleCard from '@/components/business/social/ArticleCard.vue'
+import { useArticleStore } from '@/stores/articleStore'
 
 // UI Components
 import HistoryButton from '@/components/widgets/HistoryButton.vue'
@@ -150,6 +167,7 @@ const HISTORY_UPDATE_EVENT = 'metric-history-updated'
 const pendingHistoryRefresh = ref(false)
 
 const healthStore = useHealthStore()
+const articleStore = useArticleStore()
 const { formatValueWithUnit } = useUnitConverter()
 
 // Chart Component Map
@@ -206,6 +224,45 @@ const formattedRelatedMetrics = computed(() => {
 })
 
 // ============================================================================
+// Computed: Recommended Articles (F-04 & F-05)
+// ============================================================================
+
+/**
+ * 推荐文章计算逻辑：
+ * 1. F-04 强制置顶：优先展示 article.id === metricKey 的文章，固定在列表 Index 0
+ * 2. F-05 模糊匹配：排除置顶文章，筛选 tags 交集，按匹配度排序
+ */
+const recommendedArticles = computed(() => {
+    const allArticles = articleStore.articles
+    if (!allArticles || allArticles.length === 0) return []
+    
+    const key = metricKey.value
+    if (!key) return []
+    
+    // F-04: 强制置顶 - 查找 ID 与 metricKey 匹配的文章
+    const pinnedArticle = allArticles.find(a => a.id === key)
+    
+    // F-05: 模糊匹配 - 按 tags 交集排序
+    const relatedArticles = allArticles
+        .filter(a => a.id !== key) // 排除置顶文章
+        .map(article => ({
+            article,
+            matchCount: (article.tags || []).filter(tag => 
+                tag === key || (metricMetadata.value.relatedMetrics || []).includes(tag)
+            ).length
+        }))
+        .filter(item => item.matchCount > 0)
+        .sort((a, b) => b.matchCount - a.matchCount)
+        .slice(0, 2) // 取前2篇相关文章
+        .map(item => item.article)
+    
+    // 组合结果：置顶 + 相关
+    return pinnedArticle 
+        ? [pinnedArticle, ...relatedArticles]
+        : relatedArticles
+})
+
+// ============================================================================
 // Computed: Pin State
 // ============================================================================
 
@@ -242,6 +299,8 @@ onLoad((options) => {
         if (metricMetadata.value.title) {
             uni.setNavigationBarTitle({ title: metricMetadata.value.title })
         }
+        // 加载静态文章数据用于推荐
+        articleStore.ensureLoaded()
         fetchData()
         fetchRelatedMetrics()
     }
@@ -625,6 +684,25 @@ async function confirmCompletion(e) {
     .active & {
         color: #1e293b;
         font-weight: 500;
+    }
+}
+
+/* Articles Section Styles */
+.articles-section {
+    .section-header {
+        margin-bottom: 24rpx;
+    }
+    
+    .section-title {
+        font-size: 32rpx;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    .articles-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
     }
 }
 </style>
