@@ -324,21 +324,35 @@ function resolveRange(range: MetricRange): { from: dayjs.Dayjs; to: dayjs.Dayjs;
     let daysCount: number
 
     switch (range) {
+        case 'day':
+            from = to.startOf('day')
+            daysCount = 1
+            break
+        case 'week':
         case 'last7d':
             from = to.subtract(6, 'day').startOf('day')
             daysCount = 7
             break
+        case 'month':
         case 'last30d':
+            // Month View: Recent 30 days
             from = to.subtract(29, 'day').startOf('day')
             daysCount = 30
+            break
+        case 'six_month':
+            // 6 Months View: Current month + previous 5 months
+            from = to.subtract(5, 'month').startOf('month')
+            daysCount = to.diff(from, 'day') + 1
+            break
+        case 'year':
+        case 'last12m':
+            // Year View: Current month + previous 11 months
+            from = to.subtract(11, 'month').startOf('month')
+            daysCount = to.diff(from, 'day') + 1 // Dynamic days count
             break
         case 'last40w':
             from = to.subtract(40, 'week').startOf('isoWeek')
             daysCount = 40 * 7
-            break
-        case 'last12m':
-            from = to.subtract(11, 'month').startOf('month')
-            daysCount = 365
             break
         default:
             from = to.subtract(6, 'day').startOf('day')

@@ -32,7 +32,7 @@ export const HEALTH_CACHE_SCHEMA_VERSION = 3;
 export type MetricBucket = 'day' | 'calendarWeek' | 'calendarMonth';
 
 /** 时间范围类型 */
-export type MetricRange = 'last7d' | 'last30d' | 'last40w' | 'last12m';
+export type MetricRange = 'day' | 'week' | 'month' | 'six_month' | 'year' | 'last7d' | 'last30d' | 'last40w' | 'last12m';
 
 /** 聚合方式 */
 export type AggregationMethod = 'sum' | 'avg' | 'latest' | 'max' | 'min';
