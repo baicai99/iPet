@@ -34,6 +34,8 @@ export type MetricKey =
     | 'vomiting'
     | 'tooth_brushing'
 
+import type { MetricDomain, MissingPolicy, AggregationMethod } from '@shared/types/health'
+
 export interface MetricEnumOption {
     value: number | string;
     label: string;
@@ -56,6 +58,14 @@ export interface MetricMetadata {
     unit?: string;
     category: string;
     valueType: 'number' | 'enum' | 'score' | 'time' | 'distance' | 'text';
+    /** 指标领域类型 - 决定聚合方式和缺失值处理 */
+    domain?: MetricDomain;
+    /** 缺失值处理策略 */
+    missingPolicy?: MissingPolicy;
+    /** 图表是否连接跨越缺失点 */
+    connectAcrossMissing?: boolean;
+    /** 聚合方式 */
+    aggregationMethod?: AggregationMethod;
     description?: string;
     recommendation?: string;
     tips?: string;
@@ -63,6 +73,7 @@ export interface MetricMetadata {
     trendInsights?: TrendInsightConfig;
     relatedMetrics?: MetricKey[];
     visualization?: { type: string; options?: Record<string, unknown> };
+    /** @deprecated Use aggregationMethod instead */
     calculationMethod?: 'sum' | 'latest' | 'avg';
     interactionMode?: string;
     formConfig?: Record<string, unknown>;
@@ -83,6 +94,10 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         displayUnit: '厘米',
         category: 'bodyMeasurement',
         valueType: 'number',
+        domain: 'snapshot',
+        missingPolicy: 'null',
+        connectAcrossMissing: true,
+        aggregationMethod: 'latest',
         description: '肩高是狗狗体型的关键指标，反映骨骼发育和整体身材。',
         recommendation: '成年中型犬肩高一般在 40–50 cm 之间，品种会有差异。',
         tips: '定期测量肩高，可帮助评估体型是否偏胖或偏瘦。',
@@ -99,6 +114,10 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         displayUnit: '摄氏度',
         category: 'vitalSigns',
         valueType: 'number',
+        domain: 'snapshot',
+        missingPolicy: 'null',
+        connectAcrossMissing: true,
+        aggregationMethod: 'latest',
         description: '体温是判断宠物是否发烧或低温的重要指标，稳定维持可反映健康状态。',
         recommendation: '成犬常见体温在 38.0–39.3℃，幼犬略高。连续两天超过 39.5℃ 建议就医。',
         tips: '测量时尽量选择同一时段，可使用肛温或专业耳温枪，异常时及时记录。',
@@ -115,6 +134,10 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         displayUnit: '千克',
         category: 'bodyMeasurement',
         valueType: 'number',
+        domain: 'snapshot',
+        missingPolicy: 'null',
+        connectAcrossMissing: true,
+        aggregationMethod: 'latest',
         description: '体重可以反映营养与运动平衡情况，持续上升或下降都需要关注。',
         recommendation: '同体型犬只保持一个月内波动不超过 5% 较为理想。',
         tips: '每周固定时间称重，保持记录能快速发现异常波动。',
@@ -638,6 +661,63 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
 import { usePreferenceStore } from '@/stores/preferenceStore'
 
 /**
+ * Infer domain defaults based on visualization type and calculationMethod for backwards compatibility.
+ * Explicit metadata values always take precedence.
+ */
+const inferMetricDomainDefaults = (metadata: MetricMetadata): MetricMetadata => {
+    const vizType = metadata.visualization?.type
+    const calcMethod = metadata.calculationMethod
+
+    // Infer domain from visualization type if not explicitly set
+    let domain = metadata.domain
+    if (!domain) {
+        if (['state_grid', 'risk_grid', 'event_timeline'].includes(vizType || '')) {
+            domain = 'enum'
+        } else if (vizType === 'daily_bar' || calcMethod === 'sum') {
+            domain = 'cumulative'
+        } else if (vizType === 'trend_line') {
+            domain = 'snapshot'
+        } else {
+            domain = 'snapshot' // default fallback
+        }
+    }
+
+    // Infer missingPolicy from domain if not explicitly set
+    let missingPolicy = metadata.missingPolicy
+    if (!missingPolicy) {
+        missingPolicy = domain === 'cumulative' ? 'zero' : 'null'
+    }
+
+    // Infer connectAcrossMissing from domain if not explicitly set
+    let connectAcrossMissing = metadata.connectAcrossMissing
+    if (connectAcrossMissing === undefined) {
+        connectAcrossMissing = domain === 'snapshot' || domain === 'continuous'
+    }
+
+    // Infer aggregationMethod from domain/calcMethod if not explicitly set
+    let aggregationMethod = metadata.aggregationMethod
+    if (!aggregationMethod) {
+        if (calcMethod) {
+            aggregationMethod = calcMethod
+        } else if (domain === 'cumulative') {
+            aggregationMethod = 'sum'
+        } else if (domain === 'continuous') {
+            aggregationMethod = 'avg'
+        } else {
+            aggregationMethod = 'latest'
+        }
+    }
+
+    return {
+        ...metadata,
+        domain,
+        missingPolicy,
+        connectAcrossMissing,
+        aggregationMethod
+    }
+}
+
+/**
  * Get metadata for a specific metric.
  * 
  * @param {string} metricKey - The unique metric identifier
@@ -652,19 +732,22 @@ const VACCINE_FORM_OPTIONS = [
 const VACCINE_KEYS = new Set(['rabies_vaccine', 'vaccine'])
 
 const normalizeMetricMetadata = (metadata: MetricMetadata): MetricMetadata => {
-    if (!VACCINE_KEYS.has(metadata.key)) {
-        return metadata
+    // First apply domain defaults inference
+    const withDefaults = inferMetricDomainDefaults(metadata)
+
+    if (!VACCINE_KEYS.has(withDefaults.key)) {
+        return withDefaults
     }
 
     return {
-        ...metadata,
+        ...withDefaults,
         title: '疫苗',
-        description: metadata.description || '记录宠物常规疫苗（狂犬、基础病多联）接种情况，保护宠物和家人安全。',
-        recommendation: metadata.recommendation || '按免疫证安排“两针多联+狂犬”后，通常每年加强一次，确保免疫效果。',
+        description: withDefaults.description || '记录宠物常规疫苗（狂犬、基础病多联）接种情况，保护宠物和家人安全。',
+        recommendation: withDefaults.recommendation || '按免疫证安排“两针多联+狂犬”后，通常每年加强一次，确保免疫效果。',
         formConfig: {
             type: 'tags',
             multiSelect: false,
-            ...(metadata.formConfig || {}),
+            ...(withDefaults.formConfig || {}),
             options: VACCINE_FORM_OPTIONS
         }
     }
@@ -724,4 +807,30 @@ export function getMetricsByCategory(category: string): MetricMetadata[] {
  */
 export function metricExists(metricKey: string): boolean {
     return metricKey in METRIC_METADATA
+}
+
+/**
+ * Get processing configuration for a metric (for use in data layer and charts).
+ * Returns inferred defaults if explicit values are not set.
+ * 
+ * @param {string} metricKey - The metric key
+ * @returns Processing config with domain, missingPolicy, connectAcrossMissing, aggregationMethod
+ */
+export function getMetricProcessingConfig(metricKey: string) {
+    const metadata = getMetricMetadata(metricKey as MetricKey)
+    if (!metadata) {
+        // Default fallback for unknown metrics
+        return {
+            domain: 'snapshot' as const,
+            missingPolicy: 'null' as const,
+            connectAcrossMissing: true,
+            aggregationMethod: 'latest' as const
+        }
+    }
+    return {
+        domain: metadata.domain!,
+        missingPolicy: metadata.missingPolicy!,
+        connectAcrossMissing: metadata.connectAcrossMissing!,
+        aggregationMethod: metadata.aggregationMethod!
+    }
 }

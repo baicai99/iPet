@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
+import { getMetricProcessingConfig } from '@/data/metricMetadata'
 
 /**
  * Type Definitions
@@ -150,7 +151,7 @@ export const getDateFormat = (range: TimeRange | string): ((ts: number) => strin
 const alignSeriesData = (
     sourceData: SourceData,
     axisTimestamps: number[],
-    isCumulative: boolean,
+    missingPolicy: 'null' | 'zero' | 'carry',
     range: TimeRange
 ): (number | null)[] => {
     const { values = [], timestamps = [] } = sourceData
@@ -196,10 +197,8 @@ const alignSeriesData = (
         if (dataMap.has(key)) {
             alignedValues.push(dataMap.get(key)!)
         } else {
-            // Missing data handling
-            // Cumulative (e.g. steps) -> 0
-            // Continuous (e.g. weight) -> null
-            alignedValues.push(isCumulative ? 0 : null)
+            // Missing data handling based on missingPolicy
+            alignedValues.push(missingPolicy === 'zero' ? 0 : null)
         }
     })
 
@@ -263,13 +262,16 @@ export function useChartOptions(
 
         const type = metricMetadata.value.visualization?.type
         const range = activeRange.value as TimeRange
-        const isCumulative = type === 'daily_bar' // Heuristic: bars are usually cumulative
+
+        // Metadata-driven processing config
+        const metricKey = (metricMetadata.value as { key?: string }).key || ''
+        const processingConfig = getMetricProcessingConfig(metricKey)
 
         // 1. Generate Time Axis
         const { timestamps: axisTimestamps, labels: axisLabels, formatLabel } = generateTimeAxis(range)
 
-        // 2. Align Data
-        const alignedValues = alignSeriesData(currentData.value, axisTimestamps, isCumulative, range)
+        // 2. Align Data using metadata-driven missingPolicy
+        const alignedValues = alignSeriesData(currentData.value, axisTimestamps, processingConfig.missingPolicy, range)
 
         // 3. Calculate Y-Axis
         const yAxisRange = calculateSmartYAxis(alignedValues)
@@ -358,7 +360,7 @@ export function useChartOptions(
             data: alignedValues,
             type: type === 'trend_line' ? 'line' : 'bar',
             smooth: true,
-            connectNulls: true, // Connect valid points directly (skip null gaps)
+            connectNulls: processingConfig.connectAcrossMissing, // Metadata-driven null connection
             symbol: 'circle',
             symbolSize: validDataCount === 1 ? 10 : 6, // Larger dot for single point
             showSymbol: shouldShowSymbol, // Show symbols for sparse data
