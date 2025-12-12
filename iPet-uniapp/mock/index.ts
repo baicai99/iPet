@@ -1,5 +1,13 @@
 import { MockMethod } from 'vite-plugin-mock'
-import { getMetricHistoryMock, getMetricSeriesMock } from './handlers/metricHandlers'
+import {
+    getMetricHistoryMock,
+    getMetricSeriesMock,
+    getHealthRecordsMock,
+    createHealthRecordMock,
+    updateHealthRecordMock,
+    deleteHealthRecordMock,
+    getHealthSummaryMock
+} from './handlers/metricHandlers'
 
 import { getPetsMock, createPetMock, updatePetMock, deletePetMock } from './handlers/petHandlers'
 import { sendCodeMock, registerMock, loginMock, refreshTokenMock } from './handlers/authHandlers'
@@ -24,6 +32,13 @@ const adapt = (handler: any) => {
 }
 
 export default [
+    // Health Records
+    { url: '/health', method: 'get', response: adapt(getHealthRecordsMock) },
+    { url: '/health', method: 'post', response: adapt(createHealthRecordMock) },
+    { url: '/health/:id', method: 'patch', response: adapt(updateHealthRecordMock) },
+    { url: '/health/:id', method: 'delete', response: adapt(deleteHealthRecordMock) },
+    { url: '/health/summary', method: 'get', response: adapt(getHealthSummaryMock) },
+
     // Metrics
     { url: '/metrics/:id/history', method: 'get', response: adapt(getMetricHistoryMock) },
     { url: '/metrics/:id/series', method: 'get', response: adapt(getMetricSeriesMock) },

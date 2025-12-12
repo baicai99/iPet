@@ -31,12 +31,35 @@ export const DEFAULT_CHAOS_CONFIG: ChaosConfig = {
  * Outlier value ranges for different metric types
  */
 const OUTLIER_RANGES: Record<string, { min: number; max: number }> = {
-    meal: { min: 500, max: 800 },           // Unusually high meal
-    water: { min: 800, max: 1500 },         // Excessive water
-    body_temp: { min: 34, max: 42 },        // Fever or hypothermia
-    walk_duration: { min: 120, max: 240 },  // Very long walks
-    weight: { min: 1, max: 50 },            // Extreme weights
-
+    // Nutrition
+    meal: { min: 500, max: 800 },
+    water: { min: 800, max: 1500 },
+    protein: { min: 80, max: 150 },
+    carb: { min: 150, max: 250 },
+    fat: { min: 80, max: 120 },
+    diet_energy: { min: 800, max: 1200 },
+    fish_oil: { min: 8, max: 15 },
+    calcium: { min: 5, max: 10 },
+    fiber: { min: 30, max: 50 },
+    // Body measurements
+    body_temp: { min: 34, max: 42 },
+    weight: { min: 1, max: 50 },
+    shoulder_height: { min: 15, max: 80 },
+    body_fat: { min: 5, max: 50 },
+    bmi: { min: 10, max: 40 },
+    lean_mass: { min: 1, max: 50 },
+    waist: { min: 20, max: 100 },
+    // Activity
+    walk_duration: { min: 120, max: 240 },
+    run_distance: { min: 15, max: 30 },
+    run_pace: { min: 2, max: 20 },
+    fitness_training: { min: 60, max: 120 },
+    training: { min: 60, max: 90 },
+    // Status
+    stool: { min: 0, max: 8 },
+    anxiety: { min: -1, max: 10 },
+    depression: { min: -1, max: 10 },
+    vomiting: { min: 5, max: 10 },
 }
 
 /**

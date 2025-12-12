@@ -1,11 +1,21 @@
 import { RequestConfig } from '../types/common'
+import type { HealthRecord } from '../../../shared/types/health'
 import { SeededRandom } from '../utils/random'
 import { getMockStorage } from '../utils/mockStorage'
+import { pets } from '../pet.js'
+import {
+    generateHighFreqDataForMetric,
+    generateLowFreqDataForMetric,
+    HIGH_FREQ_METRICS,
+    LOW_FREQ_METRICS,
+    injectChaos
+} from '../generators'
 
 const STORAGE_KEYS = {
     HISTORY: 'mock_metric_history',
     SERIES: 'mock_metric_series',
-    LATEST: 'mock_metric_latest'
+    LATEST: 'mock_metric_latest',
+    HEALTH_RECORDS: 'mock_health_records'
 }
 
 const getStorage = () => getMockStorage()
@@ -20,6 +30,118 @@ const setToCache = (type: string, key: string, value: any) => {
     const store = storage.get(type) || {}
     store[key] = value
     storage.set(type, store)
+}
+
+/**
+ * Clone a single health record (deep copy metadata)
+ */
+const cloneRecord = (record: HealthRecord): HealthRecord => ({
+    ...record,
+    metadata: record.metadata ? { ...record.metadata } : undefined
+})
+
+/**
+ * Clone an array of health records
+ */
+const cloneRecords = (records: HealthRecord[]): HealthRecord[] => records.map(cloneRecord)
+
+/**
+ * Sort records by updatedAt descending (newest first)
+ */
+const sortRecordsDesc = (records: HealthRecord[]): HealthRecord[] => {
+    return [...records].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+}
+
+/**
+ * Save health records to storage
+ */
+const saveHealthRecords = (records: HealthRecord[]): HealthRecord[] => {
+    const sorted = sortRecordsDesc(records)
+    getStorage().set(STORAGE_KEYS.HEALTH_RECORDS, sorted)
+    return sorted
+}
+
+/**
+ * Generate mock health records using unified generators
+ * Covers 2-year time span with realistic data distribution
+ */
+const seedHealthRecords = (): HealthRecord[] => {
+    const petId = pets[0]?.id || 'mock_pet_001'
+    let records: HealthRecord[] = []
+
+    console.log('[Mock] Generating 2-year health records using generators...')
+
+    // Generate high-frequency data (daily metrics)
+    HIGH_FREQ_METRICS.forEach(metric => {
+        try {
+            const metricRecords = generateHighFreqDataForMetric(metric, petId)
+            records.push(...metricRecords)
+            console.log(`[Mock] Generated ${metricRecords.length} records for ${metric}`)
+        } catch (e) {
+            console.warn(`[Mock] Skipped unknown high-freq metric: ${metric}`)
+        }
+    })
+
+    // Generate low-frequency data (periodic events & body measurements)
+    LOW_FREQ_METRICS.forEach(metric => {
+        try {
+            const metricRecords = generateLowFreqDataForMetric(metric, petId)
+            records.push(...metricRecords)
+            console.log(`[Mock] Generated ${metricRecords.length} records for ${metric}`)
+        } catch (e) {
+            console.warn(`[Mock] Skipped unknown low-freq metric: ${metric}`)
+        }
+    })
+
+    // Apply chaos injection (1% outliers, 2% data voids, 0.5% null fields)
+    const beforeChaos = records.length
+    records = injectChaos(records)
+    console.log(`[Mock] Applied chaos injection: ${beforeChaos} -> ${records.length} records`)
+
+    // Sort by timestamp descending
+    records.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+
+    console.log(`[Mock] Total generated: ${records.length} records covering ${new Set(records.map(r => r.type)).size} metrics`)
+
+    return saveHealthRecords(records)
+}
+
+const roundValue = (value: number, precision: number = 0): number => {
+    return Number(value.toFixed(precision))
+}
+
+const resolveTimestamp = (input?: string | number | Date): number => {
+    if (!input) return Date.now()
+    if (typeof input === 'number') return input
+    if (input instanceof Date) return input.getTime()
+    const parsed = new Date(input).getTime()
+    return Number.isNaN(parsed) ? Date.now() : parsed
+}
+
+const getHealthRecordsFromStorage = (): HealthRecord[] => {
+    const stored = getStorage().get(STORAGE_KEYS.HEALTH_RECORDS)
+    if (Array.isArray(stored) && stored.length > 0) {
+        return stored
+    }
+    return seedHealthRecords()
+}
+
+const upsertHealthRecord = (record: HealthRecord, records: HealthRecord[]): HealthRecord[] => {
+    const index = records.findIndex(item => item.id === record.id)
+    if (index === -1) {
+        records.unshift(record)
+    } else {
+        records[index] = record
+    }
+    return saveHealthRecords(records)
+}
+
+const removeHealthRecord = (id: string, records: HealthRecord[]): HealthRecord[] => {
+    const index = records.findIndex(item => item.id === id)
+    if (index !== -1) {
+        records.splice(index, 1)
+    }
+    return saveHealthRecords(records)
 }
 
 const getConsistentLatestValue = (key: string, min: number, max: number): number => {
@@ -282,30 +404,104 @@ export const getMetricSeriesMock = (config: RequestConfig) => {
 }
 
 export const getHealthRecordsMock = (config: RequestConfig) => {
-    // Basic mock implementation compatible with list format
-    const rng = new SeededRandom('health_records_list')
-    const total = 20
-    const list = Array.from({ length: total }, (_, i) => ({
-        id: `record_${i}`,
-        type: rng.choice(['weight', 'meal', 'stool', 'bath']),
-        value: rng.int(10, 100),
-        time: Date.now() - i * 86400000,
-        note: rng.choice(['正常', '有点异常', '非常健康'])
-    }))
-    return {
-        list,
-        total,
-        page: 1,
-        pageSize: 10
+    const params = (config.data || {}) as {
+        petId?: string
+        page?: number
+        limit?: number
+        type?: string
     }
+
+    let records = sortRecordsDesc(getHealthRecordsFromStorage()).filter(record => !record.deleted)
+
+    if (params.petId) {
+        records = records.filter(record => String(record.petId) === String(params.petId))
+    }
+    if (params.type) {
+        records = records.filter(record => record.type === params.type)
+    }
+
+    const page = Number(params?.page) > 0 ? Number(params.page) : 1
+    const limit = Number(params?.limit) > 0 ? Number(params.limit) : records.length
+    const start = (page - 1) * limit
+    const end = start + limit
+
+    return cloneRecords(records.slice(start, end))
 }
 
 export const createHealthRecordMock = (config: RequestConfig) => {
-    return {
-        id: `new_record_${Date.now()}`,
-        ...config.data,
-        createTime: Date.now()
+    const payload = (config.data || {}) as Partial<HealthRecord>
+    const timestamp = resolveTimestamp(payload.metadata?.targetDate || payload.date || payload.updatedAt)
+    const petId = String(payload.petId || (pets[0]?.id ?? 'mock_pet_001'))
+
+    const record: HealthRecord = {
+        id: payload.id || `health_${petId}_${timestamp}`,
+        petId,
+        type: payload.type || 'custom',
+        value: Number(payload.value ?? 0),
+        unit: payload.unit || '',
+        updatedAt: timestamp,
+        date: new Date(timestamp).toISOString(),
+        notes: payload.notes ?? null,
+        source: payload.source || (payload.metadata?.isScheduled ? 'schedule' : 'manual'),
+        status: payload.status || 'synced',
+        label: payload.label,
+        emoji: payload.emoji,
+        gridValue: payload.gridValue ?? null,
+        metadata: payload.metadata ? { ...payload.metadata } : {}
     }
+
+    const stored = getHealthRecordsFromStorage()
+    upsertHealthRecord(record, stored)
+
+    return cloneRecord(record)
+}
+
+export const updateHealthRecordMock = (config: RequestConfig) => {
+    const match = config.url.match(/\/health\/([^/]+)/)
+    const recordId = match ? match[1] : null
+
+    if (!recordId) {
+        throw new Error('Invalid record id')
+    }
+
+    const payload = (config.data || {}) as Partial<HealthRecord>
+    const stored = getHealthRecordsFromStorage()
+    const index = stored.findIndex(record => record.id === recordId)
+
+    if (index === -1) {
+        throw new Error('Record not found')
+    }
+
+    const timestamp = resolveTimestamp(payload.metadata?.targetDate || payload.date || payload.updatedAt)
+    const shouldSyncDate = Boolean(payload.date || payload.metadata?.targetDate || payload.updatedAt)
+    const isoDate = new Date(timestamp).toISOString()
+    const merged: HealthRecord = {
+        ...stored[index],
+        ...payload,
+        updatedAt: timestamp,
+        date: shouldSyncDate ? isoDate : stored[index].date,
+        metadata: payload.metadata
+            ? { ...(stored[index].metadata || {}), ...payload.metadata }
+            : stored[index].metadata
+    }
+
+    stored[index] = merged
+    saveHealthRecords(stored)
+
+    return cloneRecord(merged)
+}
+
+export const deleteHealthRecordMock = (config: RequestConfig) => {
+    const match = config.url.match(/\/health\/([^/]+)/)
+    const recordId = match ? match[1] : null
+
+    if (!recordId) {
+        throw new Error('Invalid record id')
+    }
+
+    const stored = getHealthRecordsFromStorage()
+    removeHealthRecord(recordId, stored)
+    return { success: true }
 }
 
 export const getHealthSummaryMock = (config: RequestConfig) => {

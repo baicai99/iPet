@@ -244,6 +244,8 @@ export function generateLowFreqDataForMetric(
         labels: baseConfig.labels,
         includeFuture: baseConfig.includeFuture,
         futureDays: baseConfig.futureDays,
+        valueRange: baseConfig.valueRange,
+        decimals: baseConfig.decimals,
         ...overrides
     }
 

@@ -13,6 +13,8 @@ import {
     getMetricSeriesMock,
     getHealthRecordsMock,
     createHealthRecordMock,
+    updateHealthRecordMock,
+    deleteHealthRecordMock,
     getHealthSummaryMock
 } from '../../../mock/handlers/metricHandlers'
 import { getPetsMock, createPetMock, updatePetMock, deletePetMock } from '../../../mock/handlers/petHandlers'
@@ -62,6 +64,8 @@ const mockRoutes: MockRoute[] = [
     // Health Records (main data endpoints)
     { pattern: createRouteRegex('/health'), method: 'GET', handler: adaptHandler(getHealthRecordsMock) },
     { pattern: createRouteRegex('/health'), method: 'POST', handler: adaptHandler(createHealthRecordMock) },
+    { pattern: createRouteRegex('/health/:id'), method: 'PATCH', handler: adaptHandler(updateHealthRecordMock) },
+    { pattern: createRouteRegex('/health/:id'), method: 'DELETE', handler: adaptHandler(deleteHealthRecordMock) },
     { pattern: createRouteRegex('/health/summary'), method: 'GET', handler: adaptHandler(getHealthSummaryMock) },
 
     // Metrics (legacy/chart endpoints)
