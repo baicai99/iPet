@@ -33,8 +33,7 @@ export interface MetricStaticConfig {
 const WIDE_VISUALIZATION_TYPES = [
     'event_timeline',
     'range_slider',
-    'status_grid',
-    'state_grid'  // Kept for backward compatibility with existing metadata
+    'state_grid'
 ]
 
 /**

@@ -23,7 +23,6 @@ const MINI_CHART_MAP = {
     range_slider: MiniRangeSlider,
     status_icon: MiniStatus,
     event_timeline: MiniTimeline,
-    status_grid: MiniStatusGrid,
     state_grid: MiniStatusGrid
 }
 
@@ -45,7 +44,7 @@ const chartDefaults: Record<string, ChartProps> = {
     range_slider: { height: 100 },
     status_icon: { size: 80 },
     event_timeline: { height: 120 },
-    status_grid: { columns: 4 }
+    state_grid: { columns: 4 }
 }
 
 export function resolveChartAdapter(chartType: string, options: ChartProps = {}, variant: 'mini' | 'detail' = 'mini') {

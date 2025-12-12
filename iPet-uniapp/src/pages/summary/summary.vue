@@ -43,9 +43,10 @@
                 <text class="section-title">{{ t('SUMMARY.ARTICLES_TITLE') }}</text>
             </view>
             <view class="articles-list" v-if="articles.length > 0">
-                <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id" :title="article.title"
-                    :summary="article.summary" :cover="article.cover" :category="article.category"
-                    :isNew="isArticleNew(article.updateTime, index)" :updateTime="article.updateTime" />
+                <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id"
+                    :title="article.title" :summary="article.summary" :cover="article.cover"
+                    :category="article.category" :isNew="isArticleNew(article.updateTime, index)"
+                    :updateTime="article.updateTime" />
             </view>
             <u-empty class="empty" v-else text="暂无推荐文章" mode="list"></u-empty>
             <view class="action-button" v-if="articles.length">
@@ -191,7 +192,7 @@ const closeSplash = () => {
 onShow(() => {
     // 启动自动刷新（T5.1：连续使用 > 10 分钟自动刷新）
     startAutoRefresh()
-    
+
     // 每次页面显示时，如果 App 已准备好，刷新关键数据
     if (appStore.isAppReady) {
         // 强制刷新宠物列表，解决登录后数据不显示的问题
@@ -289,6 +290,13 @@ const goViewArticles = () => {
     background-color: white;
     border-radius: 30rpx;
     padding: 30rpx;
+}
+
+.trends-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    margin-bottom: 16rpx;
 }
 
 .articles-list {

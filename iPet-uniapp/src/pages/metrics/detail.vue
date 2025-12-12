@@ -174,10 +174,9 @@ const CHART_COMPONENTS = {
     progress_ring: ProgressRingChart,
     range_slider: RangeSliderChart,
     status_icon: StatusIconChart,
-    status_grid: StatusGridChart,
+    state_grid: StatusGridChart,
     event_timeline: EventTimelineChart,
-    text: TextChart,
-    state_grid: StatusGridChart
+    text: TextChart
 }
 
 // ============================================================================

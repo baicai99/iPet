@@ -61,6 +61,18 @@
                         </view>
                     </view>
 
+                    <!-- Stool Status Tag Selection (PRD: 7-tag single select) -->
+                    <view v-if="isStatusTagMode && formConfig && formConfig.options?.length > 0" class="form-group">
+                        <text class="label">排泄状态</text>
+                        <view class="stool-tag-grid">
+                            <view v-for="option in formConfig.options" :key="option.value" class="stool-tag-item"
+                                :class="{ active: selectedStoolStatus === option.value }"
+                                @click="selectStoolStatus(option.value)">
+                                <text>{{ option.label }}</text>
+                            </view>
+                        </view>
+                    </view>
+
                     <!-- Numeric Input for Stats -->
                     <view v-if="!isEventMetric" class="form-group">
                         <text class="label">{{ valueLabel }}</text>
@@ -315,12 +327,20 @@ const isTaskMode = computed(() => {
 
 const formConfig = computed(() => metricMeta.value.formConfig)
 
+// Stool status tag mode detection
+const isStatusTagMode = computed(() => {
+    return metricMeta.value.interactionMode === 'status_tag'
+})
+
 // Metrics that don't require value input (Events)
+// Note: stool uses status_tag mode, not isEventMetric
 const isEventMetric = computed(() => {
+    if (isStatusTagMode.value) return true // status_tag has its own input
     return isTaskMode.value || ['bathing', 'vaccine', 'vomiting'].includes(metricKey.value)
 })
 
 const selectedMethods = ref<string[]>([]) // Dynamic methods based on formConfig
+const selectedStoolStatus = ref<number | null>(null) // For stool status tag selection
 
 // Reminder Config (Record Mode)
 // Reminder Config (Record Mode)
@@ -421,6 +441,11 @@ const selectFrequency = (value: string) => {
     reminderFrequency.value = value
 }
 
+// Handle stool status tag selection
+const selectStoolStatus = (value: number) => {
+    selectedStoolStatus.value = value
+}
+
 // Lifecycle
 onLoad(async (options: any) => {
     if (options?.key) {
@@ -467,8 +492,14 @@ const onRepeatSelect = (e: any) => {
 }
 
 const handleSubmit = async () => {
-    // Validation
-    if (!isEventMetric.value && !isScheduleMode.value) {
+    // Validation: Stool status tag must be selected
+    if (isStatusTagMode.value && selectedStoolStatus.value === null) {
+        showNotification('请选择排泄状态', 'error')
+        return
+    }
+
+    // Validation: Other metrics
+    if (!isEventMetric.value && !isScheduleMode.value && !isStatusTagMode.value) {
         if (!formData.value.value) {
             showNotification('请输入金额/数值', 'error')
             return
@@ -523,7 +554,11 @@ const handleSubmit = async () => {
         let valueForStorage = 1
         let finalUnit = unitLabel.value
 
-        if (!isEventMetric.value && !isScheduleMode.value && !shouldSchedule) {
+        // Handle stool status tag mode
+        if (isStatusTagMode.value && selectedStoolStatus.value !== null) {
+            valueForStorage = selectedStoolStatus.value
+            finalUnit = 'status'
+        } else if (!isEventMetric.value && !isScheduleMode.value && !shouldSchedule) {
             const numericValue = Number(formData.value.value)
             const metricUnit = metricBaseUnit.value || metricMeta.value.displayUnit || ''
             valueForStorage = metricUnit ? convertToBaseValue(numericValue, metricUnit) : numericValue
@@ -971,6 +1006,33 @@ $red-800: #991b1b;
     display: flex;
     gap: 16rpx;
     flex-wrap: wrap;
+}
+
+// Stool Status Tag Grid (7-tag single select)
+.stool-tag-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16rpx;
+}
+
+.stool-tag-item {
+    padding: 20rpx 16rpx;
+    background-color: $slate-50;
+    border-radius: 16rpx;
+    text-align: center;
+    font-size: 26rpx;
+    color: $slate-700;
+    transition: all 0.2s ease;
+
+    &.active {
+        background-color: $indigo-600;
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
 }
 
 .tag-item {

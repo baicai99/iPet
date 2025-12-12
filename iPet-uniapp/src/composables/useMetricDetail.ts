@@ -165,9 +165,24 @@ export function useMetricDetail() {
                     title: ts ? dayjs(ts).format('MM-DD') : (record.label || record.value || '记录'),
                     time: '',
                     value: record.value,
-                    date: ts
+                    timestamp: typeof ts === 'number' ? ts : dayjs(ts).valueOf(),
+                    date: ts ? dayjs(ts).format('YYYY-MM-DD') : null
                 }
             })
+
+            // For state_grid charts, return structured values array
+            const vizType = metricMetadata.value.visualization?.type
+            if (vizType === 'state_grid') {
+                return {
+                    values: formattedEvents, // Array of {value, timestamp, date} objects
+                    labels: [],
+                    unit: metricUnitLabel.value,
+                    ...stats,
+                    trend: 0,
+                    rawEvents: formattedEvents
+                }
+            }
+
             return {
                 values: [],
                 labels: [],
@@ -275,11 +290,97 @@ export function useMetricDetail() {
             let newChartData = { series: [] as any[], stats: {} }
 
             if (isCustomView.value) {
-                // 自定义视图：直接使用历史记录
-                const history = healthStore.metricHistory(metricKey.value)
-                const filteredHistory = (history || []).filter((r: HealthRecord) => r.metadata?.isScheduled !== true)
+                // 自定义视图：先确保数据已加载，再使用历史记录
+                const petId = petStore.selectedPetId
+                if (petId) {
+                    await healthStore.fetchHealthRecords(petId)
+                }
+                const allHistory = healthStore.metricHistory(metricKey.value)
+
+                // 按时间范围过滤数据
+                const now = dayjs()
+                let cutoffTime: number
+                let aggregationBucket: 'none' | 'day' | 'week' | 'month' = 'none'
+
+                switch (activeTab.value) {
+                    case 'day':
+                        cutoffTime = now.startOf('day').valueOf()
+                        aggregationBucket = 'none' // 显示所有数据点
+                        break
+                    case 'week':
+                        cutoffTime = now.subtract(6, 'day').startOf('day').valueOf()
+                        aggregationBucket = 'none' // 显示所有数据点
+                        break
+                    case 'month':
+                        cutoffTime = now.subtract(29, 'day').startOf('day').valueOf()
+                        aggregationBucket = 'day' // 聚合到每天
+                        break
+                    case 'six_month':
+                        cutoffTime = now.subtract(6, 'month').startOf('day').valueOf()
+                        aggregationBucket = 'week' // 聚合到每周
+                        break
+                    case 'year':
+                        cutoffTime = now.subtract(1, 'year').startOf('day').valueOf()
+                        aggregationBucket = 'month' // 聚合到每月
+                        break
+                    default:
+                        cutoffTime = now.subtract(6, 'day').startOf('day').valueOf()
+                        aggregationBucket = 'none'
+                }
+
+                // 过滤时间范围内的数据
+                const filteredHistory = (allHistory || []).filter((r: HealthRecord) => {
+                    if (r.metadata?.isScheduled === true) return false
+                    const recordTime = r.updatedAt || new Date(r.date).getTime()
+                    return recordTime >= cutoffTime
+                })
+
+                // 根据聚合粒度进行数据聚合
+                let aggregatedData: any[]
+                if (aggregationBucket === 'none') {
+                    // 不聚合，直接使用原始数据
+                    aggregatedData = filteredHistory
+                } else {
+                    // 按时间桶聚合，取每个桶的最后一条记录（最新状态）
+                    const buckets = new Map<string, HealthRecord>()
+
+                    for (const record of filteredHistory) {
+                        const recordTime = dayjs(record.updatedAt || record.date)
+                        let bucketKey: string
+
+                        switch (aggregationBucket) {
+                            case 'day':
+                                bucketKey = recordTime.format('YYYY-MM-DD')
+                                break
+                            case 'week':
+                                // 使用周一作为周的开始，格式为 YYYY-MM-DD（周一的日期）
+                                bucketKey = recordTime.startOf('week').format('YYYY-MM-DD')
+                                break
+                            case 'month':
+                                bucketKey = recordTime.format('YYYY-MM')
+                                break
+                            default:
+                                bucketKey = recordTime.format('YYYY-MM-DD')
+                        }
+
+                        // 保留最新的记录（覆盖旧的）
+                        const existing = buckets.get(bucketKey)
+                        const recordTs = record.updatedAt || new Date(record.date).getTime()
+                        if (!existing || recordTs > (existing.updatedAt || new Date(existing.date).getTime())) {
+                            buckets.set(bucketKey, record)
+                        }
+                    }
+
+                    aggregatedData = Array.from(buckets.values())
+                        .sort((a, b) => {
+                            const tsA = a.updatedAt || new Date(a.date).getTime()
+                            const tsB = b.updatedAt || new Date(b.date).getTime()
+                            return tsA - tsB
+                        })
+                }
+
                 newChartData = {
-                    series: filteredHistory,
+                    series: aggregatedData,
                     stats: { avg: '--', min: '--', max: '--' }
                 }
             } else {

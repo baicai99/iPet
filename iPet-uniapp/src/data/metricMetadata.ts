@@ -382,11 +382,28 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         icon: 'icon-poop',
         category: 'excretion',
         valueType: 'text',
+        interactionMode: 'status_tag',
+        formConfig: {
+            type: 'tags',
+            multiSelect: false,
+            options: [
+                { label: '羊屎蛋', value: 1 },
+                { label: '干', value: 2 },
+                { label: '偏干', value: 3 },
+                { label: '正常', value: 4 },
+                { label: '偏稀', value: 5 },
+                { label: '稀', value: 6 },
+                { label: '水样', value: 7 }
+            ]
+        },
         description: '记录排便次数和状态，帮助监测消化健康。',
         recommendation: '大多数犬每天 1–2 次，质地成型不软不硬为宜。',
         tips: '若连续多天稀/硬便或带血，及时咨询兽医。',
         visualization: {
-            type: 'status_grid'
+            type: 'state_grid',
+            options: {
+                levels: ['偏干', '正常', '偏稀']
+            }
         }
     },
     anxiety: {
@@ -401,8 +418,7 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         visualization: {
             type: 'state_grid',
             options: {
-                levels: ['Low', 'Medium', 'High'],
-                color: '#f59e0b'
+                levels: ['Low', 'Medium', 'High']
             }
         }
     },
@@ -418,8 +434,7 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         visualization: {
             type: 'state_grid',
             options: {
-                levels: ['None', 'Mild', 'Severe'],
-                color: '#6366f1'
+                levels: ['None', 'Mild', 'Severe']
             }
         }
     },

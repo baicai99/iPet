@@ -104,12 +104,17 @@ const resolvedChartProps = computed(() => {
             statusEmoji = (typeof val === 'string') ? val : '😐'
         }
 
+        // state_grid 使用统一的蓝色，不跟随主题色变化
+        const chartColor = props.config.visualizationType === 'state_grid'
+            ? '#3b82f6'
+            : themeColor.value
+
         return {
             ...baseChartProps,
             data: Object.freeze(props.config.chartData),
             events: Object.freeze(props.config.chartData),
             emoji: statusEmoji,
-            color: themeColor.value,
+            color: chartColor,
             strokeColor: baseChartProps.strokeColor || themeColor.value,
             barColor: baseChartProps.barColor || themeColor.value,
             activeColor: baseChartProps.activeColor || themeColor.value,

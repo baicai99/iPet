@@ -153,8 +153,8 @@ export const HIGH_FREQ_CONFIGS: Record<string, Partial<HighFreqConfig>> = {
     // === Body Status (daily tracking) ===
     stool: {
         timeSlots: [TIME_SLOTS.morningWalk, TIME_SLOTS.eveningWalk],
-        valueRange: { min: 1, max: 5 },
-        unit: 'score',
+        valueRange: { min: 1, max: 7 },  // 1=羊屎蛋, 2=干, 3=偏干, 4=正常, 5=偏稀, 6=稀, 7=水样
+        unit: 'status',
         minPerDay: 1,
         maxPerDay: 2
     },
@@ -211,6 +211,17 @@ export function generateHighFrequencyData(config: HighFreqConfig): HealthRecord[
             const recordTime = getRandomTimeInSlot(day, slot)
             const value = randomInRange(valueRange.min, valueRange.max, decimals)
 
+            // Stool status labels and emojis (PRD 3.2)
+            const stoolLabels: Record<number, { label: string; emoji: string }> = {
+                1: { label: '羊屎蛋', emoji: '🔴' },
+                2: { label: '干', emoji: '🟠' },
+                3: { label: '偏干', emoji: '🟡' },
+                4: { label: '正常', emoji: '🟢' },
+                5: { label: '偏稀', emoji: '🟡' },
+                6: { label: '稀', emoji: '🟠' },
+                7: { label: '水样', emoji: '🔴' }
+            }
+
             const record: HealthRecord = {
                 id: generateId(),
                 petId,
@@ -221,6 +232,11 @@ export function generateHighFrequencyData(config: HighFreqConfig): HealthRecord[
                 updatedAt: getTimestamp(recordTime),
                 status: 'synced',
                 source: 'mock',
+                // Add label and emoji for stool metric
+                ...(metricKey === 'stool' && stoolLabels[value] ? {
+                    label: stoolLabels[value].label,
+                    emoji: stoolLabels[value].emoji
+                } : {}),
                 metadata: {
                     timeSlot: slot.name,
                     generatedAt: new Date().toISOString()

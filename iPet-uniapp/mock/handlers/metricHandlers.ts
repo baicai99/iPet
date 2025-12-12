@@ -85,9 +85,9 @@ function generateFallbackData(key: string, petId: string): HealthRecord[] {
         body_temp: { min: 38, max: 39.5, unit: '°C', decimals: 1 },
         shoulder_height: { min: 30, max: 60, unit: 'cm', decimals: 0 },
         body_fat: { min: 10, max: 30, unit: 'percent', decimals: 1 },
-        stool: { min: 20, max: 90, unit: 'score', decimals: 0 },
-        anxiety: { min: 0, max: 10, unit: 'score', decimals: 0 },
-        depression: { min: 0, max: 10, unit: 'score', decimals: 0 },
+        stool: { min: 1, max: 7, unit: 'status', decimals: 0 },  // 1-7 status levels
+        anxiety: { min: 0, max: 5, unit: 'score', decimals: 0 },
+        depression: { min: 0, max: 5, unit: 'score', decimals: 0 },
         vomiting: { min: 0, max: 3, unit: 'count', decimals: 0 }
     }
 

@@ -1,22 +1,28 @@
 <template>
     <view class="status-grid-container">
+
         <view class="y-axis-labels">
-            <!-- Dynamic labels from options.levels, reversed for top-to-bottom display -->
+            <!-- 3-zone labels: 偏干, 正常, 偏稀 (top to bottom) -->
             <text v-for="(label, i) in reversedLevels" :key="i" class="label">{{ label }}</text>
         </view>
         <view class="chart-area">
             <svg width="100%" height="100%" viewBox="0 0 300 160" preserveAspectRatio="none" style="overflow: visible;">
-                <!-- Dynamic Background Zones based on levels -->
-                <rect v-for="(level, i) in levelCount" :key="`bg-${i}`" x="0" :y="getRowY(i)" width="300"
-                    :height="getRowHeight(i)" :fill="getRowFill(i)" :fill-opacity="isMiddleRow(i) ? 1 : 0.1" rx="4" />
+                <!-- 3-Zone Background -->
+                <rect v-for="(zone, i) in 3" :key="`bg-${i}`" x="0" :y="getZoneY(i)" width="300"
+                    :height="getZoneHeight(i)" :fill="getZoneFill(i)" :fill-opacity="i === 1 ? 1 : 0.1" rx="4" />
 
                 <!-- Vertical Grid Lines -->
-                <line v-for="i in 6" :key="i" :x1="i * colWidth" y1="0" :x2="i * colWidth" y2="160" stroke="white"
-                    stroke-width="2" stroke-dasharray="4 4" />
+                <line v-for="i in (gridLineCount - 1)" :key="`grid-${i}`" :x1="i * segmentWidth" y1="0"
+                    :x2="i * segmentWidth" y2="160" stroke="white" stroke-width="2" stroke-dasharray="4 4" />
 
-                <!-- Data Points -->
-                <circle v-for="(val, i) in validValues" :key="i" :cx="i * colWidth + colWidth / 2" :cy="getY(val)" r="6"
-                    :fill="color" stroke="white" stroke-width="3" class="drop-shadow" />
+                <!-- Same-day Connection Lines (PRD 5.3) -->
+                <line v-for="(line, i) in sameDayLines" :key="`line-${i}`" :x1="line.x1" :y1="line.y1" :x2="line.x2"
+                    :y2="line.y2" :stroke="color" stroke-width="2" stroke-opacity="0.4" />
+
+                <!-- Data Points positioned by timestamp, colored by status -->
+                <circle v-for="(point, i) in chartPoints" :key="`pt-${i}`" :cx="point.x" :cy="point.y" r="6"
+                    :fill="point.isNormal ? '#3B82F6' : '#EF4444'" stroke="white" stroke-width="3"
+                    class="drop-shadow" />
             </svg>
         </view>
     </view>
@@ -24,11 +30,18 @@
 
 <script setup>
 import { computed } from 'vue';
+import { getLabelForValue } from '@/config/stoolStatusConfig';
+import {
+    processChartPoints,
+    SEGMENT_COUNTS,
+    STATUS_COLORS,
+    isNormalValue
+} from '@/utils/charts/statusGridUtils';
 
 const props = defineProps({
     data: {
         type: Object,
-        default: () => ({ values: [] })
+        default: () => ({ values: [], points: [] })
     },
     options: {
         type: Object,
@@ -37,70 +50,121 @@ const props = defineProps({
     color: {
         type: String,
         default: '#3b82f6'
+    },
+    // Time range affects X-axis segments (PRD 5.1)
+    timeRange: {
+        type: String,
+        default: 'week' // day | week | month | six_month | year
     }
 });
 
 const width = 300;
 const height = 160;
-const colWidth = width / 7;
 
-// Get levels from options or use default Chinese labels for stool metric
-const levels = computed(() => {
-    const optLevels = props.options?.levels
-    return Array.isArray(optLevels) && optLevels.length > 0
-        ? optLevels
-        : ['偏干', '正常', '偏稀']
-})
+// 3-zone labels (PRD 3.2 - visual layer)
+const levels = ['偏干', '正常', '偏稀'];
+const reversedLevels = [...levels].reverse(); // Top: 偏干, Middle: 正常, Bottom: 偏稀
 
-// Reversed levels for Y-axis display (highest level at top)
-const reversedLevels = computed(() => [...levels.value].reverse())
+const segmentCount = computed(() => SEGMENT_COUNTS[props.timeRange] || 7);
+const segmentWidth = computed(() => width / segmentCount.value);
+const gridLineCount = computed(() => segmentCount.value);
 
-// Number of levels for dynamic rendering
-const levelCount = computed(() => levels.value.length)
+// Zone Y positions (3 zones with middle highlighted)
+const zoneHeights = [40, 80, 40]; // dry, normal, wet zones
+const zonePositions = [0, 40, 120];
 
-// Check if a row is the "middle" row (highlighted differently)
-const isMiddleRow = (index) => {
-    const count = levelCount.value
-    if (count <= 2) return false
-    return index === Math.floor(count / 2)
-}
+const getZoneY = (index) => zonePositions[index];
+const getZoneHeight = (index) => zoneHeights[index];
+const getZoneFill = (index) => index === 1 ? STATUS_COLORS.zone : props.color;
 
-// Calculate row Y position (top-down rendering)
-const getRowY = (index) => {
-    const count = levelCount.value
-    if (count === 3) {
-        // Original fixed layout: top zone, middle zone, bottom zone
-        const positions = [0, 45, 120]
-        return positions[index] || 0
+// Process data points using shared utility
+const chartPoints = computed(() => {
+    // Extract data array from various formats
+    let dataArray = [];
+
+    if (props.data.points && props.data.points.length > 0) {
+        dataArray = props.data.points;
+    } else if (props.data.values && props.data.values.length > 0) {
+        dataArray = props.data.values;
+    } else if (Array.isArray(props.data) && props.data.length > 0) {
+        dataArray = props.data;
     }
-    return (index * height) / count
-}
 
-// Calculate row height
-const getRowHeight = (index) => {
-    const count = levelCount.value
-    if (count === 3) {
-        // Original fixed layout for 3 levels
-        const heights = [40, 70, 40]
-        return heights[index] || 40
-    }
-    return height / count - 5
-}
+    // 只有日视图使用真实时间戳定位，其他视图使用网格吸附
+    const useTimestampPositioning = props.timeRange === 'day';
 
-// Get fill color for row
-const getRowFill = (index) => {
-    return isMiddleRow(index) ? '#BAE6FD' : props.color
-}
-
-const validValues = computed(() => {
-    // Ensure we only take up to 7 values to fit the grid
-    return (props.data.values || []).slice(0, 7);
+    return processChartPoints(
+        dataArray,
+        width,
+        height,
+        segmentCount.value,
+        useTimestampPositioning,
+        props.timeRange
+    );
 });
 
-const getY = (val) => {
-    if (val === null || val === undefined) return 0;
-    return height - (val / 100) * height;
-};
+// Same-day connection lines (PRD 5.3) - only for day view
+const sameDayLines = computed(() => {
+    // 只在日视图显示连接线，其他视图不需要
+    if (props.timeRange !== 'day') {
+        return [];
+    }
+
+    const lines = [];
+    const pointsByDate = {};
+
+    // Group points by date
+    chartPoints.value.forEach((point, index) => {
+        if (point.date) {
+            if (!pointsByDate[point.date]) {
+                pointsByDate[point.date] = [];
+            }
+            pointsByDate[point.date].push({ ...point, index });
+        }
+    });
+
+    // Create lines between points on same day
+    Object.values(pointsByDate).forEach(dayPoints => {
+        if (dayPoints.length > 1) {
+            // Sort by timestamp
+            dayPoints.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            for (let i = 0; i < dayPoints.length - 1; i++) {
+                lines.push({
+                    x1: dayPoints[i].x,
+                    y1: dayPoints[i].y,
+                    x2: dayPoints[i + 1].x,
+                    y2: dayPoints[i + 1].y
+                });
+            }
+        }
+    });
+
+    return lines;
+});
+
+// Latest status for summary (PRD 6.1)
+const latestStatus = computed(() => {
+    const points = chartPoints.value;
+    if (!points.length) return null;
+
+    // Find point with latest timestamp
+    let latest = points[0];
+    points.forEach(p => {
+        if (p.timestamp && (!latest.timestamp || p.timestamp > latest.timestamp)) {
+            latest = p;
+        }
+    });
+
+    // If no timestamps, use last point in array
+    if (!latest.timestamp) {
+        latest = points[points.length - 1];
+    }
+
+    return {
+        value: latest.value,
+        label: getLabelForValue(latest.value)
+    };
+});
 </script>
 
 <style lang="scss" scoped>
@@ -108,31 +172,28 @@ const getY = (val) => {
     display: flex;
     height: 100%;
     width: 100%;
+    position: relative;
 }
+
 
 .y-axis-labels {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 8rpx 12rpx 8rpx 0; // py-2 pr-3
-    width: 48rpx; // w-12
+    padding: 8rpx 12rpx 8rpx 0;
+    width: 48rpx;
     text-align: right;
 }
 
 .label {
-    font-size: 20rpx; // text-[10px]
+    font-size: 20rpx;
     font-weight: 700;
-    color: #94a3b8; // slate-400
+    color: #94a3b8;
 }
 
 .chart-area {
     flex: 1;
     height: 100%;
     position: relative;
-}
-
-.drop-shadow {
-    // SVG filters are tricky in UniApp/CSS, using simple shadow if possible or ignoring
-    // filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));
 }
 </style>

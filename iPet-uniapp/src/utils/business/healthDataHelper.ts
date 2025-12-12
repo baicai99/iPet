@@ -90,7 +90,7 @@ export const getLatestRecord = <T>(records: T[]): T | null => {
  * Generates chart data from history records.
  * Handles sorting and data extraction based on visualization type.
  * 
- * @param visualizationType - Type of visualization (e.g., 'event_timeline', 'status_grid', 'status_icon')
+ * @param visualizationType - Type of visualization (e.g., 'event_timeline', 'state_grid', 'status_icon')
  * @param history - Array of history records
  * @returns Array or value suitable for chart components
  */
@@ -109,9 +109,13 @@ export const buildChartData = (visualizationType: string, history: any[] = [], l
             // If we sliced 'asc' sorted data (oldest -> newest) by taking the last N, we get the N newest.
             // Then we sort them desc for display.
             return sortRecordsByTime(sorted, 'desc')
-        case 'status_grid':
         case 'state_grid':
-            return sorted.map(item => Number(item.value ?? item.gridValue ?? 0))
+            // Return structured data with timestamps for chart positioning
+            return sorted.map(item => ({
+                value: Number(item.value ?? item.gridValue ?? 0),
+                timestamp: parseTimestamp(item),
+                date: dayjs(parseTimestamp(item)).format('YYYY-MM-DD')
+            }))
         case 'status_icon':
             return sorted.length
                 ? sorted[sorted.length - 1].emoji || sorted[sorted.length - 1].value

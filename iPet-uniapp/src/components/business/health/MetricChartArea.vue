@@ -31,7 +31,7 @@
             <BaseChart v-if="isChartType" :options="echartsOptions" height="320rpx" width="100%"
                 @point-click="onChartPointClick" />
             <component v-else :is="currentChartComponent" :data="currentData" :options="chartOptions" :color="theme.hex"
-                height="280rpx" />
+                :time-range="activeTab" height="280rpx" />
         </view>
 
         <!-- 底部：辅助 X 轴标签 -->
