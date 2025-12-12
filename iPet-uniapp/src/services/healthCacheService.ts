@@ -35,6 +35,57 @@ const LRU_ACCESS_KEY = 'health_cache_lru_access'
 /** 高优先级缓存键（不会被 LRU 清理） */
 const HIGH_PRIORITY_KEYS: HealthCacheKey[] = ['Summary_Snapshot', 'Trend_Cache_7Days']
 
+/** SWR 默认陈旧时间：5 分钟 */
+const DEFAULT_STALE_TIME_MS = 5 * 60 * 1000
+
+// ============================================================================
+// In-flight Deduplication
+// ============================================================================
+
+/** 请求去重 Map：同一 key 的并发请求复用同一 Promise */
+const inflightMap = new Map<string, Promise<unknown>>()
+
+// ============================================================================
+// SWR Options
+// ============================================================================
+
+/** SWR 配置选项 */
+interface SWROptions<T> {
+    /** 缓存键 */
+    key: HealthCacheKey
+    /** 数据获取函数 */
+    fetcher: () => Promise<T>
+    /** 允许的陈旧时间（毫秒），默认 5 分钟 */
+    staleTime?: number
+    /** 后台刷新完成回调 */
+    onRevalidate?: (data: T) => void
+}
+
+// ============================================================================
+// Cache Dependency Graph
+// ============================================================================
+
+/** Trend 缓存依赖的指标列表 */
+const TREND_DEPENDENT_METRICS = ['weight', 'meal', 'water', 'walk_duration', 'body_temp', 'stool']
+
+/**
+ * 获取指标的依赖缓存键列表
+ * @param metricKey - 指标键
+ * @returns 需要失效的缓存键列表
+ */
+function getDependentKeys(metricKey: string): HealthCacheKey[] {
+    const result: HealthCacheKey[] = [
+        'Summary_Snapshot'  // Summary 总是依赖所有指标
+    ]
+
+    // Trend 缓存依赖常用指标
+    if (TREND_DEPENDENT_METRICS.includes(metricKey)) {
+        result.push('Trend_Cache_7Days', 'Trend_Cache_30Days')
+    }
+
+    return result
+}
+
 // ============================================================================
 // LRU Access Tracking
 // ============================================================================
@@ -241,6 +292,166 @@ function clear(): void {
 }
 
 // ============================================================================
+// In-flight Deduplication Functions
+// ============================================================================
+
+/**
+ * 获取或创建去重请求
+ * 
+ * 如果同一 key 的请求正在进行中，复用该 Promise。
+ * 否则创建新请求，并在完成后自动清理。
+ * 
+ * @param key - 缓存键
+ * @param fetcher - 数据获取函数
+ * @returns Promise 返回数据
+ */
+function getOrCreateInflight<T>(
+    key: HealthCacheKey,
+    fetcher: () => Promise<T>
+): Promise<T> {
+    // 如果已有进行中的请求，复用它
+    if (inflightMap.has(key)) {
+        console.log(`[HealthCacheService] Reusing inflight request for ${key}`)
+        return inflightMap.get(key) as Promise<T>
+    }
+
+    // 创建新请求
+    const promise = fetcher().finally(() => {
+        inflightMap.delete(key)
+    })
+
+    inflightMap.set(key, promise)
+    return promise
+}
+
+// ============================================================================
+// Stale-While-Revalidate (SWR)
+// ============================================================================
+
+/**
+ * SWR 模式获取数据
+ * 
+ * 策略：
+ * 1. 有缓存（即使陈旧）→ 立即返回
+ * 2. 如果陈旧 → 后台刷新，刷新完成触发 onRevalidate 回调
+ * 3. 无缓存 → 同步获取
+ * 
+ * @param options - SWR 配置
+ * @returns 缓存数据或新获取的数据
+ */
+async function getWithSWR<T>(options: SWROptions<T>): Promise<T | null> {
+    const { key, fetcher, staleTime = DEFAULT_STALE_TIME_MS, onRevalidate } = options
+
+    const cached = get<T>(key)
+    const updatedAt = getUpdatedAt(key)
+    const now = Date.now()
+    const isStale = updatedAt !== null && (now - updatedAt > staleTime)
+
+    // 有缓存，立即返回
+    if (cached !== null) {
+        // 如果陈旧，后台刷新
+        if (isStale) {
+            console.log(`[HealthCacheService] SWR: ${key} is stale, revalidating in background`)
+            getOrCreateInflight(key, async () => {
+                try {
+                    const fresh = await fetcher()
+                    set(key, fresh)
+                    onRevalidate?.(fresh)
+                    return fresh
+                } catch (e) {
+                    console.warn(`[HealthCacheService] SWR revalidation failed for ${key}:`, e)
+                    throw e
+                }
+            }).catch(() => {
+                // 后台刷新失败不影响已返回的陈旧数据
+            })
+        }
+        return cached
+    }
+
+    // 无缓存，同步获取
+    console.log(`[HealthCacheService] SWR: ${key} cache miss, fetching`)
+    return getOrCreateInflight(key, async () => {
+        const data = await fetcher()
+        set(key, data)
+        return data
+    })
+}
+
+// ============================================================================
+// Dependency-Graph Invalidation
+// ============================================================================
+
+/**
+ * 按指标失效缓存
+ * 
+ * 根据依赖图自动失效相关缓存：
+ * - 该指标的所有 Series 缓存
+ * - Summary 快照
+ * - Trend 缓存（如果该指标在依赖列表中）
+ * 
+ * @param metricKey - 指标键
+ */
+function invalidateByMetric(metricKey: string): void {
+    try {
+        const info = uni.getStorageInfoSync()
+        let invalidatedCount = 0
+
+        // 1. 删除该指标的所有 Series 缓存
+        info.keys.forEach((k: string) => {
+            if (k.startsWith(`${CACHE_PREFIX}Series_${metricKey}_`)) {
+                uni.removeStorageSync(k)
+                removeLRUAccess(k.replace(CACHE_PREFIX, '') as HealthCacheKey)
+                invalidatedCount++
+            }
+        })
+
+        // 2. 删除依赖的固定缓存
+        const dependentKeys = getDependentKeys(metricKey)
+        dependentKeys.forEach(key => {
+            remove(key)
+            invalidatedCount++
+        })
+
+        console.log(`[HealthCacheService] Invalidated ${invalidatedCount} caches by metric: ${metricKey}`)
+    } catch (e) {
+        console.warn(`[HealthCacheService] Failed to invalidate by metric ${metricKey}:`, e)
+    }
+}
+
+/**
+ * 按记录类型失效缓存
+ * 
+ * 记录类型通常等于指标键，直接调用 invalidateByMetric
+ * 
+ * @param recordType - 记录类型
+ */
+function invalidateByRecordType(recordType: string): void {
+    invalidateByMetric(recordType)
+}
+
+/**
+ * 失效所有 Series 缓存
+ */
+function invalidateAllSeries(): void {
+    try {
+        const info = uni.getStorageInfoSync()
+        let count = 0
+
+        info.keys.forEach((k: string) => {
+            if (k.startsWith(`${CACHE_PREFIX}Series_`)) {
+                uni.removeStorageSync(k)
+                count++
+            }
+        })
+
+        console.log(`[HealthCacheService] Invalidated ${count} Series caches`)
+    } catch (e) {
+        console.warn('[HealthCacheService] Failed to invalidate all series:', e)
+    }
+}
+
+// ============================================================================
 // LRU Cleanup
 // ============================================================================
 
@@ -375,6 +586,7 @@ function checkVersionAndMigrate(): void {
 // ============================================================================
 
 export const healthCacheService = {
+    // Core functions
     get,
     set,
     remove,
@@ -384,6 +596,17 @@ export const healthCacheService = {
     runLRUCleanup,
     checkVersionAndMigrate,
     getHealthCacheSize,
+
+    // In-flight deduplication
+    getOrCreateInflight,
+
+    // Stale-While-Revalidate
+    getWithSWR,
+
+    // Dependency-graph invalidation
+    invalidateByMetric,
+    invalidateByRecordType,
+    invalidateAllSeries,
 
     // 便捷方法
     getSummarySnapshot: () => get<any>('Summary_Snapshot'),
