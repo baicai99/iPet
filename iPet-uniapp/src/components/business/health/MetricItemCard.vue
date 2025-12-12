@@ -130,6 +130,9 @@ const hasChartData = computed(() => {
     const p = resolvedChartProps.value
     if (!p) return false
 
+    // risk_grid metrics don't show mini charts - only semantic label
+    if (props.config?.visualizationType === 'risk_grid') return false
+
     // If we have a component but no data, check if it needs data
     // For status_icon, data might be in 'emoji' or 'data'
     if (props.config?.visualizationType === 'status_icon') return true

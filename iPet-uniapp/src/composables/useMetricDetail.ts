@@ -172,7 +172,7 @@ export function useMetricDetail() {
 
             // For state_grid charts, return structured values array
             const vizType = metricMetadata.value.visualization?.type
-            if (vizType === 'state_grid') {
+            if (vizType === 'state_grid' || vizType === 'risk_grid') {
                 return {
                     values: formattedEvents, // Array of {value, timestamp, date} objects
                     labels: [],
@@ -232,6 +232,23 @@ export function useMetricDetail() {
 
         if (!displayData) {
             return { value: '暂无数据', unit: '' }
+        }
+
+        // For risk_grid metrics, convert numeric value to semantic label
+        const vizType = metricMetadata.value.visualization?.type
+        if (vizType === 'risk_grid' && typeof displayData.rawValue === 'number') {
+            const riskLabels: Record<number, string> = {
+                1: '最轻',
+                2: '轻度',
+                3: '中度',
+                4: '重度'
+            }
+            const label = riskLabels[displayData.rawValue] || '暂无数据'
+            return {
+                value: label,
+                unit: '',
+                isPlaceholder: false
+            }
         }
 
         const isPlaceholder = typeof displayData.displayValue === 'string' && displayData.displayValue.length > 20

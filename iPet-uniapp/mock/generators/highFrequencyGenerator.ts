@@ -153,15 +153,15 @@ export const HIGH_FREQ_CONFIGS: Record<string, Partial<HighFreqConfig>> = {
     },
     anxiety: {
         timeSlots: [TIME_SLOTS.lunch],
-        valueRange: { min: 0, max: 5 },
-        unit: 'score',
+        valueRange: { min: 1, max: 4 },  // 1=最低, 2=轻度, 3=中度, 4=重度
+        unit: 'risk_level',
         minPerDay: 1,
         maxPerDay: 1
     },
     depression: {
         timeSlots: [TIME_SLOTS.lunch],
-        valueRange: { min: 0, max: 5 },
-        unit: 'score',
+        valueRange: { min: 1, max: 4 },  // 1=最低, 2=轻度, 3=中度, 4=重度
+        unit: 'risk_level',
         minPerDay: 1,
         maxPerDay: 1
     },

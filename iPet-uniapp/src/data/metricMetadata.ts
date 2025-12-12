@@ -400,15 +400,15 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         recommendation: '持续高分建议增加陪伴、训练或咨询行为专家。',
         tips: '结合睡眠、运动与环境变化一起观察，降低突发应激。',
         visualization: {
-            type: 'state_grid',
+            type: 'risk_grid',
             options: {
-                levels: ['Low', 'Medium', 'High']
+                levels: ['最轻', '轻度', '中度', '重度']
             }
         }
     },
     depression: {
         key: 'depression',
-        title: '抑郁',
+        title: '抑郁风险',
         icon: 'icon-sad',
         category: 'mentalHealth',
         valueType: 'text',
@@ -416,9 +416,9 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         recommendation: '若持续低落超过 2 周，建议咨询兽医或行为专家。',
         tips: '增加陪伴时间、户外活动和游戏互动，有助于改善情绪。',
         visualization: {
-            type: 'state_grid',
+            type: 'risk_grid',
             options: {
-                levels: ['None', 'Mild', 'Severe']
+                levels: ['最轻', '轻度', '中度', '重度']
             }
         }
     },

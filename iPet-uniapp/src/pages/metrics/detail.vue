@@ -104,6 +104,7 @@ import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
 import RangeSliderChart from '@/components/widgets/charts/RangeSliderChart.vue'
 import StatusIconChart from '@/components/widgets/charts/StatusIconChart.vue'
 import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
+import RiskGridTrendChart from '@/components/widgets/charts/RiskGridTrendChart.vue'
 import EventTimelineChart from '@/components/widgets/charts/EventTimelineChart.vue'
 import TextChart from '@/components/widgets/charts/TextChart.vue'
 
@@ -175,6 +176,7 @@ const CHART_COMPONENTS = {
     range_slider: RangeSliderChart,
     status_icon: StatusIconChart,
     state_grid: StatusGridChart,
+    risk_grid: RiskGridTrendChart,
     event_timeline: EventTimelineChart,
     text: TextChart
 }

@@ -8,6 +8,7 @@ import MiniTimeline from '@/components/widgets/charts/MiniTimeline.vue'
 import MiniStatusGrid from '@/components/widgets/charts/MiniStatusGrid.vue'
 import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
 import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
+import RiskGridTrendChart from '@/components/widgets/charts/RiskGridTrendChart.vue'
 
 import RangeSliderChart from '@/components/widgets/charts/RangeSliderChart.vue'
 import StatusIconChart from '@/components/widgets/charts/StatusIconChart.vue'
@@ -30,6 +31,7 @@ const DETAIL_CHART_MAP = {
     line: TrendLineChart,
     bar: DailyBarChart,
     grid: StatusGridChart,
+    risk_grid: RiskGridTrendChart,
 
     slider: RangeSliderChart,
     status: StatusIconChart,

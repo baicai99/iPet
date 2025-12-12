@@ -167,6 +167,21 @@ export function useMetricProcessor() {
             )
         }
 
+        // 特殊处理 risk_grid：将数值转换为语义标签
+        if (config.visualizationType === 'risk_grid') {
+            const riskLabels: Record<number, string> = {
+                1: '最轻',
+                2: '轻度',
+                3: '中度',
+                4: '重度'
+            }
+            const rawVal = formatted.rawValue
+            if (typeof rawVal === 'number' && riskLabels[rawVal]) {
+                formatted.displayValue = riskLabels[rawVal]
+                formatted.displayUnit = ''
+            }
+        }
+
         // 4. 构建图表数据
         const chartData = buildData(config.visualizationType, data.history, {
             miniChartDays: config.miniChartDays,
