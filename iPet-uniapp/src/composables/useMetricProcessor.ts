@@ -184,7 +184,7 @@ export function useMetricProcessor() {
             title: config.title,
             subTitle: config.description,
             displayValue: (formatted.displayValue ?? '暂无数据') as string | number,
-            displayUnit: formatted.displayUnit ?? '',
+            displayUnit: config.displayUnit || formatted.displayUnit || '',
             displayDate: data.displayDate,
             trend,
             chartData,
