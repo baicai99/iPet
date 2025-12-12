@@ -349,7 +349,7 @@ export function useChartOptions(
         }
 
         // Determine if we need to show symbols (points)
-        // Show symbols if there is only 1 valid data point to avoid empty chart
+        // Only show symbol for single data point (no line to draw)
         const validDataCount = alignedValues.filter(v => v !== null && v !== undefined).length
         const shouldShowSymbol = validDataCount === 1
 
@@ -358,10 +358,10 @@ export function useChartOptions(
             data: alignedValues,
             type: type === 'trend_line' ? 'line' : 'bar',
             smooth: true,
-            connectNulls: true, // Connect nulls for continuous data
+            connectNulls: true, // Connect valid points directly (skip null gaps)
             symbol: 'circle',
-            symbolSize: 6,
-            showSymbol: shouldShowSymbol, // Dynamic symbol visibility
+            symbolSize: validDataCount === 1 ? 10 : 6, // Larger dot for single point
+            showSymbol: shouldShowSymbol, // Show symbols for sparse data
             itemStyle: {
                 color: theme.value.hex,
                 borderRadius: type === 'daily_bar' ? [4, 4, 0, 0] : 0

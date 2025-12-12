@@ -184,9 +184,9 @@ export const getMetricSeries = (history: any[], range: string) => {
  * @returns Array of numbers representing daily values (latest first or oldest first? usually charts want oldest -> newest)
  *          Here we return oldest -> newest to match chart left-to-right.
  */
-export const aggregateDailyData = (history: any[], daysCount: number = 7, method: 'sum' | 'latest' | 'avg' = 'latest', endDate?: number | string | Date) => {
-    // Return zeros if no history
-    if (!Array.isArray(history)) return Array(daysCount).fill(0)
+export const aggregateDailyData = (history: any[], daysCount: number = 7, method: 'sum' | 'latest' | 'avg' = 'latest', endDate?: number | string | Date): (number | null)[] => {
+    // Return nulls if no history (null = no data, not 0)
+    if (!Array.isArray(history)) return Array(daysCount).fill(null)
 
     const groups = {} as Record<string, any[]>
 
@@ -200,7 +200,7 @@ export const aggregateDailyData = (history: any[], daysCount: number = 7, method
         groups[dateStr].push(record)
     })
 
-    const result = []
+    const result: (number | null)[] = []
     const anchor = endDate ? dayjs(endDate) : dayjs()
 
     // Iterate from (daysCount-1) days ago up to anchor date
@@ -208,18 +208,22 @@ export const aggregateDailyData = (history: any[], daysCount: number = 7, method
         const dateStr = anchor.subtract(i, 'day').format('YYYY-MM-DD')
         const dayRecords = groups[dateStr] || []
 
-        let value = 0
-        if (dayRecords.length > 0) {
-            if (method === 'sum') {
-                value = dayRecords.reduce((acc, r) => acc + (Number(r.value) || 0), 0)
-            } else if (method === 'avg') {
-                const sum = dayRecords.reduce((acc, r) => acc + (Number(r.value) || 0), 0)
-                value = Number((sum / dayRecords.length).toFixed(2))
-            } else { // latest
-                // Sort descending by time to get the latest record of the day
-                const sorted = sortRecordsByTime(dayRecords, 'desc')
-                value = Number(sorted[0].value) || 0
-            }
+        // No data for this day = null (not 0)
+        if (dayRecords.length === 0) {
+            result.push(null)
+            continue
+        }
+
+        let value: number = 0
+        if (method === 'sum') {
+            value = dayRecords.reduce((acc, r) => acc + (Number(r.value) || 0), 0)
+        } else if (method === 'avg') {
+            const sum = dayRecords.reduce((acc, r) => acc + (Number(r.value) || 0), 0)
+            value = Number((sum / dayRecords.length).toFixed(2))
+        } else { // latest
+            // Sort descending by time to get the latest record of the day
+            const sorted = sortRecordsByTime(dayRecords, 'desc')
+            value = Number(sorted[0].value) || 0
         }
         result.push(value)
     }
@@ -260,6 +264,9 @@ export function groupDailyToBucket(
     const groups: Record<string, { values: number[]; days: number; ts: number }> = {}
 
     days.forEach(day => {
+        // Skip days with no data (null value)
+        if (day.value === null || day.value === undefined) return;
+
         const d = dayjs(day.date)
         let period: string
         let periodTs: number
@@ -301,12 +308,15 @@ export function groupDailyToBucket(
  * @param points - 日级或周期级聚合点
  * @returns MetricStats 统计信息
  */
-export function buildSeriesStats(points: Array<{ value: number }>): MetricStats {
+export function buildSeriesStats(points: Array<{ value: number | null }>): MetricStats {
     if (!points || points.length === 0) {
         return { min: 0, max: 0, avg: 0 }
     }
 
-    const values = points.map(p => p.value).filter(v => typeof v === 'number' && !Number.isNaN(v))
+    // Filter out null values - only calculate stats from valid data
+    const values = points
+        .map(p => p.value)
+        .filter((v): v is number => v !== null && v !== undefined && typeof v === 'number' && !Number.isNaN(v))
 
     if (values.length === 0) {
         return { min: 0, max: 0, avg: 0 }
@@ -429,7 +439,8 @@ export function aggregateToDailyPoints(
         const dateStr = date.format('YYYY-MM-DD')
         const dayRecords = groups[dateStr] || []
 
-        let value = 0
+        // No data for this day = null value (not 0)
+        let value: number | null = null
         if (dayRecords.length > 0) {
             const values = dayRecords.map(r => Number(r.value) || 0)
             switch (agg) {
@@ -491,7 +502,7 @@ export function getMetricSeriesV2(
     })
 
     // 2. 如果需要更粗粒度，升维到周/月
-    let finalPoints: Array<{ ts: number; value: number }>
+    let finalPoints: Array<{ ts: number; value: number | null }>
 
     if (bucket === 'day') {
         finalPoints = dailyPoints.map(p => ({ ts: p.ts, value: p.value }))

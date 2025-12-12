@@ -194,9 +194,13 @@ export function useMetricDetail() {
         }
 
         const normalizedSeries = Array.isArray(series) ? series : []
+        // Preserve null values - don't convert to 0!
         const convertedValues = normalizedSeries.map((item: any) => {
+            // Check for null/undefined FIRST
+            if (item.value === null || item.value === undefined) return null
             const value = typeof item.value === 'number' ? item.value : Number(item.value)
-            return Number.isNaN(value) ? 0 : convertValue(value, metricBaseUnit.value as any)
+            // NaN means invalid data - treat as null (missing)
+            return Number.isNaN(value) ? null : convertValue(value, metricBaseUnit.value as any)
         })
         const convertedStats = {
             avg: typeof stats.avg === 'number' ? convertValue(stats.avg, metricBaseUnit.value as any) : stats.avg ?? '--',
@@ -204,8 +208,10 @@ export function useMetricDetail() {
             max: typeof stats.max === 'number' ? convertValue(stats.max, metricBaseUnit.value as any) : stats.max ?? '--'
         }
 
-        const trend = convertedValues.length >= 2
-            ? Number((convertedValues[convertedValues.length - 1] - convertedValues[convertedValues.length - 2]).toFixed(1))
+        // Calculate trend only from valid values
+        const validValues = convertedValues.filter((v: any): v is number => v !== null)
+        const trend = validValues.length >= 2
+            ? Number((validValues[validValues.length - 1] - validValues[validValues.length - 2]).toFixed(1))
             : 0
 
         const formatLabel = getDateFormat(activeTab.value)

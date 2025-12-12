@@ -41,7 +41,7 @@ export type AggregationMethod = 'sum' | 'avg' | 'latest' | 'max' | 'min';
 export interface DailyPoint {
     date: string;       // YYYY-MM-DD
     ts: number;         // timestamp (ms)
-    value: number;
+    value: number | null;  // null = no data for this day
     count?: number;     // 当天记录数
 }
 
@@ -74,7 +74,7 @@ export interface MetricSeriesResponse {
     metric: string;
     bucket: MetricBucket;
     range: MetricRange;
-    points: Array<{ ts: number; value: number }>;
+    points: Array<{ ts: number; value: number | null }>;
     stats: MetricStats;
 }
 

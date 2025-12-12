@@ -37,32 +37,41 @@ export interface NormalizationOptions {
 export const normalizeData = (
     rawData: any,
     options: NormalizationOptions = {}
-): number[] => {
-    let data: number[] = [];
+): (number | null)[] => {
+    let data: (number | null)[] = [];
 
     // 1. Extract array
     if (Array.isArray(rawData)) {
-        data = rawData.map(d => Number(d));
+        data = rawData.map(d => {
+            if (d === null || d === undefined) return null;
+            const num = Number(d);
+            return isNaN(num) ? null : num;
+        });
     } else if (typeof rawData === 'object' && rawData !== null && Array.isArray(rawData.values)) {
-        data = rawData.values.map((d: any) => Number(d));
+        data = rawData.values.map((d: any) => {
+            if (d === null || d === undefined) return null;
+            const num = Number(d);
+            return isNaN(num) ? null : num;
+        });
     } else {
         return [];
     }
 
-    // 2. Handle NaNs
-    data = data.map(d => isNaN(d) ? 0 : d); // Default to 0 for safety, or null if supported
+    // 2. No longer convert null to 0 - preserve null for missing data
+    // (removed: data = data.map(d => isNaN(d) ? 0 : d))
 
     // 3. Padding/Truncation
-    const { targetLength, fillStrategy = 'zero', padDirection = 'start' } = options;
+    const { targetLength, fillStrategy = 'null', padDirection = 'start' } = options;
 
     if (targetLength && data.length !== targetLength) {
         if (data.length > targetLength) {
             // Truncate
             data = padDirection === 'start' ? data.slice(-targetLength) : data.slice(0, targetLength);
         } else {
-            // Pad
+            // Pad with null (not 0) by default
             const diff = targetLength - data.length;
-            const fillValue = fillStrategy === 'zero' ? 0 : (fillStrategy === 'last' ? data[data.length - 1] : 0);
+            const fillValue = fillStrategy === 'zero' ? 0
+                : (fillStrategy === 'last' ? (data[data.length - 1] ?? null) : null);
             const padding = new Array(diff).fill(fillValue);
 
             data = padDirection === 'start'
@@ -117,14 +126,18 @@ export const linearScale = (
 };
 
 export const generatePoints = (
-    data: number[],
+    data: (number | null)[],
     width: number,
     height: number,
     padding: { top?: number, bottom?: number, left?: number, right?: number } = {}
 ): ChartPoint[] => {
     if (!data.length) return [];
 
-    const domain = getDomain(data);
+    // Filter out null values to calculate domain from valid data only
+    const validValues = data.filter((d): d is number => d !== null && d !== undefined);
+    if (validValues.length === 0) return [];
+
+    const domain = getDomain(validValues);
 
     const pTop = padding.top || 0;
     const pBottom = padding.bottom || 0;
@@ -139,15 +152,24 @@ export const generatePoints = (
     const yMax = pTop;
     const yMin = height - pBottom;
 
-    return data.map((d, i) => {
-        const x = data.length > 1
-            ? pLeft + (i / (data.length - 1)) * availableWidth
+    // Generate points only for non-null values, but use original index for X positioning
+    const points: ChartPoint[] = [];
+    const totalPoints = data.length;
+
+    data.forEach((d, i) => {
+        // Skip null values - they represent missing data
+        if (d === null || d === undefined) return;
+
+        const x = totalPoints > 1
+            ? pLeft + (i / (totalPoints - 1)) * availableWidth
             : pLeft + availableWidth / 2; // Center single point
 
         const y = linearScale(d, domain, yMax, yMin);
 
-        return { x, y, value: d, index: i };
+        points.push({ x, y, value: d, index: i });
     });
+
+    return points;
 };
 
 // ==========================================
