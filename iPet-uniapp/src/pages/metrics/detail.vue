@@ -16,8 +16,7 @@
         <!-- 数值统计网格：使用新组件 -->
         <NumericStatsSection v-if="isNumericMetric && !isTaskMode" />
 
-        <!-- 时间轴列表：使用新组件 -->
-        <TimelineSection v-else-if="!isTaskMode" />
+
 
         <!-- 智能分析气泡 -->
         <MetricInsight :metric-key="metricKey" :metric-metadata="metricMetadata" :current-data="currentData"
@@ -46,7 +45,7 @@
                     <u-icon :name="metric.icon" :color="metric.color.hex" size="20"></u-icon>
                 </view>
                 <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
-                        }}</text>
+                }}</text>
                 </view>
                 <text class="card-label">{{ metric.title }}</text>
             </view>
@@ -95,7 +94,7 @@ import TaskCompletionModal from '@/components/business/health/TaskCompletionModa
 // New Business Components (Refactored)
 import TaskModeSection from '@/components/business/health/TaskModeSection.vue'
 import NumericStatsSection from '@/components/business/health/NumericStatsSection.vue'
-import TimelineSection from '@/components/business/health/TimelineSection.vue'
+
 import ScheduleSection from '@/components/business/health/ScheduleSection.vue'
 
 // Chart Components
