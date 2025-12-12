@@ -1,4 +1,4 @@
-import { RequestConfig } from '@/utils/common/request'
+import { RequestConfig } from '../types/common'
 import { accountInfo as mockAccountInfo, vipStatus as mockVipStatus } from '../user.js'
 import { userState } from '../state.js'
 import { getMockStorage } from '../utils/mockStorage'

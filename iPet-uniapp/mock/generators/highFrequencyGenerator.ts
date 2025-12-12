@@ -141,14 +141,7 @@ export const HIGH_FREQ_CONFIGS: Record<string, Partial<HighFreqConfig>> = {
         minPerDay: 0,
         maxPerDay: 1
     },
-    sleep_duration: {
-        timeSlots: [TIME_SLOTS.bedtime],
-        valueRange: { min: 8, max: 14 },
-        unit: 'hour',
-        minPerDay: 1,
-        maxPerDay: 1,
-        decimals: 1
-    },
+
 
     // === Body Status (daily tracking) ===
     stool: {

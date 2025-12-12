@@ -20,6 +20,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
+import { normalizeData } from '@/utils/charts/chartCore';
 
 const props = defineProps({
     data: {
@@ -35,31 +36,18 @@ const props = defineProps({
 const activeIndex = ref(-1);
 
 const values = computed(() => {
-    const raw = props.data.values || [];
-    // Ensure we have 7 slots for the visual layout (representing a week)
-    // We pad with 0 at the beginning to represent 'past' empty days if fewer than 7
-    // This ensures bars are always 1/7th width and right-aligned
-    const filled = [...raw];
-    const targetLength = 7;
-
-    if (filled.length < targetLength) {
-        const padding = new Array(targetLength - filled.length).fill(0);
-        return [...padding, ...filled];
-    }
-    return filled.slice(-targetLength);
+    // Standardize data padding to 7 days
+    return normalizeData(props.data.values, { 
+        targetLength: 7, 
+        padDirection: 'start' 
+    });
 });
 
 const unit = computed(() => props.data.unit || '');
 const max = computed(() => {
     if (values.value.length === 0) return 1;
-    // Filter out potential non-numeric values for max calculation
-    const nums = values.value.map(v => Number(v)).filter(v => !isNaN(v));
-    return Math.max(...nums) || 1;
+    return Math.max(...values.value) || 1;
 });
-
-const isZero = (val) => {
-    return val === 0 || val === '0';
-}
 </script>
 
 <style lang="scss" scoped>

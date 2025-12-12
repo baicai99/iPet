@@ -31,6 +31,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { normalizeData, generatePoints, generateLinePath, generateAreaPath } from '@/utils/charts/chartCore';
 
 const props = defineProps({
     data: {
@@ -44,37 +45,34 @@ const props = defineProps({
 });
 
 const uniqueId = Math.random().toString(36).substr(2, 9);
-
-const values = computed(() => props.data.values || []);
+const width = 100;
+const height = 40;
 
 const pointsData = computed(() => {
-    const data = values.value;
-    if (!data || data.length === 0) return { points: '', fillPath: '', endY: 0 };
+    // 1. Normalize Data (from props.data.values)
+    const data = normalizeData(props.data.values);
+    if (!data.length) return { points: '', fillPath: '', endY: 0 };
+    
+    // 2. Generate Points
+    const chartPoints = generatePoints(data, width, height);
 
-    const height = 40;
-    const width = 100;
-    const max = Math.max(...data);
-    const min = Math.min(...data);
-    const range = max - min || 1;
+    // 3. Generate Paths (Polyline & Area)
+    // Note: TrendLineChart uses polyline (not smooth), so smooth=false
+    // For SVG polyline points string format "x1,y1 x2,y2 ..."
+    const pointsStr = chartPoints.map(p => `${p.x},${p.y}`).join(' ');
+    
+    // Use helper for area path
+    const fillPath = generateAreaPath(chartPoints, height);
 
-    const pts = data.map((d, i) => {
-        const x = (i / (data.length - 1)) * width;
-        const y = height - ((d - min) / range) * height;
-        return `${x},${y}`;
-    }).join(' ');
+    // Calculate endY for the dot (last point Y)
+    const endY = chartPoints[chartPoints.length - 1].y;
 
-    const fillPath = `M0,${height} L${pts.replace(/ /g, ' L')} L${width},${height} Z`;
-
-    // Calculate endY for the dot
-    const endY = height - ((data[data.length - 1] - min) / range) * height;
-
-    return { points: pts, fillPath, endY };
+    return { points: pointsStr, fillPath, endY };
 });
 
 const points = computed(() => pointsData.value.points);
 const fillPath = computed(() => pointsData.value.fillPath);
 const endY = computed(() => pointsData.value.endY);
-
 </script>
 
 <style lang="scss" scoped>

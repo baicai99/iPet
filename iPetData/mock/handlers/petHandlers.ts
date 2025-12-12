@@ -1,4 +1,4 @@
-import { RequestConfig } from '@/utils/common/request'
+import { RequestConfig } from '../types/common'
 import { pets } from '../pet.js'
 import { getMockStorage } from '../utils/mockStorage'
 

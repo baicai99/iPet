@@ -10,6 +10,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { normalizeData } from '@/utils/charts/chartCore'
 
 const props = defineProps({
     data: {
@@ -23,29 +24,16 @@ const props = defineProps({
 })
 
 const normalizedData = computed(() => {
-    // 1. Clean data
-    let data = (props.data || []).map(d => Number(d))
+    // 1. Normalize Data (pad to 7 items)
+    const data = normalizeData(props.data, { targetLength: 7, padDirection: 'start' })
 
-    // 2. Pad to exactly 7 items
-    const targetLength = 7
-    while (data.length < targetLength) {
-        data.unshift(0)
-    }
-    if (data.length > targetLength) {
-        data = data.slice(-targetLength)
-    }
+    // 2. Calculate percentages
+    const max = Math.max(...data) || 1
 
-    // 3. Calculate percentages
-    const validNums = data.filter(d => !isNaN(d))
-    const max = Math.max(...validNums) || 1
-
-    return data.map(d => {
-        const val = isNaN(d) ? 0 : d
-        return {
-            value: val,
-            percent: (val / max) * 100
-        }
-    })
+    return data.map(d => ({
+        value: d,
+        percent: (d / max) * 100
+    }))
 })
 </script>
 

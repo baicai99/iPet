@@ -1,4 +1,4 @@
-import { RequestConfig } from '@/utils/common/request'
+import { RequestConfig } from '../types/common'
 
 interface Cache {
     history: Record<string, any[]>;
@@ -53,7 +53,7 @@ const generateMockSeries = (key: string, granularity: string) => {
     switch (key) {
         case 'meal': min = 150; max = 400; break;
         case 'weight': min = 5; max = 40; break;
-        case 'sleep_duration': min = 6; max = 14; break;
+
         case 'water': min = 200; max = 800; break;
         case 'walk_duration': min = 15; max = 90; break;
         case 'body_temp': min = 38; max = 39.5; break;
@@ -206,7 +206,7 @@ export const getMetricHistoryMock = (config: RequestConfig) => {
         switch (key) {
             case 'meal': min = 150; max = 400; break;
             case 'weight': min = 5; max = 40; break;
-            case 'sleep_duration': min = 6; max = 14; break;
+
             case 'water': min = 200; max = 800; break;
             case 'walk_duration': min = 15; max = 90; break;
             case 'body_temp': min = 38; max = 39.5; break;

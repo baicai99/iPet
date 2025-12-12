@@ -45,7 +45,7 @@
                     <u-icon :name="metric.icon" :color="metric.color.hex" size="20"></u-icon>
                 </view>
                 <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
-                }}</text>
+                        }}</text>
                 </view>
                 <text class="card-label">{{ metric.title }}</text>
             </view>
@@ -100,7 +100,7 @@ import ScheduleSection from '@/components/business/health/ScheduleSection.vue'
 // Chart Components
 import TrendLineChart from '@/components/widgets/charts/TrendLineChart.vue'
 import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
-import ProgressRingChart from '@/components/widgets/charts/ProgressRingChart.vue'
+
 import RangeSliderChart from '@/components/widgets/charts/RangeSliderChart.vue'
 import StatusIconChart from '@/components/widgets/charts/StatusIconChart.vue'
 import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
@@ -171,7 +171,7 @@ const { formatValueWithUnit } = useUnitConverter()
 const CHART_COMPONENTS = {
     trend_line: TrendLineChart,
     daily_bar: DailyBarChart,
-    progress_ring: ProgressRingChart,
+
     range_slider: RangeSliderChart,
     status_icon: StatusIconChart,
     state_grid: StatusGridChart,

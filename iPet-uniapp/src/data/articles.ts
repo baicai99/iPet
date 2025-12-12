@@ -166,28 +166,7 @@ export const ARTICLES_DATA: Article[] = [
         tags: ['bathing', 'grooming', 'hygiene', 'care'],
         updateTime: '2025-04-28'
     },
-    {
-        id: 'sleep_duration',
-        title: '狗狗睡眠知多少：让毛孩睡个好觉',
-        summary: '了解狗狗的睡眠规律，打造舒适的睡眠环境。',
-        content: `<h2>狗狗需要多少睡眠？</h2>
-<p>成年犬每天需要12-14小时睡眠，幼犬和老年犬可能需要更多。睡眠不足会影响免疫力和情绪。</p>
 
-<h2>睡眠环境建议</h2>
-<ul>
-<li>提供安静、温度适宜的休息区域</li>
-<li>选择合适的狗窝或垫子</li>
-<li>保持规律的作息时间</li>
-</ul>
-
-<h2>异常睡眠信号</h2>
-<p>如果狗狗突然睡眠过多或过少，可能是健康问题的信号，需要关注。</p>`,
-        cover: '/static/images/articles/dog-sleep.png',
-        category: 'education',
-        author: 'iPet 健康团队',
-        tags: ['sleep_duration', 'sleep', 'health', 'rest'],
-        updateTime: '2025-04-25'
-    },
     {
         id: 'shoulder_height',
         title: '狗狗肩高测量与生长发育指南',

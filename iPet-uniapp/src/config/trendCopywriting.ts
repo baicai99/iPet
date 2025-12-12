@@ -148,7 +148,7 @@ export const METRIC_SENTIMENTS: Record<string, TrendSentiment> = {
     water: 'positive',
     walk_duration: 'positive',
     run_distance: 'positive',
-    sleep_duration: 'positive',
+
     fitness_training: 'positive',
     training: 'positive',
 

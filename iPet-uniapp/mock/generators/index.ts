@@ -56,7 +56,7 @@ export const HIGH_FREQ_METRICS = [
     // Nutrition
     'meal', 'water', 'protein', 'carb', 'fat', 'diet_energy', 'fish_oil', 'calcium', 'fiber',
     // Activity
-    'walk_duration', 'run_distance', 'run_pace', 'fitness_training', 'training', 'sleep_duration',
+    'walk_duration', 'run_distance', 'run_pace', 'fitness_training', 'training',
     // Body Status (daily tracking)
     'stool', 'anxiety', 'depression', 'vomiting'
 ]

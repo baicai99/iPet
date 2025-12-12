@@ -28,7 +28,7 @@
             <view class="trends-section" v-if="changedMetricKeys.length">
                 <TrendCard v-for="key in changedMetricKeys.slice(0, 3)" :key="key" :metricKey="key"
                     :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
-                    :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" />
+                    :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :themeBg="getMetricBg(key)" />
             </view>
             <u-empty v-else class="empty" text="暂无趋势变化" mode="data"></u-empty>
             <view class="action-button">
@@ -175,6 +175,11 @@ const getMetricColor = (key: string) => {
     const category = METRIC_METADATA[key as MetricKey]?.category || 'default'
     const colorKey = CATEGORY_COLOR_MAP[category as keyof typeof CATEGORY_COLOR_MAP] || 'orange'
     return COLORS[colorKey as keyof typeof COLORS]?.hex || '#ff453a'
+}
+const getMetricBg = (key: string) => {
+    const category = METRIC_METADATA[key as MetricKey]?.category || 'default'
+    const colorKey = CATEGORY_COLOR_MAP[category as keyof typeof CATEGORY_COLOR_MAP] || 'orange'
+    return COLORS[colorKey as keyof typeof COLORS]?.bg || '#fff7ed'
 }
 
 // ============================================================================

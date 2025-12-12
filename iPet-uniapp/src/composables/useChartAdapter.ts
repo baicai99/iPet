@@ -1,14 +1,14 @@
 import { computed } from 'vue'
 import MiniLineChart from '@/components/widgets/charts/MiniLineChart.vue'
 import MiniBarChart from '@/components/widgets/charts/MiniBarChart.vue'
-import MiniRingChart from '@/components/widgets/charts/MiniRingChart.vue'
+
 import MiniRangeSlider from '@/components/widgets/charts/MiniRangeSlider.vue'
 import MiniStatus from '@/components/widgets/charts/MiniStatus.vue'
 import MiniTimeline from '@/components/widgets/charts/MiniTimeline.vue'
 import MiniStatusGrid from '@/components/widgets/charts/MiniStatusGrid.vue'
 import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
 import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
-import ProgressRingChart from '@/components/widgets/charts/ProgressRingChart.vue'
+
 import RangeSliderChart from '@/components/widgets/charts/RangeSliderChart.vue'
 import StatusIconChart from '@/components/widgets/charts/StatusIconChart.vue'
 import TrendLineChart from '@/components/widgets/charts/TrendLineChart.vue'
@@ -19,7 +19,7 @@ type ChartProps = Record<string, any>
 const MINI_CHART_MAP = {
     trend_line: MiniLineChart,
     daily_bar: MiniBarChart,
-    progress_ring: MiniRingChart,
+
     range_slider: MiniRangeSlider,
     status_icon: MiniStatus,
     event_timeline: MiniTimeline,
@@ -30,7 +30,7 @@ const DETAIL_CHART_MAP = {
     line: TrendLineChart,
     bar: DailyBarChart,
     grid: StatusGridChart,
-    ring: ProgressRingChart,
+
     slider: RangeSliderChart,
     status: StatusIconChart,
     timeline: EventTimelineChart
@@ -40,7 +40,7 @@ const DEFAULT_MINI_TYPE = 'trend_line'
 const DEFAULT_DETAIL_TYPE = 'line'
 
 const chartDefaults: Record<string, ChartProps> = {
-    progress_ring: { size: 120 },
+
     range_slider: { height: 100 },
     status_icon: { size: 80 },
     event_timeline: { height: 120 },

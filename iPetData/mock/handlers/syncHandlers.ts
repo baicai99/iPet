@@ -1,4 +1,4 @@
-import { RequestConfig } from '@/utils/common/request'
+import { RequestConfig } from '../types/common'
 
 export const syncMock = (config: RequestConfig) => {
     if (config.method === 'GET') {

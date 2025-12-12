@@ -14,8 +14,12 @@
             <!-- Header -->
             <view class="header">
                 <view class="header-left">
-                    <u-icon :name="icon" size="20" :color="colors.primary"></u-icon>
-                    <text class="title" :style="{ color: colors.primary }">{{ title }}</text>
+                    <view class="icon-wrapper" :style="{ backgroundColor: themeBg, color: colors.primary }">
+                        <svg class="icon" aria-hidden="true" style="font-size: 18px">
+                            <use :xlink:href="'#' + icon"></use>
+                        </svg>
+                    </view>
+                    <text class="title">{{ title }}</text>
                 </view>
                 <view class="header-right">
                     <u-icon name="arrow-right" size="18" :color="colors.textMuted"></u-icon>
@@ -146,6 +150,11 @@ const props = defineProps({
     primaryColor: {
         type: String,
         default: '#ff453a'
+    },
+    /** Background color for icon wrapper */
+    themeBg: {
+        type: String,
+        default: '#fff7ed'
     },
     /** Loading state */
     loading: {
@@ -484,10 +493,20 @@ const handleCardClick = () => {
     gap: 8rpx;
 }
 
+.icon-wrapper {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .title {
     font-size: 34rpx;
     font-weight: 700;
     letter-spacing: -0.5rpx;
+    color: #334155; /* slate-700 */
 }
 
 .view-mode-badge {

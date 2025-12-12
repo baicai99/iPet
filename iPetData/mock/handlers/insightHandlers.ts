@@ -1,4 +1,4 @@
-import { RequestConfig } from '@/utils/common/request'
+import { RequestConfig } from '../types/common'
 
 export const getTrendInsightMock = (config: RequestConfig) => {
     const { key } = (config.data || {}) as any

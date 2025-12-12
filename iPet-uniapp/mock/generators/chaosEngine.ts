@@ -36,7 +36,7 @@ const OUTLIER_RANGES: Record<string, { min: number; max: number }> = {
     body_temp: { min: 34, max: 42 },        // Fever or hypothermia
     walk_duration: { min: 120, max: 240 },  // Very long walks
     weight: { min: 1, max: 50 },            // Extreme weights
-    sleep_duration: { min: 2, max: 20 }     // Very short or long sleep
+
 }
 
 /**

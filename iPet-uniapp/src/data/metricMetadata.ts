@@ -20,7 +20,7 @@ export type MetricKey =
     | 'run_distance'
     | 'run_pace'
     | 'fitness_training'
-    | 'sleep_duration'
+
     | 'stool'
     | 'anxiety'
     | 'depression'
@@ -359,23 +359,7 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
             type: 'daily_bar'
         }
     },
-    sleep_duration: {
-        key: 'sleep_duration',
-        title: '睡眠时长',
-        icon: 'icon-sleepmode',
-        unit: 'hour',
-        displayUnit: '小时',
-        category: 'sleep',
-        valueType: 'time',
-        description: '睡眠时长是指宠物在 24 小时内累计或连续的睡眠时间，总体偏低可能意味着环境或情绪存在压力。',
-        recommendation: '成犬每日睡眠 10–14 小时通常属于正常范围；幼犬可适当更长。',
-        tips: '如果连续一周明显少于 8 小时，建议关注是否有焦虑、环境噪音或运动不足的问题。',
-        visualization: {
-            type: 'progress_ring',
-            options: { max: 14, color: '#8b5cf6' }
-        },
-        calculationMethod: 'sum'
-    },
+
     stool: {
         key: 'stool',
         title: '排泄状况',

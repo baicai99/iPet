@@ -50,8 +50,7 @@ export function getMetricStaticConfig(key: string): MetricStaticConfig | null {
     const iconName = metadata.icon || getMetricIcon(metadata.title, metadata.category)
 
     const isWide = WIDE_VISUALIZATION_TYPES.includes(visualizationType)
-    const chartHeight = (typeof visualizationOptions?.height === 'string' ? visualizationOptions.height : null) ||
-        (visualizationType === 'progress_ring' ? '110rpx' : '80rpx')
+    const chartHeight = (typeof visualizationOptions?.height === 'string' ? visualizationOptions.height : null) || '80rpx'
 
     const miniChartDays = (metadata as any).timeDisplay?.miniChartDays || 7
 

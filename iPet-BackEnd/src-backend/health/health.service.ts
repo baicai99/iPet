@@ -142,7 +142,7 @@ export class HealthService {
         // For simplicity, we will just return the raw series data for now and let frontend do some formatting if needed, 
         // OR we can do the aggregation here. 
         // Let's return the raw series for the last 7 days for these specific metrics.
-        const trendKeys = ['weight', 'water', 'sleep_duration', 'walk_duration', 'meal'];
+        const trendKeys = ['weight', 'water', 'walk_duration', 'meal'];
         const trends: any[] = [];
 
         for (const key of trendKeys) {

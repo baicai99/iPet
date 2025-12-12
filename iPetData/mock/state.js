@@ -1,3 +1,4 @@
+/** @type {{ users: any[], currentUserId: number | null }} */
 export const userState = {
     users: [
         {
