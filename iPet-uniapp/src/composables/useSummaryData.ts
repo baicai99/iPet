@@ -12,11 +12,12 @@
  * - 复用已有 composables：useUnitConverter, useMetricTrend
  */
 
-import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useHealthStore } from '@/stores/healthStore'
 import { useUnitConverter } from '@/composables/useUnitConverter'
 import { healthCacheService } from '@/services/healthCacheService'
+import { requestManager } from '@/utils/request/requestManager'
 
 // ============================================================================
 // Types
@@ -61,6 +62,8 @@ export interface UseSummaryDataReturn {
     startAutoRefresh: () => void
     /** 停止自动刷新（页面 onHide 时调用） */
     stopAutoRefresh: () => void
+    /** 取消待处理的请求 */
+    cancelPendingRequests: () => void
 }
 
 // ============================================================================
@@ -255,86 +258,108 @@ export function useSummaryData(petId: Ref<string | null>): UseSummaryDataReturn 
     // -------------------------------------------------------------------------
 
     /**
-     * 加载 Summary 数据 (带缓存策略 - stale-while-revalidate)
+     * 加载 Summary 数据 (带缓存策略 - stale-while-revalidate + 请求去重)
      * 
      * 策略：
      * 1. 优先从本地缓存读取，立即渲染首屏
-     * 2. 后台静默请求最新数据
+     * 2. 后台静默请求最新数据（带去重和取消支持）
      * 3. 请求成功后更新缓存和 UI
      * 4. 请求失败时继续展示缓存数据 + Toast 提示
      */
     async function loadSummaryData(targetPetId: string): Promise<void> {
         if (!targetPetId) return
 
-        // Step 1: 尝试从本地缓存读取
-        const cachedSnapshot = healthCacheService.getSummarySnapshot()
-        const hasCachedData = cachedSnapshot && (
-            cachedSnapshot.tasks?.length > 0 ||
-            cachedSnapshot.pinnedMetrics?.length > 0 ||
-            cachedSnapshot.trends?.length > 0
-        )
+        const requestKey = `summary:${targetPetId}`
 
-        // 如果有缓存，立即渲染（不显示 loading）
-        if (hasCachedData) {
-            tasks.value = cachedSnapshot.tasks || []
-            pinnedMetrics.value = cachedSnapshot.pinnedMetrics || []
-            trends.value = cachedSnapshot.trends || []
-            dailySummaries.value = cachedSnapshot.dailySummaries || {}
-        }
-
-        // 检查缓存是否过期
-        const cacheExpired = healthCacheService.isExpired('Summary_Snapshot')
-
-        // 检查是否为每日首次打开（T5.2）
-        const needDailyRefresh = isFirstOpenToday() && !dailyRefreshTriggered
-
-        // 如果无缓存或缓存过期，需要清晰地显示 loading
-        const shouldShowLoading = !hasCachedData
-
-        if (shouldShowLoading) {
-            isLoading.value = true
-            healthStore.resetSummarySnapshot()
-        }
-
-        // Step 2: 后台请求最新数据
         try {
-            const shouldForceRefresh = cacheExpired || !hasCachedData || needDailyRefresh
-            await healthStore.initSummaryPage(targetPetId, { force: shouldForceRefresh })
+            await requestManager.execute(
+                requestKey,
+                async (signal) => {
+                    // Step 1: 尝试从本地缓存读取
+                    const cachedSnapshot = healthCacheService.getSummarySnapshot()
+                    const hasCachedData = cachedSnapshot && (
+                        cachedSnapshot.tasks?.length > 0 ||
+                        cachedSnapshot.pinnedMetrics?.length > 0 ||
+                        cachedSnapshot.trends?.length > 0
+                    )
 
-            // Step 3: 成功后更新缓存
-            const newSnapshot = {
-                tasks: healthStore.tasks,
-                pinnedMetrics: healthStore.pinnedMetrics,
-                trends: healthStore.trends,
-                dailySummaries: healthStore.dailySummaries,
-                petId: targetPetId,
-                timestamp: Date.now()
-            }
-            healthCacheService.setSummarySnapshot(newSnapshot)
+                    // 如果有缓存，立即渲染（不显示 loading）
+                    if (hasCachedData) {
+                        tasks.value = cachedSnapshot.tasks || []
+                        pinnedMetrics.value = cachedSnapshot.pinnedMetrics || []
+                        trends.value = cachedSnapshot.trends || []
+                        dailySummaries.value = cachedSnapshot.dailySummaries || {}
+                    }
 
-            // 标记今日已刷新（T5.2）
-            if (needDailyRefresh) {
-                markTodayRefreshed()
-                dailyRefreshTriggered = true
-            }
+                    // 检查缓存是否过期
+                    const cacheExpired = healthCacheService.isExpired('Summary_Snapshot')
 
-        } catch (error) {
-            console.error('Failed to load summary data', error)
+                    // 检查是否为每日首次打开（T5.2）
+                    const needDailyRefresh = isFirstOpenToday() && !dailyRefreshTriggered
 
-            // Step 4: 降级处理
-            if (hasCachedData) {
-                // 有缓存：显示 Toast 提示，继续展示缓存数据
-                uni.showToast({
-                    title: '网络异常，显示历史数据',
-                    icon: 'none',
-                    duration: 2000
-                })
+                    // 如果无缓存或缓存过期，需要清晰地显示 loading
+                    const shouldShowLoading = !hasCachedData
+
+                    if (shouldShowLoading) {
+                        isLoading.value = true
+                        healthStore.resetSummarySnapshot()
+                    }
+
+                    try {
+                        // Step 2: 后台请求最新数据
+                        const shouldForceRefresh = cacheExpired || !hasCachedData || needDailyRefresh
+                        await healthStore.initSummaryPage(targetPetId, { force: shouldForceRefresh })
+
+                        // Step 3: 成功后更新缓存
+                        const newSnapshot = {
+                            tasks: healthStore.tasks,
+                            pinnedMetrics: healthStore.pinnedMetrics,
+                            trends: healthStore.trends,
+                            dailySummaries: healthStore.dailySummaries,
+                            petId: targetPetId,
+                            timestamp: Date.now()
+                        }
+                        healthCacheService.setSummarySnapshot(newSnapshot)
+
+                        // 标记今日已刷新（T5.2）
+                        if (needDailyRefresh) {
+                            markTodayRefreshed()
+                            dailyRefreshTriggered = true
+                        }
+                    } catch (error: any) {
+                        // 检查是否为取消错误
+                        if (signal.aborted || error?.name === 'AbortError') {
+                            console.log('[useSummaryData] Request cancelled')
+                            throw error // 重新抛出，让外层捕获
+                        }
+
+                        console.error('Failed to load summary data', error)
+
+                        // Step 4: 降级处理
+                        if (hasCachedData) {
+                            // 有缓存：显示 Toast 提示，继续展示缓存数据
+                            uni.showToast({
+                                title: '网络异常，显示历史数据',
+                                icon: 'none',
+                                duration: 2000
+                            })
+                        }
+                        // 无缓存：不做特殊处理，会显示空状态
+                    } finally {
+                        if (shouldShowLoading) {
+                            isLoading.value = false
+                        }
+                    }
+                },
+                { cancelPrevious: false } // 复用同 petId 的请求
+            )
+        } catch (error: any) {
+            // 请求被取消或去重，静默处理
+            if (error?.name === 'AbortError') {
+                console.log('[useSummaryData] Request was cancelled or deduplicated')
+                return
             }
-            // 无缓存：不做特殊处理，会显示空状态
-        } finally {
-            if (shouldShowLoading) {
-                isLoading.value = false
-            }
+            // 其他错误已在内层处理
         }
     }
 
@@ -447,19 +472,27 @@ export function useSummaryData(petId: Ref<string | null>): UseSummaryDataReturn 
     }
 
     // -------------------------------------------------------------------------
+    // Request Management
+    // -------------------------------------------------------------------------
+
+    /**
+     * 取消待处理的 summary 请求
+     */
+    function cancelPendingRequests(): void {
+        requestManager.cancelMatching(/^summary:/)
+    }
+
+    // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
 
-    // Auto-load on petId change
-    watch(petId, (newId) => {
-        if (newId) {
-            loadSummaryData(newId)
-        }
-    })
+    // ❌ REMOVED: Auto-load on petId change
+    // watch(petId) 移到 view 层，变成被动取消而非主动加载
 
     // Cleanup on unmount
     onUnmounted(() => {
         stopAutoRefresh()
+        cancelPendingRequests()
     })
 
     return {
@@ -469,6 +502,7 @@ export function useSummaryData(petId: Ref<string | null>): UseSummaryDataReturn 
         loadSummaryData,
         refresh,
         startAutoRefresh,
-        stopAutoRefresh
+        stopAutoRefresh,
+        cancelPendingRequests
     }
 }

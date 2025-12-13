@@ -96,7 +96,7 @@ const { pinnedMetrics: rawPinnedMetrics } = storeToRefs(healthStore)
 // Summary Data (via Composable)
 // ============================================================================
 
-const { stepTrendData, isLoading, loadSummaryData, refresh, startAutoRefresh, stopAutoRefresh } = useSummaryData(selectedPetId)
+const { stepTrendData, isLoading, loadSummaryData, refresh, startAutoRefresh, stopAutoRefresh, cancelPendingRequests } = useSummaryData(selectedPetId)
 
 // ============================================================================
 // Computed Properties
@@ -121,51 +121,10 @@ const isArticleNew = (updateTime: string, index: number): boolean => {
 }
 
 // ============================================================================
-// Trend Change Detection (for summary display)
+// Trend Detection (from Store Getters)
 // ============================================================================
 
-const TREND_METRIC_KEYS = Object.keys(METRIC_METADATA)
-const THRESHOLD_PERCENT = 30
-const MIN_DATA_POINTS = 20
-
-const changedMetricKeys = computed(() => {
-    return TREND_METRIC_KEYS.filter(key => {
-        const records = healthStore.metricHistory(key) || []
-        if (records.length < MIN_DATA_POINTS) return false
-
-        // Group by date
-        const groups = new Map<string, number[]>()
-        for (const record of records) {
-            const dateKey = record.date?.split('T')[0] || ''
-            if (!dateKey) continue
-            if (!groups.has(dateKey)) groups.set(dateKey, [])
-            groups.get(dateKey)!.push(record.value)
-        }
-
-        // Aggregate to daily totals
-        const sortedKeys = Array.from(groups.keys()).sort()
-        const dailyTotals = sortedKeys.map(key => {
-            const values = groups.get(key)!
-            return values.reduce((a, b) => a + b, 0)
-        })
-
-        if (dailyTotals.length < MIN_DATA_POINTS) return false
-
-        // Split and calculate
-        const limitedPoints = dailyTotals.slice(-40)
-        const midpoint = Math.floor(limitedPoints.length / 2)
-        const previous = limitedPoints.slice(0, midpoint)
-        const recent = limitedPoints.slice(midpoint)
-
-        const prevAvg = previous.reduce((a, b) => a + b, 0) / previous.length
-        const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length
-
-        if (prevAvg === 0) return false
-
-        const changePercent = Math.abs((recentAvg - prevAvg) / prevAvg * 100)
-        return changePercent >= THRESHOLD_PERCENT
-    })
-})
+const changedMetricKeys = computed(() => healthStore.getChangedMetricKeys())
 
 // Helper functions for TrendCard props
 const getMetricTitle = (key: string) => METRIC_METADATA[key as MetricKey]?.title || key
@@ -198,35 +157,32 @@ onShow(() => {
     // 启动自动刷新（T5.1：连续使用 > 10 分钟自动刷新）
     startAutoRefresh()
 
-    // 每次页面显示时，如果 App 已准备好，刷新关键数据
-    if (appStore.isAppReady) {
+    // ✅ SINGLE ENTRY POINT: 只在 onShow 触发数据加载
+    if (appStore.isAppReady && selectedPetId.value) {
         // 强制刷新宠物列表，解决登录后数据不显示的问题
         petViewModel.refresh()
 
-        // 如果有选中的宠物，也刷新健康摘要
-        if (selectedPetId.value) {
-            loadSummaryData(selectedPetId.value)
-        }
+        // 加载健康摘要数据
+        loadSummaryData(selectedPetId.value)
     }
 })
 
 onHide(() => {
     // 停止自动刷新
     stopAutoRefresh()
+
+    // 取消待处理的请求（避免stale请求覆盖新数据）
+    cancelPendingRequests()
 })
 
 onMounted(() => {
+    // ✅ ONLY SETUP: 不做数据获取，只做准备工作
     const initData = () => {
         petViewModel.ensureHydrated()
         // 加载静态文章数据
         articleStore.ensureLoaded()
-        // Initial load
-        if (selectedPetId.value) {
-            healthStore.initSummaryPage(selectedPetId.value, { force: false })
-                .catch((error: unknown) => {
-                    console.error('Failed to hydrate summary snapshot', error)
-                })
-        }
+        // ❌ REMOVED: healthStore.initSummaryPage()
+        // 数据加载由 onShow 统一处理
         closeSplash()
     }
 
@@ -248,6 +204,21 @@ onMounted(() => {
             refresh(selectedPetId.value)
         }
     })
+})
+
+// ============================================================================
+// Pet Watch (Passive - Only Cancel Requests)
+// ============================================================================
+
+// ✅ PASSIVE WATCH: 只取消旧请求，不主动触发新请求
+// 数据加载由 onShow 统一触发
+watch(selectedPetId, (newPetId, oldPetId) => {
+    if (oldPetId && newPetId !== oldPetId) {
+        // 取消旧宠物的待处理请求
+        cancelPendingRequests()
+    }
+    // ❌ DO NOT call loadSummaryData() here
+    // ✅ 数据将在下次 onShow 时自动加载
 })
 
 onPullDownRefresh(async () => {

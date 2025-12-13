@@ -13,7 +13,7 @@
  * - 使用 ref/computed 替代 state/getters，获得更好的 TS 推断
  */
 
-import { ref, computed } from 'vue'
+import { ref, computed, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { getMetricMetadata } from '@/data/metricMetadata'
 import { healthSummaryService } from '@/services/healthSummaryService'
@@ -23,6 +23,14 @@ import { healthCacheService } from '@/services/healthCacheService'
 import type { HealthRecord, MetricSeriesResponse, MetricSeriesParams } from '@shared/types/health'
 import { parseTimestamp, sortRecordsByTime, getMetricSeries, getMetricSeriesV2 } from '@/utils/business/healthDataHelper'
 import { processPinnedMetrics, processTrendMetrics } from '@/utils/business/healthSummaryHelper'
+import { getAllMetricKeys } from '@/data/metricMetadata'
+import {
+    detectSignificantChange,
+    filterChangedMetrics,
+    filterStableMetrics,
+    type TrendAnalysis,
+    type MetricRecord
+} from '@/domain/trend/detectSignificantChanges'
 
 // ============================================================================
 // Types
@@ -67,6 +75,12 @@ export const useHealthStore = defineStore('health', () => {
 
     /** Series 缓存：带 TTL 的图表数据缓存 */
     const seriesCache = ref<Record<string, CachedSeries>>({})
+
+    /** 
+     * Trend 分析缓存：按指标粒度 memoization 
+     * 使用 shallowRef 避免在 getter 中更新时触发响应式循环
+     */
+    const trendCache = shallowRef<Map<string, { hash: string, result: TrendAnalysis }>>(new Map())
 
     // =========================================================================
     // Getters (computed)
@@ -126,6 +140,90 @@ export const useHealthStore = defineStore('health', () => {
     /** 获取每日摘要 */
     const getDailySummary = (key: string): number => {
         return dailySummaries.value[key] || 0
+    }
+
+    // =========================================================================
+    // Trend Detection Getters (带 Memoization)
+    // =========================================================================
+
+    /**
+     * 计算指标数据哈希（用于脏检查）
+     */
+    function calculateMetricHash(records: MetricRecord[]): string {
+        if (records.length === 0) return '0:0'
+        const lastTimestamp = records[records.length - 1].date || '0'
+        return `${lastTimestamp}:${records.length}`
+    }
+
+    /**
+     * 获取所有指标的趋势分析结果
+     * 
+     * 带 memoization：只在数据变化时重算
+     * 性能优化：按指标粒度缓存，避免全量重算
+     */
+    const trendAnalysis = computed<Record<string, TrendAnalysis>>(() => {
+        const keys = getAllMetricKeys()
+        const results: Record<string, TrendAnalysis> = {}
+
+        for (const key of keys) {
+            // 从 store 获取历史记录
+            const records = metricHistory(key) || []
+
+            // 转换为 domain 层格式
+            const metricRecords: MetricRecord[] = records.map(r => ({
+                value: r.value,
+                date: r.date
+            }))
+
+            // 计算当前数据哈希
+            const currentHash = calculateMetricHash(metricRecords)
+
+            // 检查缓存
+            const cached = trendCache.value.get(key)
+
+            if (cached && cached.hash === currentHash) {
+                // ✅ 哈希未变，复用缓存结果
+                results[key] = cached.result
+            } else {
+                // ❌ 哈希变化或无缓存，重新计算
+                const result = detectSignificantChange(metricRecords)
+                results[key] = result
+
+                // 更新缓存（shallowRef不会触发响应式循环）
+                trendCache.value.set(key, { hash: currentHash, result })
+            }
+        }
+
+        return results
+    })
+
+    /**
+     * 获取有显著变化的指标键列表
+     */
+    function getChangedMetricKeys(): string[] {
+        return filterChangedMetrics(trendAnalysis.value)
+    }
+
+    /**
+     * 获取稳定的指标键列表
+     */
+    function getStableMetricKeys(): string[] {
+        return filterStableMetrics(trendAnalysis.value)
+    }
+
+    /**
+     * 获取指标的趋势状态
+     * 
+     * @param key 指标键
+     * @returns 'changed' | 'stable' | 'insufficient' | 'unknown'
+     */
+    function getMetricTrendStatus(key: string): 'changed' | 'stable' | 'insufficient' | 'unknown' {
+        const analysis = trendAnalysis.value
+        const result = analysis[key]
+
+        if (!result) return 'unknown'
+        if (result.dataPoints < 20) return 'insufficient'
+        return result.hasSignificantChange ? 'changed' : 'stable'
     }
 
     // =========================================================================
@@ -524,6 +622,10 @@ export const useHealthStore = defineStore('health', () => {
         metricHistory,
         latestMetrics,
         getDailySummary,
+        trendAnalysis,
+        getChangedMetricKeys,
+        getStableMetricKeys,
+        getMetricTrendStatus,
 
         // Actions
         fetchHealthRecords,
