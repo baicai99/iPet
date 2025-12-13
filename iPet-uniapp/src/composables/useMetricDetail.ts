@@ -92,6 +92,9 @@ export function useMetricDetail() {
     const relatedMetricsData = ref<any[]>([])
     const latestValue = ref<any>(null)
 
+    // ✅ Race Condition Protection: Version Control
+    let fetchDataVersion = 0  // 请求版本号，每次 fetchData 递增
+
     // Modal State
     const showCompletionModal = ref(false)
     const showCompletePicker = ref(false)
@@ -309,6 +312,11 @@ export function useMetricDetail() {
 
     async function fetchData() {
         if (!metricKey.value) return
+
+        // ✅ 竞态保护：递增版本号
+        const currentVersion = ++fetchDataVersion
+        console.log(`[Detail] 📊 fetchData v${currentVersion} started for ${metricKey.value} / ${activeTab.value}`)
+
         loading.value = true
 
         try {
@@ -445,6 +453,13 @@ export function useMetricDetail() {
                 }
             }
 
+            // ✅ 竞态保护：版本校验
+            if (currentVersion !== fetchDataVersion) {
+                console.warn(`[Detail] ⚠️ Stale response v${currentVersion} discarded (current: v${fetchDataVersion})`)
+                return  // 丢弃旧版本响应
+            }
+
+            console.log(`[Detail] ✅ Applying data v${currentVersion}`)
             chartData.value = { series: [], stats: {} }
             await nextTick()
             chartData.value = newChartData
@@ -454,6 +469,11 @@ export function useMetricDetail() {
                 latestValue.value = displayData.rawValue
             }
         } catch (e) {
+            // ✅ 竞态保护：错误时也检查版本
+            if (currentVersion !== fetchDataVersion) {
+                console.warn(`[Detail] ⚠️ Error in stale request v${currentVersion}, ignoring`)
+                return
+            }
             console.error('Failed to fetch metric data:', e)
         } finally {
             loading.value = false

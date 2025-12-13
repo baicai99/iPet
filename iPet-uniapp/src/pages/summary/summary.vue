@@ -1,5 +1,10 @@
 <template>
     <view class="content">
+        <!-- ✅ Lightweight Refresh Indicator (后台刷新时的轻量态) -->
+        <view v-if="isBackgroundRefreshing" class="refresh-indicator">
+            <u-loading-icon mode="circle" size="20" color="#ff6b35" />
+        </view>
+
         <!-- Pet Selector Carousel -->
         <PetSelectorBar v-if="activePets.length > 1" :pets="activePets" mode="select" @add="handleAddPet"
             @click="handlePetSelect" />
@@ -9,11 +14,14 @@
             <view class="section-header">
                 <text class="section-title">{{ t('SUMMARY.PINNED_TITLE') }}</text>
             </view>
-            <template v-if="pinnedMetricKeys.length">
+
+            <!-- ✅ 使用统一 AppSectionState 组件 -->
+            <AppSectionState :section-state="pinnedState" empty-reason="no-pinned">
+                <!-- Data Slot -->
                 <PinnedMetricsWidget :metric-keys="pinnedMetricKeys" @add="goManageMetrics"
                     @metric-click="goToMetric" />
-            </template>
-            <u-empty class="empty" v-else text="暂无置顶数据" mode="data"></u-empty>
+            </AppSectionState>
+
             <view class="action-button">
                 <u-button type="primary" plain shape="circle" :text="t('SUMMARY.PINNED_CTA')"
                     @click="goManageMetrics"></u-button>
@@ -25,12 +33,17 @@
             <view class="section-header">
                 <text class="section-title">{{ t('SUMMARY.TRENDS_TITLE') }}</text>
             </view>
-            <view class="trends-section" v-if="changedMetricKeys.length">
-                <TrendCard v-for="key in changedMetricKeys.slice(0, 3)" :key="key" :metricKey="key"
-                    :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
-                    :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :themeBg="getMetricBg(key)" />
-            </view>
-            <u-empty v-else class="empty" text="暂无趋势变化" mode="data"></u-empty>
+
+            <!-- ✅ 使用统一 AppSectionState 组件 -->
+            <AppSectionState :section-state="trendsState" empty-reason="no-trends">
+                <!-- Data Slot -->
+                <view class="trends-section">
+                    <TrendCard v-for="key in changedMetricKeys.slice(0, 3)" :key="key" :metricKey="key"
+                        :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
+                        :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :themeBg="getMetricBg(key)" />
+                </view>
+            </AppSectionState>
+
             <view class="action-button">
                 <u-button type="primary" plain shape="circle" :text="t('SUMMARY.TRENDS_CTA')"
                     @click="goViewTrends"></u-button>
@@ -42,13 +55,18 @@
             <view class="section-header">
                 <text class="section-title">{{ t('SUMMARY.ARTICLES_TITLE') }}</text>
             </view>
-            <view class="articles-list" v-if="articles.length > 0">
-                <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id"
-                    :title="article.title" :summary="article.summary" :cover="article.cover"
-                    :category="article.category" :isNew="isArticleNew(article.updateTime, index)"
-                    :updateTime="article.updateTime" />
-            </view>
-            <u-empty class="empty" v-else text="暂无推荐文章" mode="list"></u-empty>
+
+            <!-- ✅ 使用统一 AppSectionState 组件 -->
+            <AppSectionState :section-state="articlesState" empty-reason="no-articles">
+                <!-- Data Slot -->
+                <view class="articles-list">
+                    <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id"
+                        :title="article.title" :summary="article.summary" :cover="article.cover"
+                        :category="article.category" :isNew="isArticleNew(article.updateTime, index)"
+                        :updateTime="article.updateTime" />
+                </view>
+            </AppSectionState>
+
             <view class="action-button" v-if="articles.length">
                 <u-button type="primary" plain shape="circle" :text="t('SUMMARY.ARTICLES_CTA')"
                     @click="goViewArticles"></u-button>
@@ -58,13 +76,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'  // ✅ Added ref for skeleton state
 import { onPullDownRefresh, onShow, onHide } from '@dcloudio/uni-app'
 import { useI18n } from 'vue-i18n'
 import PetSelectorBar from '@/components/profile/PetSelectorBar.vue'
 import PinnedMetricsWidget from '@/components/widgets/PinnedMetricsWidget.vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
+import AppSectionState from '@/components/common/AppSectionState.vue'  // ✅ NEW: 统一状态组件
 import { usePetViewModel } from '@/composables/usePetViewModel'
 import { usePetCommands } from '@/composables/usePetCommands'
 import { useHealthStore } from '@/stores/healthStore'
@@ -76,6 +95,8 @@ import { useSummaryData } from '@/composables/useSummaryData'
 import { METRIC_METADATA, type MetricKey } from '@/data/metricMetadata'
 import { COLORS, CATEGORY_COLOR_MAP } from '@/config/theme'
 import type { Article } from '@/types/article'
+import healthCacheService from '@/services/healthCacheService'  // ✅ NEW: 同步读取缓存
+import { useSectionState } from '@/composables/useSectionState'  // ✅ NEW: 分区状态机
 
 const { t } = useI18n()
 
@@ -90,7 +111,15 @@ const articleStore = useArticleStore()
 const appStore = useAppStore()
 
 const { activePets, selectedPetId, isLoading: petsLoading } = petViewModel
-const { pinnedMetrics: rawPinnedMetrics } = storeToRefs(healthStore)
+const { pinnedMetrics: rawPinnedMetrics, tasks, trends, dailySummaries } = storeToRefs(healthStore)  // ✅ NEW: 增加 tasks/trends/dailySummaries 用于同步缓存填充
+
+// ✅ Section-Based State Machine（替代全局 loading）
+const pinnedState = useSectionState()   // 置顶指标独立状态
+const trendsState = useSectionState()   // 趋势独立状态
+const articlesState = useSectionState() // 文章独立状态
+
+// ✅ 保留轻量刷新态（所有 section 共用）
+const isBackgroundRefreshing = ref(false)
 
 // ============================================================================
 // Summary Data (via Composable)
@@ -157,54 +186,153 @@ const closeSplash = () => {
 }
 
 /**
- * ✅ 单一初始化入口（onMounted ONLY）
+ * ✅ SHELL FIRST 架构（P0 优化）
  * 
- * 原则：
- * - initData() 只在这里触发一次
- * - 包含首次数据加载（使用 ensureDataLoaded，内置 SWR 缓存）
- * - onShow 不再触发数据加载，只做轻量恢复
+ * 核心原则：
+ * 1. 页面壳永远先出（同步渲染，< 150ms）
+ * 2. 缓存数据立即上屏（同步读取，0ms）
+ * 3. appReady 仅控制后台刷新时机，不阻塞渲染
+ * 
+ * 改进前：appReady 阻塞 -> 全白屏 -> 数据到达才显示
+ * 改进后：壳立即出现 -> 缓存立即填充 -> 后台刷新
  */
 onMounted(() => {
-    const initData = async () => {
-        // 1. 水合宠物数据
-        petViewModel.ensureHydrated()
+    // ============================================================================
+    // Phase 1: 同步渲染页面壳 + 应用缓存（0-50ms，不等待任何异步）
+    // ============================================================================
 
-        // 2. 加载静态文章数据
-        articleStore.ensureLoaded()
+    // 1.1 同步水合宠物数据（从 localStorage 读取，同步操作）
+    petViewModel.ensureHydrated()
 
-        // 3. 首次数据加载（使用 ensureDataLoaded，优先缓存）
-        if (selectedPetId.value) {
-            // ✅ 使用 healthStore.ensureDataLoaded 而非 loadSummaryData
-            // ensureDataLoaded 会优先返回缓存，后台刷新
-            await healthStore.ensureDataLoaded(selectedPetId.value)
+    // 1.2 同步加载静态文章数据（从本地JSON读取，同步操作）
+    articleStore.ensureLoaded()
 
-            // ✅ 加载 summary 特定数据（trends 等）
-            await loadSummaryData(selectedPetId.value)
+    // 1.3 ✅ 核心优化：同步应用 Summary 缓存快照 + 分区状态初始化
+    if (selectedPetId.value) {
+        const cachedSnapshot = healthCacheService.getSummarySnapshot()
+
+        // ✅ 分区判断缓存
+        const hasPinnedCache = cachedSnapshot?.pinnedMetrics?.length > 0
+        const hasTrendsCache = cachedSnapshot?.trends?.length > 0
+        const hasArticlesCache = articleStore.getLatestArticles(3).length > 0
+
+        // ✅ 分区启动加载（有缓存 → showing_cache，无缓存 → loading）
+        pinnedState.startLoading({ hasCache: hasPinnedCache })
+        trendsState.startLoading({ hasCache: hasTrendsCache })
+        articlesState.startLoading({ hasCache: hasArticlesCache })
+
+        if (cachedSnapshot) {
+            // 立即填充缓存数据到 UI（不等待网络请求）
+            tasks.value = cachedSnapshot.tasks || []
+            rawPinnedMetrics.value = cachedSnapshot.pinnedMetrics || []
+            trends.value = cachedSnapshot.trends || []
+            dailySummaries.value = cachedSnapshot.dailySummaries || {}
+            console.log('[Summary] 📸 Cache applied synchronously:', {
+                tasks: tasks.value.length,
+                pinnedMetrics: rawPinnedMetrics.value.length,
+                trends: trends.value.length
+            })
         }
-
-        // 4. 关闭启动屏
-        closeSplash()
-
-        // 5. 标记已初始化
-        isInitialized = true
     }
 
-    // App Ready 检查（确保 store 已准备好）
+    // 1.4 立即关闭启动屏（不等待数据加载）
+    closeSplash()
+
+    // ============================================================================
+    // Phase 2: 后台数据刷新（异步，由 appReady 控制时机）
+    // ============================================================================
+
+    const backgroundRefresh = async () => {
+        if (!selectedPetId.value) return
+
+        // 2.0 判断是否有缓存数据（用于轻量刷新态）
+        const hasCacheData = tasks.value.length > 0 || rawPinnedMetrics.value.length > 0 || trends.value.length > 0
+
+        if (hasCacheData) {
+            // ✅ 后台刷新有缓存：显示轻量刷新 indicator
+            isBackgroundRefreshing.value = true
+            console.log('[Summary] 🔄 Background refresh with cache (lightweight indicator)')
+        }
+
+        try {
+            // ============================================================================
+            // ✅ Wave 1: 置顶指标（最高优先级，立即加载）
+            // ============================================================================
+            console.log('[Summary] 🌊 Wave 1: Loading pinned metrics (immediate)')
+
+            await healthStore.ensureDataLoaded(selectedPetId.value)
+
+            const hasPinnedData = rawPinnedMetrics.value.length > 0
+            pinnedState.loadSuccess({ hasData: hasPinnedData })
+            console.log('[Summary] ✅ Wave 1 complete: Pinned metrics ready')
+
+            // ============================================================================
+            // ✅ Wave 2: 趋势数据（次优先级，延迟 100ms）
+            // ============================================================================
+            setTimeout(async () => {
+                console.log('[Summary] 🌊 Wave 2: Loading trends (delayed 100ms)')
+
+                try {
+                    await loadSummaryData(selectedPetId.value)
+
+                    const hasTrendsData = trends.value.length > 0
+                    trendsState.loadSuccess({ hasData: hasTrendsData })
+                    console.log('[Summary] ✅ Wave 2 complete: Trends ready')
+                } catch (error) {
+                    console.warn('[Summary] Wave 2 failed:', error)
+                    trendsState.loadError(error as Error)
+                }
+            }, 100)  // Wave 2 延迟
+
+            // ============================================================================
+            // ✅ Wave 3: 文章推荐（低优先级，延迟 500ms）
+            // ============================================================================
+            setTimeout(() => {
+                console.log('[Summary] 🌊 Wave 3: Loading articles (delayed 500ms)')
+
+                try {
+                    const hasArticlesData = articleStore.getLatestArticles(3).length > 0
+                    articlesState.loadSuccess({ hasData: hasArticlesData })
+                    console.log('[Summary] ✅ Wave 3 complete: Articles ready')
+                } catch (error) {
+                    console.warn('[Summary] Wave 3 failed:', error)
+                    articlesState.loadError(error as Error)
+                }
+            }, 500)  // Wave 3 延迟
+
+        } catch (error) {
+            console.warn('[Summary] Wave 1 failed:', error)
+            // ✅ Wave 1 失败时的错误处理
+            pinnedState.loadError(error as Error)
+            // Wave 2/3 会独立处理自己的错误
+        } finally {
+            // ✅ 清理刷新态（Wave 1 完成后立即清理）
+            isBackgroundRefreshing.value = false
+            isInitialized = true
+        }
+    }
+
+    // 2.3 ✅ appReady 仅控制后台刷新时机，不阻塞首屏渲染
     if (appStore.isAppReady) {
-        initData()
+        // App 已就绪，立即开始后台刷新
+        backgroundRefresh()
     } else {
+        // App 未就绪，等待就绪后再刷新（但页面壳和缓存已经展示）
         const unwatch = watch(() => appStore.isAppReady, (ready) => {
             if (ready && !isInitialized) {
-                initData()
+                backgroundRefresh()
                 unwatch()
             }
         })
     }
 
-    // Subscribe to data changes
+    // ============================================================================
+    // Phase 3: 订阅数据变更事件
+    // ============================================================================
+
     onDataChanged((event) => {
         if (event.reason === 'metrics:record-added' && selectedPetId.value) {
-            // Refresh summary silently
+            // 静默刷新 summary
             refresh(selectedPetId.value)
         }
     })
@@ -363,5 +491,82 @@ const goViewArticles = () => {
 .empty-trend-text {
     font-size: 28rpx;
     color: #8e8e93;
+}
+
+/* ✅ Skeleton Card Styles */
+.skeleton-card {
+    background-color: white;
+    border-radius: 30rpx;
+    padding: 30rpx;
+    margin-bottom: 24rpx;
+    height: 220rpx;
+    /* 锁定高度，避免CLS */
+}
+
+.skeleton-title {
+    width: 120rpx;
+    height: 28rpx;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 8rpx;
+    margin-bottom: 20rpx;
+}
+
+.skeleton-chart {
+    width: 100%;
+    height: 100rpx;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 12rpx;
+    margin-bottom: 16rpx;
+}
+
+.skeleton-value {
+    width: 80rpx;
+    height: 32rpx;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 8rpx;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ✅ Lightweight Refresh Indicator */
+.refresh-indicator {
+    position: fixed;
+    top: 20rpx;
+    right: 32rpx;
+    z-index: 1000;
+    padding: 12rpx 20rpx;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 40rpx;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+}
+
+/* ✅ Section Error State */
+.error-state {
+    padding: 48rpx 32rpx;
+    text-align: center;
+    background-color: white;
+    border-radius: 30rpx;
+}
+
+.error-text {
+    font-size: 28rpx;
+    color: #ef4444;
 }
 </style>
