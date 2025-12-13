@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch, ref } from 'vue'  // ✅ Added ref for skeleton state
+import { computed, onMounted, watch, ref, nextTick } from 'vue'  // ✅ Added ref for skeleton state, nextTick for reactivity timing
 import { onPullDownRefresh, onShow, onHide } from '@dcloudio/uni-app'
 import { useI18n } from 'vue-i18n'
 import PetSelectorBar from '@/components/profile/PetSelectorBar.vue'
@@ -280,6 +280,9 @@ onMounted(() => {
 
             await healthStore.ensureDataLoaded(selectedPetId.value)
 
+            // ✅ Wait for Vue reactivity to settle before transitioning state
+            await nextTick()
+
             const hasPinnedData = rawPinnedMetrics.value.length > 0
             console.log('[DEBUG] hasPinnedData:', hasPinnedData, 'rawPinnedMetrics:', rawPinnedMetrics.value.length)
             pinnedState.loadSuccess({ hasData: hasPinnedData })
@@ -295,6 +298,9 @@ onMounted(() => {
 
                 try {
                     await loadSummaryData(selectedPetId.value)
+
+                    // ✅ Wait for Vue reactivity to settle
+                    await nextTick()
 
                     const hasTrendsData = trends.value.length > 0
                     console.log('[DEBUG] hasTrendsData:', hasTrendsData, 'trends:', trends.value.length)

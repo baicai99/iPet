@@ -1,7 +1,7 @@
 <template>
     <view class="app-section-state">
-        <!-- ✅ Skeleton State -->
-        <view v-if="showSkeleton" class="skeleton-container"
+        <!-- ✅ Skeleton State (v-show for DOM stability) -->
+        <view v-show="showSkeleton" class="skeleton-container"
             :style="{ minHeight: skeletonHeight }">
             <slot name="skeleton">
                 <!-- 默认 Skeleton（3 卡片） -->
@@ -14,12 +14,12 @@
         </view>
 
         <!-- ✅ Data State (Ready or Showing Cache) -->
-        <view v-else-if="showData" class="data-container">
+        <view v-show="showData" class="data-container">
             <slot></slot>
         </view>
 
         <!-- ✅ Empty State -->
-        <view v-else-if="showEmpty" class="empty-container">
+        <view v-show="showEmpty" class="empty-container">
             <slot name="empty">
                 <!-- 默认 Empty -->
                 <view class="empty-state">
@@ -33,7 +33,7 @@
         </view>
 
         <!-- ✅ Error State -->
-        <view v-else-if="showError" class="error-container">
+        <view v-show="showError" class="error-container">
             <slot name="error">
                 <!-- 默认 Error -->
                 <view class="error-state">
@@ -193,6 +193,19 @@ function handleCTA() {
 <style lang="scss" scoped>
 .app-section-state {
     width: 100%;
+    position: relative; /* Stable positioning context */
+}
+
+/* ============================================================================
+   Smooth State Transitions (Anti-Collapse)
+   ============================================================================ */
+
+/* Add fade transitions to all state containers */
+.skeleton-container,
+.data-container,
+.empty-container,
+.error-container {
+    transition: opacity 0.2s ease-in-out;
 }
 
 /* ============================================================================
