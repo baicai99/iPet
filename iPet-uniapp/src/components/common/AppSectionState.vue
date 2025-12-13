@@ -6,16 +6,10 @@
             <slot></slot>
         </view>
 
-        <!-- ✅ Skeleton Overlay：绝对定位盖在数据层上 -->
-        <view v-show="showSkeleton" class="skeleton-overlay">
-            <slot name="skeleton">
-                <!-- 默认 Skeleton（3 卡片） -->
-                <view class="default-skeleton-card" v-for="i in skeletonCount" :key="i">
-                    <view class="skeleton-title"></view>
-                    <view class="skeleton-content"></view>
-                    <view class="skeleton-value"></view>
-                </view>
-            </slot>
+        <!-- ✅ Loading Overlay：简洁的加载状态 -->
+        <view v-show="showLoading" class="loading-overlay">
+            <u-loading-icon mode="circle" size="24" />
+            <text class="loading-text">加载中...</text>
         </view>
 
         <!-- ✅ Empty Overlay：绝对定位盖在数据层上 -->
@@ -82,22 +76,14 @@ export interface AppSectionStateProps {
     /** Show retry button on error */
     showRetry?: boolean
 
-    /** Skeleton height (避免 CLS) - 已废弃，由 minHeight 统一控制 */
-    skeletonHeight?: string
-
-    /** Number of skeleton cards */
-    skeletonCount?: number
-
-    /** ✅ NEW: Section 最小高度（锁定首屏稳定性） */
+    /** ✅ Section 最小高度（锁定首屏稳定性） */
     minHeight?: string
 }
 
 const props = withDefaults(defineProps<AppSectionStateProps>(), {
     emptyReason: 'no-data',
     showRetry: true,
-    skeletonHeight: '220rpx',  // 向后兼容
-    skeletonCount: 3,
-    minHeight: '708rpx'  // ✅ 默认 = skeleton 3卡高度 (220*3 + 24*2)
+    minHeight: '708rpx'  // ✅ 默认最小高度
 })
 
 // ============================================================================
@@ -113,21 +99,21 @@ const emit = defineEmits<{
 // Computed
 // ============================================================================
 
-/** ✅ Shell 最小高度（优先使用 minHeight，回退到 skeletonHeight） */
+/** ✅ Shell 最小高度 */
 const shellMinHeight = computed(() => {
     return props.minHeight
 })
 
-/** Should show skeleton screen */
-const showSkeleton = computed(() => {
-    const result = props.sectionState?.shouldShowSkeleton?.value || props.state === 'loading'
+/** Should show loading state */
+const showLoading = computed(() => {
+    const result = props.sectionState?.isLoading?.value || props.state === 'loading'
     return result
 })
 
 /** Should show data */
 const showData = computed(() => {
     const result = props.sectionState?.shouldShowData?.value || props.state === 'ready'
-    
+
     // ✅ DEBUG: 追踪 showData 变化
     if (import.meta.env.DEV) {
         console.log('[AppSectionState] showData:', {
@@ -137,7 +123,7 @@ const showData = computed(() => {
             propsState: props.state
         })
     }
-    
+
     return result
 })
 
@@ -217,7 +203,7 @@ function handleCTA() {
    核心原则：
    1. .app-section-state 是固定高度的壳（min-height 锁定）
    2. .data-container 始终存在，提供基准高度
-   3. 所有状态层（skeleton/empty/error）都是绝对定位的 overlay
+   3. 所有状态层（loading/empty/error）都是绝对定位的 overlay
    4. 状态切换只改变 z-index/opacity，不改变布局高度
    ============================================================================ */
 
@@ -234,15 +220,19 @@ function handleCTA() {
 
 .data-container {
     width: 100%;
-    min-height: inherit; /* 继承外壳的 min-height */
+    min-height: inherit;
+    /* 继承外壳的 min-height */
     opacity: 0;
-    transition: opacity 0.2s ease-in-out;  /* 首次显示时的过渡 */
-    
+    transition: opacity 0.2s ease-in-out;
+    /* 首次显示时的过渡 */
+
     /* ✅ 数据可见时才显示 */
     &.data-visible {
         opacity: 1;
-        z-index: 1; /* 确保在最上层 */
-        transition: none;  /* ✅ BUG FIX: 禁用 transition,防止 Wave 2/3 触发响应式更新时闪烁 */
+        z-index: 1;
+        /* 确保在最上层 */
+        transition: none;
+        /* ✅ BUG FIX: 禁用 transition,防止 Wave 2/3 触发响应式更新时闪烁 */
     }
 }
 
@@ -250,7 +240,7 @@ function handleCTA() {
    Overlay Layers (Absolute Positioned - No Layout Impact)
    ============================================================================ */
 
-.skeleton-overlay,
+.loading-overlay,
 .empty-overlay,
 .error-overlay {
     position: absolute;
@@ -258,74 +248,41 @@ function handleCTA() {
     left: 0;
     right: 0;
     width: 100%;
-    z-index: 10; /* 盖在数据层上 */
+    z-index: 10;
+    /* 盖在数据层上 */
     background-color: transparent;
     transition: opacity 0.2s ease-in-out;
 }
 
 /* ============================================================================
-   Skeleton Overlay
+   Loading Overlay
    ============================================================================ */
 
-.skeleton-overlay {
+.loading-overlay {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
-}
-
-.default-skeleton-card {
-    background-color: white;
-    border-radius: 30rpx;
-    padding: 30rpx;
-    height: 220rpx; /* ✅ 锁定高度 */
-    display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 16rpx;
+    min-height: inherit;
+    background-color: rgba(255, 255, 255, 0.95);
 }
 
-.skeleton-title {
-    width: 120rpx;
-    height: 28rpx;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-    border-radius: 8rpx;
+.loading-text {
+    font-size: 28rpx;
+    color: #8e8e93;
 }
 
-.skeleton-content {
-    flex: 1;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-    border-radius: 12rpx;
-}
-
-.skeleton-value {
-    width: 80rpx;
-    height: 32rpx;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-    border-radius: 8rpx;
-}
-
-@keyframes skeleton-loading {
-    0% {
-        background-position: 200% 0;
-    }
-
-    100% {
-        background-position: -200% 0;
-    }
-}
 
 /* ============================================================================
    Empty Overlay
    ============================================================================ */
 
 .empty-overlay {
-    background-color: rgba(255, 255, 255, 0.98); /* 半透明背景 */
-    backdrop-filter: blur(4px); /* 模糊背后内容 */
+    background-color: rgba(255, 255, 255, 0.98);
+    /* 半透明背景 */
+    backdrop-filter: blur(4px);
+    /* 模糊背后内容 */
 }
 
 .empty-state {
@@ -336,7 +293,8 @@ function handleCTA() {
     padding: 80rpx 32rpx;
     background-color: white;
     border-radius: 30rpx;
-    min-height: 400rpx; /* 确保空态有足够高度 */
+    min-height: 400rpx;
+    /* 确保空态有足够高度 */
 }
 
 .empty-title {

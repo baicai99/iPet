@@ -1,111 +1,99 @@
 <template>
-    <!-- Only render when loading or has enough data -->
-    <view v-if="loading || hasEnoughData" class="trend-card" :class="{ 'trend-card--dark': isDark }"
-        @click="handleCardClick">
-        <!-- Loading State -->
-        <view v-if="loading" class="loading-state">
-            <view class="skeleton header-skeleton"></view>
-            <view class="skeleton title-skeleton"></view>
-            <view class="skeleton chart-skeleton"></view>
+    <!-- Only render when has enough data -->
+    <view v-if="hasEnoughData" class="trend-card" :class="{ 'trend-card--dark': isDark }" @click="handleCardClick">
+        <!-- Header -->
+        <view class="header">
+            <view class="header-left">
+                <view class="icon-wrapper" :style="{ backgroundColor: themeBg, color: colors.primary }">
+                    <svg class="icon" aria-hidden="true" style="font-size: 18px">
+                        <use :xlink:href="'#' + icon"></use>
+                    </svg>
+                </view>
+                <text class="title">{{ title }}</text>
+            </view>
+            <view class="header-right">
+                <u-icon name="arrow-right" size="18" :color="colors.textMuted"></u-icon>
+            </view>
         </view>
 
-        <!-- Normal Content -->
-        <template v-else>
-            <!-- Header -->
-            <view class="header">
-                <view class="header-left">
-                    <view class="icon-wrapper" :style="{ backgroundColor: themeBg, color: colors.primary }">
-                        <svg class="icon" aria-hidden="true" style="font-size: 18px">
-                            <use :xlink:href="'#' + icon"></use>
-                        </svg>
+        <!-- Main Title (Smart Copywriting) -->
+        <text class="main-title">{{ copywriting }}</text>
+
+        <!-- Chart Area -->
+        <view class="chart-container">
+            <!-- Bars Container -->
+            <view class="bars-wrapper">
+                <!-- Left Side (Previous Period) -->
+                <view class="bars-section bars-left" :style="{ width: leftSectionWidth }">
+                    <view v-for="(val, index) in previousValues" :key="'left-' + index" class="bar-slot"
+                        :style="{ width: leftSlotWidth }">
+                        <view class="bar" :style="{ height: getBarHeight(val) }"></view>
                     </view>
-                    <text class="title">{{ title }}</text>
                 </view>
-                <view class="header-right">
-                    <u-icon name="arrow-right" size="18" :color="colors.textMuted"></u-icon>
+
+                <!-- Right Side (Recent Period) -->
+                <view class="bars-section bars-right" :style="{ width: rightSectionWidth }">
+                    <view v-for="(val, index) in recentValues" :key="'right-' + index" class="bar-slot"
+                        :style="{ width: rightSlotWidth }">
+                        <view class="bar bar-highlight" :style="{ height: getBarHeight(val) }"></view>
+                    </view>
                 </view>
             </view>
 
-            <!-- Main Title (Smart Copywriting) -->
-            <text class="main-title">{{ copywriting }}</text>
-
-            <!-- Chart Area -->
-            <view class="chart-container">
-                <!-- Bars Container -->
-                <view class="bars-wrapper">
-                    <!-- Left Side (Previous Period) -->
-                    <view class="bars-section bars-left" :style="{ width: leftSectionWidth }">
-                        <view v-for="(val, index) in previousValues" :key="'left-' + index" class="bar-slot"
-                            :style="{ width: leftSlotWidth }">
-                            <view class="bar" :style="{ height: getBarHeight(val) }"></view>
-                        </view>
-                    </view>
-
-                    <!-- Right Side (Recent Period) -->
-                    <view class="bars-section bars-right" :style="{ width: rightSectionWidth }">
-                        <view v-for="(val, index) in recentValues" :key="'right-' + index" class="bar-slot"
-                            :style="{ width: rightSlotWidth }">
-                            <view class="bar bar-highlight" :style="{ height: getBarHeight(val) }"></view>
-                        </view>
-                    </view>
-                </view>
-
-                <!-- Average Lines Overlay -->
-                <view class="lines-overlay">
-                    <!-- Stable Mode: Single full-width orange line -->
-                    <template v-if="isStable">
-                        <view class="avg-line avg-line-full"
-                            :style="{ top: overallLineTop, borderColor: colors.primary }">
-                            <text class="avg-label avg-label-center" :style="{ color: colors.primary }">
-                                {{ formatNumber(overallAvg) }} <text class="avg-unit"
-                                    :style="{ color: colors.primary }">{{ unit }}</text>
-                            </text>
-                        </view>
-                    </template>
-
-                    <!-- Normal Mode: Two separate lines -->
-                    <template v-else>
-                        <!-- Left Average Line -->
-                        <view class="avg-line avg-line-left" :style="{
-                            top: previousLineTop,
-                            width: `calc(${leftSectionWidth} - 4rpx)`
-                        }">
-                            <text class="avg-label avg-label-left">
-                                {{ formatNumber(previousAvg) }} <text class="avg-unit">{{ unit }}</text>
-                            </text>
-                        </view>
-
-                        <!-- Right Average Line -->
-                        <view class="avg-line avg-line-right" :style="{
-                            top: recentLineTop,
-                            width: `calc(${rightSectionWidth} - 4rpx)`,
-                            right: 0,
-                            borderColor: colors.primary
-                        }">
-                            <text class="avg-label avg-label-right" :style="{ color: colors.primary }">
-                                {{ formatNumber(recentAvg) }} <text class="avg-unit"
-                                    :style="{ color: colors.primary }">{{ unit }}</text>
-                            </text>
-                        </view>
-                    </template>
-                </view>
-            </view>
-
-            <!-- Footer Labels -->
-            <view class="footer">
+            <!-- Average Lines Overlay -->
+            <view class="lines-overlay">
+                <!-- Stable Mode: Single full-width orange line -->
                 <template v-if="isStable">
-                    <text class="footer-label footer-label-full">{{ overallLabel }}</text>
+                    <view class="avg-line avg-line-full" :style="{ top: overallLineTop, borderColor: colors.primary }">
+                        <text class="avg-label avg-label-center" :style="{ color: colors.primary }">
+                            {{ formatNumber(overallAvg) }} <text class="avg-unit" :style="{ color: colors.primary }">{{
+                                unit }}</text>
+                        </text>
+                    </view>
                 </template>
+
+                <!-- Normal Mode: Two separate lines -->
                 <template v-else>
-                    <text class="footer-label" :style="{ width: leftSectionWidth }">
-                        {{ previousLabel }}
-                    </text>
-                    <text class="footer-label footer-label-right" :style="{ width: rightSectionWidth }">
-                        {{ recentLabel }}
-                    </text>
+                    <!-- Left Average Line -->
+                    <view class="avg-line avg-line-left" :style="{
+                        top: previousLineTop,
+                        width: `calc(${leftSectionWidth} - 4rpx)`
+                    }">
+                        <text class="avg-label avg-label-left">
+                            {{ formatNumber(previousAvg) }} <text class="avg-unit">{{ unit }}</text>
+                        </text>
+                    </view>
+
+                    <!-- Right Average Line -->
+                    <view class="avg-line avg-line-right" :style="{
+                        top: recentLineTop,
+                        width: `calc(${rightSectionWidth} - 4rpx)`,
+                        right: 0,
+                        borderColor: colors.primary
+                    }">
+                        <text class="avg-label avg-label-right" :style="{ color: colors.primary }">
+                            {{ formatNumber(recentAvg) }} <text class="avg-unit" :style="{ color: colors.primary }">{{
+                                unit }}</text>
+                        </text>
+                    </view>
                 </template>
             </view>
-        </template>
+        </view>
+
+        <!-- Footer Labels -->
+        <view class="footer">
+            <template v-if="isStable">
+                <text class="footer-label footer-label-full">{{ overallLabel }}</text>
+            </template>
+            <template v-else>
+                <text class="footer-label" :style="{ width: leftSectionWidth }">
+                    {{ previousLabel }}
+                </text>
+                <text class="footer-label footer-label-right" :style="{ width: rightSectionWidth }">
+                    {{ recentLabel }}
+                </text>
+            </template>
+        </view>
     </view>
 </template>
 
@@ -155,11 +143,6 @@ const props = defineProps({
     themeBg: {
         type: String,
         default: '#fff7ed'
-    },
-    /** Loading state */
-    loading: {
-        type: Boolean,
-        default: false
     },
     /** Minimum data points (default: 20) */
     minDataPoints: {
@@ -392,93 +375,6 @@ const handleCardClick = () => {
     }
 }
 
-// Loading State
-.loading-state {
-    display: flex;
-    flex-direction: column;
-    gap: 24rpx;
-}
-
-.skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 8rpx;
-}
-
-.header-skeleton {
-    height: 40rpx;
-    width: 120rpx;
-}
-
-.title-skeleton {
-    height: 48rpx;
-    width: 80%;
-}
-
-.chart-skeleton {
-    height: 260rpx;
-    width: 100%;
-    border-radius: 16rpx;
-}
-
-@keyframes shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-
-    100% {
-        background-position: 200% 0;
-    }
-}
-
-// Collecting State
-.collecting-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 64rpx 32rpx;
-    gap: 16rpx;
-}
-
-.collecting-icon {
-    margin-bottom: 16rpx;
-}
-
-.collecting-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #1e293b;
-}
-
-.collecting-hint {
-    font-size: 24rpx;
-    color: #8e8e93;
-}
-
-.collecting-metric-name {
-    font-size: 28rpx;
-    font-weight: 600;
-    margin-bottom: 8rpx;
-}
-
-.collecting-progress {
-    width: 200rpx;
-    height: 8rpx;
-    background-color: #e5e5ea;
-    border-radius: 4rpx;
-    overflow: hidden;
-    margin-top: 16rpx;
-}
-
-.collecting-progress-bar {
-    height: 100%;
-    background-color: #ff453a;
-    border-radius: 4rpx;
-    transition: width 0.3s ease;
-}
-
 // Header
 .header {
     display: flex;
@@ -506,7 +402,8 @@ const handleCardClick = () => {
     font-size: 34rpx;
     font-weight: 700;
     letter-spacing: -0.5rpx;
-    color: #334155; /* slate-700 */
+    color: #334155;
+    /* slate-700 */
 }
 
 .view-mode-badge {

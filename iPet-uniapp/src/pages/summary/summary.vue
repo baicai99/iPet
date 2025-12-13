@@ -128,17 +128,14 @@ const articlesState = useSectionState() // 文章独立状态
 // 🐛 DEBUG: Watch state transitions
 watch(() => pinnedState.state.value, (newState) => {
     console.log('[DEBUG] pinnedState changed:', newState,
-        'shouldShowSkeleton:', pinnedState.shouldShowSkeleton.value,
         'shouldShowData:', pinnedState.shouldShowData.value)
 })
 watch(() => trendsState.state.value, (newState) => {
     console.log('[DEBUG] trendsState changed:', newState,
-        'shouldShowSkeleton:', trendsState.shouldShowSkeleton.value,
         'shouldShowData:', trendsState.shouldShowData.value)
 })
 watch(() => articlesState.state.value, (newState) => {
     console.log('[DEBUG] articlesState changed:', newState,
-        'shouldShowSkeleton:', articlesState.shouldShowSkeleton.value,
         'shouldShowData:', articlesState.shouldShowData.value)
 })
 
@@ -554,55 +551,6 @@ const goViewArticles = () => {
 .empty-trend-text {
     font-size: 28rpx;
     color: #8e8e93;
-}
-
-/* ✅ Skeleton Card Styles */
-.skeleton-card {
-    background-color: white;
-    border-radius: 30rpx;
-    padding: 30rpx;
-    margin-bottom: 24rpx;
-    height: 220rpx;
-    /* 锁定高度，避免CLS */
-}
-
-.skeleton-title {
-    width: 120rpx;
-    height: 28rpx;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-    border-radius: 8rpx;
-    margin-bottom: 20rpx;
-}
-
-.skeleton-chart {
-    width: 100%;
-    height: 100rpx;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-    border-radius: 12rpx;
-    margin-bottom: 16rpx;
-}
-
-.skeleton-value {
-    width: 80rpx;
-    height: 32rpx;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s ease-in-out infinite;
-    border-radius: 8rpx;
-}
-
-@keyframes skeleton-loading {
-    0% {
-        background-position: 200% 0;
-    }
-
-    100% {
-        background-position: -200% 0;
-    }
 }
 
 /* ✅ Lightweight Refresh Indicator */

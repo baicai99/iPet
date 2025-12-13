@@ -74,11 +74,6 @@ export function useSectionState(initialState: SectionState = 'unknown') {
     /** 是否错误 */
     const isError = computed(() => state.value === 'error')
 
-    /** 是否应该显示 skeleton（未加载或首次加载中） */
-    const shouldShowSkeleton = computed(() =>
-        state.value === 'loading' && !isShowingCache.value
-    )
-
     /** 是否应该显示数据（ready 或 showing_cache） */
     const shouldShowData = computed(() => {
         const result = state.value === 'ready' || state.value === 'showing_cache'
@@ -231,7 +226,6 @@ export function useSectionState(initialState: SectionState = 'unknown') {
         isError,
 
         // UI Helpers
-        shouldShowSkeleton,
         shouldShowData,
         shouldShowEmpty,
         shouldShowError,

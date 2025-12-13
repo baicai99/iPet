@@ -335,7 +335,7 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
             type: 'daily_bar',
             options: { goal: 45 }
         },
-        calculationMethod: 'sum'
+        calculationMethod: 'latest'
     },
     run_distance: {
         key: 'run_distance',
@@ -351,7 +351,7 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         visualization: {
             type: 'daily_bar'
         },
-        calculationMethod: 'sum'
+        calculationMethod: 'latest'
     },
     run_pace: {
         key: 'run_pace',
@@ -459,7 +459,7 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         visualization: {
             type: 'daily_bar'
         },
-        calculationMethod: 'sum'
+        calculationMethod: 'latest'
     },
     bathing: {
         key: 'bathing',
@@ -575,7 +575,7 @@ export const METRIC_METADATA: Record<MetricKey, MetricMetadata> = {
         visualization: {
             type: 'daily_bar'
         },
-        calculationMethod: 'sum'
+        calculationMethod: 'latest'
     },
     calcium: {
         key: 'calcium',

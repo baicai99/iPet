@@ -1,4 +1,90 @@
-## 0.0.4 (2025-12-11)
+## 0.0.4 (2025-12-14)
+
+### Added
+- [x] 新增 `AppSectionState.vue` 组件，采用叠加层架构防止累积布局偏移 (CLS)
+  - 支持 `minHeight` 属性确保骨架屏到数据的平滑过渡
+  - 使用 `v-show` 替代 `v-if` 避免 DOM 销毁
+  - 内置 overlay 架构实现无缝状态切换
+- [x] 新增 `TrendNoChangeCard.vue` 趋势无变化卡片，用于稳定的趋势展示
+- [x] 新增 `useSectionState.ts` composable，统一管理区块状态 (loading/ready/empty/error)
+- [x] 新增健康数据新架构，独立的实体存储、查询存储和事件总线
+  - `entityStore.ts` - 管理原始健康数据实体
+  - `queryStore.ts` - 管理派生数据和查询缓存
+  - `eventBus.ts` - 处理数据变更事件
+- [x] 新增 5 阶段纯函数数据处理管线
+  - Stage 1: Data Loading
+  - Stage 2: Data Filtering
+  - Stage 3: Data Aggregation
+  - Stage 4: Chart Model Building
+  - Stage 5: Chart Options Generation
+- [x] 新增统一的图表模型构建器 (`chartModelBuilder.ts`)
+  - 坐标轴生成工具
+  - 数据点对齐算法
+  - 统计计算功能
+- [x] 新增元数据驱动的健康指标处理系统
+  - 支持动态图表选项生成
+  - 支持数据聚合配置
+- [x] 新增风险网格可视化功能
+  - 新的趋势图表类型
+  - 语义标签处理
+  - 更新 Mock 数据生成
+- [x] 新增状态网格图表组件，整合状态和状态网格图表为单一通用组件
+- [x] 新增便便状态详细配置和状态网格图表组件重构
+- [x] 新增文章推荐系统
+  - 新增文章数据类型定义
+  - 增强文章卡片组件
+  - 指标详情页集成推荐文章
+- [x] 新增 V2 指标系列数据聚合
+  - 使用新的 composables
+  - 智能缓存机制
+  - Summary 自动刷新
+- [x] 新增健康指标时间范围配置
+- [x] 新增 Vitest 配置和单元测试
+  - 时间工具函数测试
+  - 增量聚合器测试
+- [x] 新增 Mock 健康记录数据生成系统 (CRUD 操作)
+  - 扩展指标类型支持
+  - 混沌注入功能
+
+### Changed
+- [x] 优化 Shell-first 加载策略，实现骨架屏优先渲染
+- [x] 改进 UI 状态转换和响应式时机
+  - 使用 `v-show` 提升性能
+  - 使用 `nextTick` 优化渲染时序
+- [x] 移除 `PinnedMetricsWidget` 内部空状态处理逻辑
+- [x] 优化健康数据检索和处理
+  - 批量查询支持
+  - 服务端聚合
+  - 智能缓存策略
+  - 新性能工具函数
+- [x] 集中化趋势检测逻辑
+  - 实现请求取消机制
+  - 改进数据加载和生命周期管理
+- [x] 优化图表渲染和数据计算，统一使用 `null` 值处理缺失数据
+- [x] 整合图表渲染逻辑到 `chartCore.ts`
+  - 删除环形图表组件
+  - 更新 `TrendCard` UI
+  - 增强 Mock 数据生成工具和类型
+- [x] 优先使用 `config.displayUnit` 作为指标显示单位
+- [x] 数值统计格式化为一位小数
+
+### Fixed
+- [x] 修复 Summary Snapshot Mock 契约验证问题，增强健康摘要 Mock 数据生成
+
+### Refactor
+- [x] 重构 `AppSectionState` 采用叠加层架构防止 CLS
+- [x] 重构趋势检测逻辑，集中管理
+- [x] 重构状态网格图表组件和工具函数
+
+### Removed
+- [x] 删除 `TimelineSection` 组件及其在指标详情页的使用
+
+### Test
+- [x] 新增 Vitest 单元测试覆盖时间工具和增量聚合器
+
+---
+
+## 0.0.3 (2025-12-11)
 
 ### Added
 - [x] 新增 `TrendCard.vue` 通用趋势卡片组件，支持显示健康指标的趋势变化
@@ -35,7 +121,7 @@
 
 ---
 
-## 0.0.3 (2025-12-10)
+## 0.0.2 (2025-12-10)
 
 ### Added
 - [x] 新增 `useSummaryData.ts` composable，封装 Summary 页面的趋势数据处理和加载逻辑
@@ -74,7 +160,7 @@
 
 ---
 
-## 0.0.2 (2025-12-06)
+## 0.0.1 (2025-12-06)
 
 ### Added
 - [x] 新增指标时间范围配置功能，支持为不同指标自定义 mini 图表显示天数和详情页 Tab 选项
