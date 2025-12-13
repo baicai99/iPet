@@ -505,11 +505,85 @@ export const deleteHealthRecordMock = (config: RequestConfig) => {
 }
 
 export const getHealthSummaryMock = (config: RequestConfig) => {
-    const rng = new SeededRandom('health_summary')
+    const params = (config.data || {}) as { petId?: string }
+    const petId = params.petId || pets[0]?.id || 'mock_pet_001'
+    const rng = new SeededRandom(`health_summary_${petId}`)
+
+    // Get all health records for comprehensive summary
+    const allRecords = getHealthRecordsFromStorage().filter(
+        record => String(record.petId) === String(petId) && !record.deleted
+    )
+
+    // Generate pinned metrics (default: weight, meal, water)
+    const pinnedMetricKeys = ['weight', 'meal', 'water', 'walk_duration']
+    const pinnedMetrics = pinnedMetricKeys.map(key => {
+        const metricRecords = allRecords
+            .filter(r => r.type === key)
+            .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+
+        const latestRecord = metricRecords[0] || null
+        const history = metricRecords.slice(0, 7) // Last 7 records
+
+        return {
+            key,
+            latestRecord,
+            history,
+            trend: rng.choice(['up', 'down', 'stable']),
+            trendValue: rng.float(-5, 5).toFixed(1)
+        }
+    })
+
+    // Generate trends (metrics with significant changes)
+    const trendMetricKeys = ['weight', 'meal']
+    const trends = trendMetricKeys.map(key => {
+        const metricRecords = allRecords
+            .filter(r => r.type === key)
+            .slice(0, 30) // Last 30 records
+
+        return {
+            key,
+            records: metricRecords
+        }
+    })
+
+    // Generate tasks (upcoming scheduled events)
+    const tasks = [
+        {
+            id: 'task_1',
+            type: 'deworming',
+            title: '体内驱虫',
+            dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'pending'
+        },
+        {
+            id: 'task_2',
+            type: 'bathing',
+            title: '洗澡美容',
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'pending'
+        }
+    ]
+
+    // Generate daily summaries (aggregated daily data)
+    const dailySummaries: Record<string, any> = {}
+    const today = new Date()
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today)
+        date.setDate(date.getDate() - i)
+        const dateKey = date.toISOString().split('T')[0]
+
+        dailySummaries[dateKey] = {
+            meal: rng.float(250, 350).toFixed(1),
+            water: rng.float(400, 600).toFixed(1),
+            weight: rng.float(8, 12).toFixed(1)
+        }
+    }
+
     return {
-        avgWeight: rng.float(5, 15).toFixed(1),
-        totalWalk: rng.int(100, 500),
-        status: 'healthy'
+        tasks,
+        pinnedMetrics,
+        trends,
+        dailySummaries
     }
 }
 

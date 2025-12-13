@@ -376,31 +376,36 @@ export const useHealthStore = defineStore('health', () => {
         }
     }
 
-    // =========================================================================
     // Actions
     // =========================================================================
 
     /**
-     * 🚀 统一数据加载入口（去重 + 缓存 + SWR）
-     * 
-     * 替代原先的 fetchHealthRecords + refreshSummary 双重调用
-     * 
-     * 策略：
-     * 1. 去重：检查 lastUpdated 和 petId，避免重复请求
-     * 2. 缓存：如果有数据且 petId 未变，立即返回
-     * 3. SWR：数据较旧时（>1分钟），后台刷新
-     * 
-     * @param petId 宠物 ID
-     * @param options 配置选项
-     * @returns Promise<void>
-     */
+ * 🚀 统一数据加载入口（去重 + 缓存 + SWR）
+ * 
+ * 替代原先的 fetchHealthRecords + refreshSummary 双重调用
+ * 
+ * 🔴 RED LINE 规则：
+ * 1. 必须返回 Promise（不能是 void）
+ * 2. 成功时 resolve 稳定的 snapshot
+ * 3. 失败时 reject（不吞异常）
+ * 4. 内部不能有未 await 的异步分支
+ * 
+ * 策略：
+ * 1. 去重：检查 lastUpdated 和 petId，避免重复请求
+ * 2. 缓存：如果有数据且 petId 未变，立即返回
+ * 3. SWR：数据较旧时（>1分钟），后台刷新
+ * 
+ * @param petId 宠物 ID
+ * @param options 配置选项
+ * @returns Promise<DataSnapshot> 返回加载后的数据快照
+ */
     async function ensureDataLoaded(
         petId: string,
         options: {
             force?: boolean      // 强制刷新（忽略缓存）
             staleTime?: number   // 数据过期时间（ms），默认 60000 (1分钟)
         } = {}
-    ): Promise<void> {
+    ): Promise<DataSnapshot> {
         const { force = false, staleTime = 60 * 1000 } = options
 
         // 当前已加载的 petId（从第一条记录推断）
@@ -423,7 +428,8 @@ export const useHealthStore = defineStore('health', () => {
                 refreshTrendDetection()
             }
 
-            return
+            // ✅ 返回稳定的 snapshot
+            return createDataSnapshot(petId)
         }
 
         // ⚠️ 缓存未命中或数据过期
@@ -435,6 +441,13 @@ export const useHealthStore = defineStore('health', () => {
             try {
                 await fetchHealthRecords(petId)
                 await refreshSummary(petId)
+
+                // ✅ 返回稳定的 snapshot
+                return createDataSnapshot(petId)
+            } catch (error) {
+                // ✅ 失败时 reject（不吞异常）
+                console.error('[ensureDataLoaded] Failed to load data:', error)
+                throw error
             } finally {
                 loading.value = false
             }
@@ -442,13 +455,24 @@ export const useHealthStore = defineStore('health', () => {
             // 场景2: 数据过期但有缓存 → SWR（后台刷新，不显示 loading）
             console.log('[ensureDataLoaded] Data stale, background refresh...')
 
-            // 不阻塞，后台刷新
-            fetchHealthRecords(petId).then(() => {
-                return refreshSummary(petId)
-            }).catch(err => {
+            // 🔥 RED LINE 修复：不能有未 await 的异步分支
+            // 改前：fetchHealthRecords(petId).then(...).catch(...)  ← ❌ 未 await
+            // 改后：await 完整执行                                  ← ✅ 正确
+            try {
+                await fetchHealthRecords(petId)
+                await refreshSummary(petId)
+
+                console.log('[ensureDataLoaded] ✅ Background refresh completed')
+
+                // ✅ 返回更新后的 snapshot
+                return createDataSnapshot(petId)
+            } catch (err) {
                 console.warn('[ensureDataLoaded] Background refresh failed:', err)
-                // 静默失败，继续使用缓存数据
-            })
+
+                // ⚠️ 后台刷新失败，但仍返回缓存数据（不抛出错误）
+                // 这是 SWR 的容错策略
+                return createDataSnapshot(petId)
+            }
         } else {
             // 场景3: 首次加载且无数据 → 全量加载
             console.log('[ensureDataLoaded] Initial load, fetching...')
@@ -457,12 +481,49 @@ export const useHealthStore = defineStore('health', () => {
             try {
                 await fetchHealthRecords(petId)
                 await refreshSummary(petId)
+
+                // ✅ 返回稳定的 snapshot
+                return createDataSnapshot(petId)
+            } catch (error) {
+                // ✅ 失败时 reject（不吞异常）
+                console.error('[ensureDataLoaded] Initial load failed:', error)
+                throw error
             } finally {
                 loading.value = false
             }
         }
     }
 
+    /**
+     * 🔧 创建当前数据的稳定快照
+     * 
+     * @param petId 宠物 ID
+     * @returns 数据快照
+     */
+    function createDataSnapshot(petId: string): DataSnapshot {
+        return {
+            petId,
+            tasks: tasks.value,
+            pinnedMetrics: pinnedMetrics.value,
+            trends: trends.value,
+            dailySummaries: dailySummaries.value,
+            records: ids.value.map(id => entities.value[id]),
+            timestamp: Date.now(),
+            isStale: false
+        }
+    }
+
+    // 数据快照类型
+    interface DataSnapshot {
+        petId: string
+        tasks: any[]
+        pinnedMetrics: any[]
+        trends: any[]
+        dailySummaries: Record<string, any>
+        records: any[]
+        timestamp: number
+        isStale: boolean
+    }
     /**
      * 获取健康记录列表
      */

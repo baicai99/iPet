@@ -1,7 +1,7 @@
 <template>
     <view class="app-section-state">
         <!-- ✅ Skeleton State -->
-        <view v-if="sectionState?.shouldShowSkeleton || state === 'loading'" class="skeleton-container"
+        <view v-if="showSkeleton" class="skeleton-container"
             :style="{ minHeight: skeletonHeight }">
             <slot name="skeleton">
                 <!-- 默认 Skeleton（3 卡片） -->
@@ -14,12 +14,12 @@
         </view>
 
         <!-- ✅ Data State (Ready or Showing Cache) -->
-        <view v-else-if="sectionState?.shouldShowData || state === 'ready'" class="data-container">
+        <view v-else-if="showData" class="data-container">
             <slot></slot>
         </view>
 
         <!-- ✅ Empty State -->
-        <view v-else-if="sectionState?.shouldShowEmpty || state === 'empty'" class="empty-container">
+        <view v-else-if="showEmpty" class="empty-container">
             <slot name="empty">
                 <!-- 默认 Empty -->
                 <view class="empty-state">
@@ -33,7 +33,7 @@
         </view>
 
         <!-- ✅ Error State -->
-        <view v-else-if="sectionState?.shouldShowError || state === 'error'" class="error-container">
+        <view v-else-if="showError" class="error-container">
             <slot name="error">
                 <!-- 默认 Error -->
                 <view class="error-state">
@@ -108,6 +108,30 @@ const emit = defineEmits<{
 // ============================================================================
 // Computed
 // ============================================================================
+
+/** Should show skeleton screen */
+const showSkeleton = computed(() => {
+    const result = props.sectionState?.shouldShowSkeleton?.value || props.state === 'loading'
+    return result
+})
+
+/** Should show data */
+const showData = computed(() => {
+    const result = props.sectionState?.shouldShowData?.value || props.state === 'ready'
+    return result
+})
+
+/** Should show empty state */
+const showEmpty = computed(() => {
+    const result = props.sectionState?.shouldShowEmpty?.value || props.state === 'empty'
+    return result
+})
+
+/** Should show error state */
+const showError = computed(() => {
+    const result = props.sectionState?.shouldShowError?.value || props.state === 'error'
+    return result
+})
 
 /** Empty state configuration */
 const emptyConfig = computed(() => {

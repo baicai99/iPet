@@ -118,6 +118,23 @@ const pinnedState = useSectionState()   // 置顶指标独立状态
 const trendsState = useSectionState()   // 趋势独立状态
 const articlesState = useSectionState() // 文章独立状态
 
+// 🐛 DEBUG: Watch state transitions
+watch(() => pinnedState.state.value, (newState) => {
+    console.log('[DEBUG] pinnedState changed:', newState, 
+        'shouldShowSkeleton:', pinnedState.shouldShowSkeleton.value,
+        'shouldShowData:', pinnedState.shouldShowData.value)
+})
+watch(() => trendsState.state.value, (newState) => {
+    console.log('[DEBUG] trendsState changed:', newState,
+        'shouldShowSkeleton:', trendsState.shouldShowSkeleton.value,
+        'shouldShowData:', trendsState.shouldShowData.value)
+})
+watch(() => articlesState.state.value, (newState) => {
+    console.log('[DEBUG] articlesState changed:', newState,
+        'shouldShowSkeleton:', articlesState.shouldShowSkeleton.value,
+        'shouldShowData:', articlesState.shouldShowData.value)
+})
+
 // ✅ 保留轻量刷新态（所有 section 共用）
 const isBackgroundRefreshing = ref(false)
 
@@ -259,11 +276,14 @@ onMounted(() => {
             // ✅ Wave 1: 置顶指标（最高优先级，立即加载）
             // ============================================================================
             console.log('[Summary] 🌊 Wave 1: Loading pinned metrics (immediate)')
+            console.log('[DEBUG] pinnedState before Wave 1:', pinnedState.state.value)
 
             await healthStore.ensureDataLoaded(selectedPetId.value)
 
             const hasPinnedData = rawPinnedMetrics.value.length > 0
+            console.log('[DEBUG] hasPinnedData:', hasPinnedData, 'rawPinnedMetrics:', rawPinnedMetrics.value.length)
             pinnedState.loadSuccess({ hasData: hasPinnedData })
+            console.log('[DEBUG] pinnedState after loadSuccess:', pinnedState.state.value)
             console.log('[Summary] ✅ Wave 1 complete: Pinned metrics ready')
 
             // ============================================================================
@@ -271,12 +291,15 @@ onMounted(() => {
             // ============================================================================
             setTimeout(async () => {
                 console.log('[Summary] 🌊 Wave 2: Loading trends (delayed 100ms)')
+                console.log('[DEBUG] trendsState before Wave 2:', trendsState.state.value)
 
                 try {
                     await loadSummaryData(selectedPetId.value)
 
                     const hasTrendsData = trends.value.length > 0
+                    console.log('[DEBUG] hasTrendsData:', hasTrendsData, 'trends:', trends.value.length)
                     trendsState.loadSuccess({ hasData: hasTrendsData })
+                    console.log('[DEBUG] trendsState after loadSuccess:', trendsState.state.value)
                     console.log('[Summary] ✅ Wave 2 complete: Trends ready')
                 } catch (error) {
                     console.warn('[Summary] Wave 2 failed:', error)
@@ -289,10 +312,13 @@ onMounted(() => {
             // ============================================================================
             setTimeout(() => {
                 console.log('[Summary] 🌊 Wave 3: Loading articles (delayed 500ms)')
+                console.log('[DEBUG] articlesState before Wave 3:', articlesState.state.value)
 
                 try {
                     const hasArticlesData = articleStore.getLatestArticles(3).length > 0
+                    console.log('[DEBUG] hasArticlesData:', hasArticlesData, 'articles:', articleStore.getLatestArticles(3).length)
                     articlesState.loadSuccess({ hasData: hasArticlesData })
+                    console.log('[DEBUG] articlesState after loadSuccess:', articlesState.state.value)
                     console.log('[Summary] ✅ Wave 3 complete: Articles ready')
                 } catch (error) {
                     console.warn('[Summary] Wave 3 failed:', error)
