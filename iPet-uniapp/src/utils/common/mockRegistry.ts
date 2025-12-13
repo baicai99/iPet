@@ -15,7 +15,8 @@ import {
     createHealthRecordMock,
     updateHealthRecordMock,
     deleteHealthRecordMock,
-    getHealthSummaryMock
+    getHealthSummaryMock,
+    getHealthSeriesMock  // ✅ NEW: Backend aggregation API
 } from '../../../mock/handlers/metricHandlers'
 import { getPetsMock, createPetMock, updatePetMock, deletePetMock } from '../../../mock/handlers/petHandlers'
 import { sendCodeMock, registerMock, loginMock, refreshTokenMock } from '../../../mock/handlers/authHandlers'
@@ -67,6 +68,7 @@ const mockRoutes: MockRoute[] = [
     { pattern: createRouteRegex('/health/:id'), method: 'PATCH', handler: adaptHandler(updateHealthRecordMock) },
     { pattern: createRouteRegex('/health/:id'), method: 'DELETE', handler: adaptHandler(deleteHealthRecordMock) },
     { pattern: createRouteRegex('/health/summary'), method: 'GET', handler: adaptHandler(getHealthSummaryMock) },
+    { pattern: createRouteRegex('/health/series'), method: 'GET', handler: adaptHandler(getHealthSeriesMock) },  // ✅ NEW
 
     // Metrics (legacy/chart endpoints)
     { pattern: createRouteRegex('/metrics/:id/history'), method: 'GET', handler: adaptHandler(getMetricHistoryMock) },

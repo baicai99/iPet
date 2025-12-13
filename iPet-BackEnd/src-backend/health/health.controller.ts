@@ -55,6 +55,41 @@ export class HealthController {
         return this.healthService.getSummary(userId, petId);
     }
 
+    /**
+     * ✅ NEW: Get pre-aggregated metric series
+     * 
+     * Query params:
+     * - petId: Pet ID (required)
+     * - metricKey: Metric type (required)
+     * - range: Time range (day|week|month|six_month|year)
+     * - bucket: Aggregation granularity (none|day|week|month)
+     * 
+     * Performance: Server-side aggregation eliminates client-side main thread blocking
+     */
+    @Get('series')
+    getMetricSeries(
+        @Req() req: AuthenticatedRequest,
+        @Query('petId') petId: string,
+        @Query('metricKey') metricKey: string,
+        @Query('range') range?: string,
+        @Query('bucket') bucket?: string
+    ) {
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
+        if (!petId) throw new Error('Pet ID is required');
+        if (!metricKey) throw new Error('Metric key is required');
+
+        return this.healthService.getMetricSeries(
+            userId,
+            petId,
+            metricKey,
+            range || 'week',
+            bucket || 'none'
+        );
+    }
+
     @Get(':id')
     findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
         const uid = req.user?.uid;

@@ -68,7 +68,8 @@ export function useTrendDetection(
     return {
         changedMetricKeys: computed(() => healthStore.getChangedMetricKeys()),
         stableMetricKeys: computed(() => healthStore.getStableMetricKeys()),
-        trendAnalysis: computed(() => healthStore.trendAnalysis),
-        getAnalysis: (metricKey: string) => healthStore.trendAnalysis[metricKey] || null
+        // ✅ 改用 metricTrendMap 而非 trendAnalysis computed
+        trendAnalysis: computed(() => healthStore.metricTrendMap),
+        getAnalysis: (metricKey: string) => healthStore.metricTrendMap[metricKey] || null
     }
 }

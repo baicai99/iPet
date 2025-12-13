@@ -23,6 +23,7 @@ import { getMetricMetadata } from '@/data/metricMetadata'
 import { useChartOptions, getDateFormat } from '@/composables/useChartOptions'
 import { COLORS, CATEGORY_COLOR_MAP } from '@/config/theme'
 import { STRINGS } from '@/locale/zh-Hans'
+import { healthService } from '@/services/health.service'
 
 // ============================================================================
 // Types
@@ -305,6 +306,7 @@ export function useMetricDetail() {
     // Actions
     // -------------------------------------------------------------------------
 
+
     async function fetchData() {
         if (!metricKey.value) return
         loading.value = true
@@ -313,7 +315,7 @@ export function useMetricDetail() {
             let newChartData = { series: [] as any[], stats: {} }
 
             if (isCustomView.value) {
-                // 自定义视图：先确保数据已加载，再使用历史记录
+                // ✅ Custom View: 保持客户端处理（数据量小，逻辑特殊）
                 const petId = petStore.selectedPetId
                 if (petId) {
                     await healthStore.fetchHealthRecords(petId)
@@ -328,23 +330,23 @@ export function useMetricDetail() {
                 switch (activeTab.value) {
                     case 'day':
                         cutoffTime = now.startOf('day').valueOf()
-                        aggregationBucket = 'none' // 显示所有数据点
+                        aggregationBucket = 'none'
                         break
                     case 'week':
                         cutoffTime = now.subtract(6, 'day').startOf('day').valueOf()
-                        aggregationBucket = 'none' // 显示所有数据点
+                        aggregationBucket = 'none'
                         break
                     case 'month':
                         cutoffTime = now.subtract(29, 'day').startOf('day').valueOf()
-                        aggregationBucket = 'day' // 聚合到每天
+                        aggregationBucket = 'day'
                         break
                     case 'six_month':
                         cutoffTime = now.subtract(6, 'month').startOf('day').valueOf()
-                        aggregationBucket = 'week' // 聚合到每周
+                        aggregationBucket = 'week'
                         break
                     case 'year':
                         cutoffTime = now.subtract(1, 'year').startOf('day').valueOf()
-                        aggregationBucket = 'month' // 聚合到每月
+                        aggregationBucket = 'month'
                         break
                     default:
                         cutoffTime = now.subtract(6, 'day').startOf('day').valueOf()
@@ -361,10 +363,9 @@ export function useMetricDetail() {
                 // 根据聚合粒度进行数据聚合
                 let aggregatedData: any[]
                 if (aggregationBucket === 'none') {
-                    // 不聚合，直接使用原始数据
                     aggregatedData = filteredHistory
                 } else {
-                    // 按时间桶聚合，取每个桶的最后一条记录（最新状态）
+                    // 简化的客户端聚合（Custom View 专用）
                     const buckets = new Map<string, HealthRecord>()
 
                     for (const record of filteredHistory) {
@@ -376,7 +377,6 @@ export function useMetricDetail() {
                                 bucketKey = recordTime.format('YYYY-MM-DD')
                                 break
                             case 'week':
-                                // 使用周一作为周的开始，格式为 YYYY-MM-DD（周一的日期）
                                 bucketKey = recordTime.startOf('week').format('YYYY-MM-DD')
                                 break
                             case 'month':
@@ -386,7 +386,6 @@ export function useMetricDetail() {
                                 bucketKey = recordTime.format('YYYY-MM-DD')
                         }
 
-                        // 保留最新的记录（覆盖旧的）
                         const existing = buckets.get(bucketKey)
                         const recordTs = record.updatedAt || new Date(record.date).getTime()
                         if (!existing || recordTs > (existing.updatedAt || new Date(existing.date).getTime())) {
@@ -407,36 +406,42 @@ export function useMetricDetail() {
                     stats: { avg: '--', min: '--', max: '--' }
                 }
             } else {
-                // 使用新的 V2 聚合管线（带缓存）
-                const rangeMap: Record<string, 'day' | 'calendarWeek' | 'calendarMonth'> = {
-                    day: 'day',
-                    week: 'day',
-                    month: 'day',
-                    six_month: 'calendarWeek',
-                    year: 'calendarMonth'
+                // ✅ OPTIMIZED: 使用后端聚合 API（消除主线程阻塞）
+                const petId = petStore.selectedPetId
+                if (!petId) {
+                    throw new Error('Pet ID not found')
                 }
-                const bucket = rangeMap[activeTab.value] || 'day'
 
-                const seriesResponse = healthStore.metricSeriesV2(
+                // 映射时间范围到聚合粒度
+                const bucketMap: Record<string, 'none' | 'day' | 'week' | 'month'> = {
+                    day: 'none',
+                    week: 'none',
+                    month: 'day',
+                    six_month: 'week',
+                    year: 'month'
+                }
+                const bucket = bucketMap[activeTab.value] || 'none'
+
+                // 调用后端预聚合 API
+                const response = await healthService.getMetricSeries(
+                    petId,
                     metricKey.value,
                     activeTab.value,
                     bucket
                 )
 
-                // 转换为现有 chartData 格式以保持兼容性
-                if (seriesResponse && seriesResponse.points) {
-                    newChartData = {
-                        series: seriesResponse.points.map(p => ({
-                            timestamp: p.ts,
-                            value: p.value,
-                            date: new Date(p.ts).toISOString()
-                        })),
-                        stats: seriesResponse.stats
+                // 转换为 chartData 格式
+                newChartData = {
+                    series: response.series.map(item => ({
+                        value: item.value,
+                        date: item.date,
+                        timestamp: item.timestamp
+                    })),
+                    stats: {
+                        avg: response.stats.avg ?? '--',
+                        min: response.stats.min ?? '--',
+                        max: response.stats.max ?? '--'
                     }
-                } else {
-                    // 回退到旧接口
-                    const res = healthStore.metricSeries(metricKey.value, activeTab.value)
-                    newChartData = res
                 }
             }
 

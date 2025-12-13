@@ -512,3 +512,127 @@ export const getHealthSummaryMock = (config: RequestConfig) => {
         status: 'healthy'
     }
 }
+
+/**
+ * ✅ NEW: Mock handler for /health/series API
+ * Matches backend aggregation endpoint format
+ */
+export const getHealthSeriesMock = (config: RequestConfig) => {
+    const params = (config.data || {}) as {
+        petId?: string
+        metricKey?: string
+        range?: string
+        bucket?: string
+    }
+
+    const metricKey = params.metricKey || 'weight'
+    const range = params.range || 'week'
+    const bucket = params.bucket || 'none'
+
+    console.log(`[Mock] Generating /health/series: ${metricKey}, ${range}, ${bucket}`)
+
+    // Determine number of data points based on range and bucket
+    const dataPoints: Record<string, Record<string, number>> = {
+        day: { none: 10 },
+        week: { none: 7 },
+        month: { day: 30, none: 50 },
+        six_month: { week: 26, none: 180 },
+        year: { month: 12, week: 52, none: 365 }
+    }
+
+    const points = dataPoints[range]?.[bucket] || 7
+
+    // Min/max values per metric
+    let min = 0, max = 100
+    switch (metricKey) {
+        case 'meal': min = 150; max = 400; break
+        case 'weight': min = 5; max = 40; break
+        case 'water': min = 200; max = 800; break
+        case 'walk_duration': min = 15; max = 90; break
+        case 'body_temp': min = 38; max = 39.5; break
+        default: min = 0; max = 100
+    }
+
+    // Generate deterministic data
+    const dateBucket = new Date().toISOString().slice(0, 10)
+    const rng = new SeededRandom(`series_${metricKey}_${range}_${bucket}_${dateBucket}`)
+
+    const latestVal = getConsistentLatestValue(metricKey, min, max)
+    const base = (min + max) / 2
+
+    // Generate series data
+    const now = Date.now()
+    const series = Array.from({ length: points }, (_, index) => {
+        // Calculate timestamp based on range and index
+        let timestamp: number
+        if (bucket === 'month') {
+            // Monthly buckets
+            const date = new Date()
+            date.setMonth(date.getMonth() - (points - 1 - index))
+            date.setDate(1)
+            date.setHours(12, 0, 0, 0)
+            timestamp = date.getTime()
+        } else if (bucket === 'week') {
+            // Weekly buckets
+            const daysAgo = (points - 1 - index) * 7
+            timestamp = now - daysAgo * 24 * 60 * 60 * 1000
+        } else if (bucket === 'day') {
+            // Daily buckets
+            const daysAgo = points - 1 - index
+            timestamp = now - daysAgo * 24 * 60 * 60 * 1000
+        } else {
+            // None/raw data
+            const daysAgo = points - 1 - index
+            timestamp = now - daysAgo * 24 * 60 * 60 * 1000
+        }
+
+        // Use latest value for the most recent point
+        let value: number
+        if (index === points - 1) {
+            value = latestVal
+        } else {
+            const trend = Math.sin(index / points * Math.PI) * (max - min) * 0.1
+            const randomFactor = rng.float(-0.5, 0.5)
+            value = base + trend + randomFactor * (max - min) * 0.1
+            value = Math.max(min, Math.min(max, value))
+        }
+
+        // Round based on metric type
+        if (metricKey === 'weight' || metricKey === 'body_temp') {
+            value = Number(value.toFixed(1))
+        } else {
+            value = Math.round(value)
+        }
+
+        return {
+            value,
+            date: new Date(timestamp).toISOString(),
+            timestamp
+        }
+    })
+
+    // Calculate stats
+    const values = series.map(s => s.value)
+    const stats = {
+        avg: values.length > 0 ? Number((values.reduce((sum, v) => sum + v, 0) / values.length).toFixed(1)) : null,
+        min: values.length > 0 ? Math.min(...values) : null,
+        max: values.length > 0 ? Math.max(...values) : null,
+        count: values.length
+    }
+
+    // Calculate cutoff date
+    const cutoffDate = new Date(series[0].timestamp).toISOString()
+
+    return {
+        series,
+        stats,
+        meta: {
+            metricKey,
+            range,
+            bucket,
+            cutoffDate,
+            recordCount: points,
+            aggregatedCount: points
+        }
+    }
+}

@@ -145,6 +145,9 @@ const getMetricBg = (key: string) => {
 // Lifecycle Hooks
 // ============================================================================
 
+// 标记是否已完成首次初始化
+let isInitialized = false
+
 const closeSplash = () => {
     // #ifdef APP-PLUS
     if (typeof plus !== 'undefined' && plus?.navigator) {
@@ -153,44 +156,45 @@ const closeSplash = () => {
     // #endif
 }
 
-onShow(() => {
-    // 启动自动刷新（T5.1：连续使用 > 10 分钟自动刷新）
-    startAutoRefresh()
-
-    // ✅ SINGLE ENTRY POINT: 只在 onShow 触发数据加载
-    if (appStore.isAppReady && selectedPetId.value) {
-        // 强制刷新宠物列表，解决登录后数据不显示的问题
-        petViewModel.refresh()
-
-        // 加载健康摘要数据
-        loadSummaryData(selectedPetId.value)
-    }
-})
-
-onHide(() => {
-    // 停止自动刷新
-    stopAutoRefresh()
-
-    // 取消待处理的请求（避免stale请求覆盖新数据）
-    cancelPendingRequests()
-})
-
+/**
+ * ✅ 单一初始化入口（onMounted ONLY）
+ * 
+ * 原则：
+ * - initData() 只在这里触发一次
+ * - 包含首次数据加载（使用 ensureDataLoaded，内置 SWR 缓存）
+ * - onShow 不再触发数据加载，只做轻量恢复
+ */
 onMounted(() => {
-    // ✅ ONLY SETUP: 不做数据获取，只做准备工作
-    const initData = () => {
+    const initData = async () => {
+        // 1. 水合宠物数据
         petViewModel.ensureHydrated()
-        // 加载静态文章数据
+
+        // 2. 加载静态文章数据
         articleStore.ensureLoaded()
-        // ❌ REMOVED: healthStore.initSummaryPage()
-        // 数据加载由 onShow 统一处理
+
+        // 3. 首次数据加载（使用 ensureDataLoaded，优先缓存）
+        if (selectedPetId.value) {
+            // ✅ 使用 healthStore.ensureDataLoaded 而非 loadSummaryData
+            // ensureDataLoaded 会优先返回缓存，后台刷新
+            await healthStore.ensureDataLoaded(selectedPetId.value)
+
+            // ✅ 加载 summary 特定数据（trends 等）
+            await loadSummaryData(selectedPetId.value)
+        }
+
+        // 4. 关闭启动屏
         closeSplash()
+
+        // 5. 标记已初始化
+        isInitialized = true
     }
 
+    // App Ready 检查（确保 store 已准备好）
     if (appStore.isAppReady) {
         initData()
     } else {
         const unwatch = watch(() => appStore.isAppReady, (ready) => {
-            if (ready) {
+            if (ready && !isInitialized) {
                 initData()
                 unwatch()
             }
@@ -204,6 +208,42 @@ onMounted(() => {
             refresh(selectedPetId.value)
         }
     })
+})
+
+/**
+ * ✅ 轻量恢复（onShow ONLY）
+ * 
+ * 原则：
+ * - 只做"恢复"操作，不做"初始化"
+ * - 启动定时器
+ * - 检查数据是否过期，必要时后台刷新（SWR）
+ * - 不阻塞 UI 主线程
+ */
+onShow(() => {
+    // 1. 启动自动刷新定时器
+    startAutoRefresh()
+
+    // 2. 如果未初始化，跳过（等待 onMounted 完成）
+    if (!isInitialized || !appStore.isAppReady || !selectedPetId.value) {
+        return
+    }
+
+    // 3. ✅ 轻量检查：数据是否过期（SWR 模式）
+    // ensureDataLoaded 内部会判断：
+    // - 数据新鲜 → 立即返回（0ms）
+    // - 数据过期 → 后台刷新（不阻塞）
+    healthStore.ensureDataLoaded(selectedPetId.value)
+})
+
+/**
+ * 页面隐藏时的清理
+ */
+onHide(() => {
+    // 停止自动刷新
+    stopAutoRefresh()
+
+    // 取消待处理的请求（避免stale请求覆盖新数据）
+    cancelPendingRequests()
 })
 
 // ============================================================================

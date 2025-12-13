@@ -355,6 +355,11 @@ export function useChartOptions(
         const validDataCount = alignedValues.filter(v => v !== null && v !== undefined).length
         const shouldShowSymbol = validDataCount === 1
 
+        // ✅ OPTIMIZED: 降采样策略
+        // 大数据量时启用 ECharts 降采样和渐进式渲染
+        const shouldEnableSampling = validDataCount > 50 && range === 'year'
+        const shouldEnableProgressive = validDataCount > 100
+
         // Series Configuration
         const seriesItem = {
             data: alignedValues,
@@ -364,6 +369,14 @@ export function useChartOptions(
             symbol: 'circle',
             symbolSize: validDataCount === 1 ? 10 : 6, // Larger dot for single point
             showSymbol: shouldShowSymbol, // Show symbols for sparse data
+
+            // ✅ 降采样配置 (大数据量优化)
+            sampling: shouldEnableSampling ? 'lttb' : undefined,  // Largest-Triangle-Three-Buckets 算法
+
+            // ✅ 渐进式渲染 (分块加载)
+            progressive: shouldEnableProgressive ? 500 : undefined,
+            progressiveThreshold: shouldEnableProgressive ? 1000 : undefined,
+
             itemStyle: {
                 color: theme.value.hex,
                 borderRadius: type === 'daily_bar' ? [4, 4, 0, 0] : 0

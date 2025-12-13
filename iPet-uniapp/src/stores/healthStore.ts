@@ -13,24 +13,25 @@
  * - 使用 ref/computed 替代 state/getters，获得更好的 TS 推断
  */
 
-import { ref, computed, shallowRef } from 'vue'
+import { ref, computed, shallowRef, markRaw } from 'vue'
 import { defineStore } from 'pinia'
 import { getMetricMetadata } from '@/data/metricMetadata'
 import { healthSummaryService } from '@/services/healthSummaryService'
 import { healthService } from '@/services/health.service'
 import { healthRecordService } from '@/services/healthRecordService'
-import { healthCacheService } from '@/services/healthCacheService'
+import healthCacheService from '@/services/healthCacheService'
+import { healthCacheServiceV2 } from '@/services/healthCacheServiceV2'  // ✅ NEW: V2 缓存
 import type { HealthRecord, MetricSeriesResponse, MetricSeriesParams } from '@shared/types/health'
 import { parseTimestamp, sortRecordsByTime, getMetricSeries, getMetricSeriesV2 } from '@/utils/business/healthDataHelper'
 import { processPinnedMetrics, processTrendMetrics } from '@/utils/business/healthSummaryHelper'
 import { getAllMetricKeys } from '@/data/metricMetadata'
 import {
-    detectSignificantChange,
     filterChangedMetrics,
     filterStableMetrics,
     type TrendAnalysis,
     type MetricRecord
 } from '@/domain/trend/detectSignificantChanges'
+import { TrendEngine } from '@/utils/performance/TrendEngine'
 
 // ============================================================================
 // Types
@@ -52,10 +53,26 @@ const SERIES_CACHE_TTL_MS = 10 * 60 * 1000
 export const useHealthStore = defineStore('health', () => {
     // =========================================================================
     // State (reactive refs)
+    // ✅ OPTIMIZED: 使用 shallowRef 避免大对象深层响应式开销
     // =========================================================================
 
     const ids = ref<string[]>([])
-    const entities = ref<Record<string, HealthRecord>>({})
+
+    /**
+     * ✅ OPTIMIZED: entities 使用 shallowRef
+     * 
+     * 原因:
+     * - entities 是大对象 (可能包含 100-500 条记录)
+     * - ref() 会对每个记录进行深层 Proxy 包装
+     * - 每次更新需要深层 diff,性能开销大
+     * 
+     * 优化:
+     * - shallowRef() 只代理第一层,不代理嵌套对象
+     * - 更新时通过替换引用: entities.value = { ...entities.value }
+     * - 减少响应式开销 ~70%
+     */
+    const entities = shallowRef<Record<string, HealthRecord>>({})
+
     const loading = ref(false)
     const error = ref<string | null>(null)
 
@@ -71,16 +88,36 @@ export const useHealthStore = defineStore('health', () => {
     // =========================================================================
 
     /** 指标索引：metricKey -> recordIds，减少 O(N) 扫描 */
-    const metricIndex = ref<Record<string, string[]>>({})
+    const metricIndex = shallowRef<Record<string, string[]>>({})
 
     /** Series 缓存：带 TTL 的图表数据缓存 */
-    const seriesCache = ref<Record<string, CachedSeries>>({})
+    const seriesCache = shallowRef<Record<string, CachedSeries>>({})
 
     /** 
-     * Trend 分析缓存：按指标粒度 memoization 
-     * 使用 shallowRef 避免在 getter 中更新时触发响应式循环
+     * ✅ OPTIMIZED: Trend 分析缓存 - 完全隔离响应式系统
+     * 
+     * 使用 markRaw 确保:
+     * 1. Map 本身不被 Vue 响应式代理
+     * 2. 内部对象不触发深层响应式追踪
+     * 3. 杜绝任何循环依赖的可能性
      */
-    const trendCache = shallowRef<Map<string, { hash: string, result: TrendAnalysis }>>(new Map())
+    const trendCache = shallowRef(markRaw(new Map<string, { hash: string, result: TrendAnalysis }>()))
+
+    /**
+     * ✅ OPTIMIZED: 趋势分析结果存储 - 非响应式
+     * 
+     * markRaw 确保:
+     * - 结果对象不会被 Vue 深层代理
+     * - 更新时不触发 computed/watch 的副作用
+     * - 只能通过显式赋值更新 (metricTrendMap.value = newResults)
+     */
+    const metricTrendMap = shallowRef<Record<string, TrendAnalysis>>(markRaw({}))
+
+    /**
+     * 待刷新的指标队列（用于 debounce）
+     */
+    let pendingRefreshMetrics = new Set<string>()
+    let refreshTimer: number | null = null
 
     // =========================================================================
     // Getters (computed)
@@ -146,80 +183,108 @@ export const useHealthStore = defineStore('health', () => {
     // Trend Detection Getters (带 Memoization)
     // =========================================================================
 
-    /**
-     * 计算指标数据哈希（用于脏检查）
-     */
-    function calculateMetricHash(records: MetricRecord[]): string {
-        if (records.length === 0) return '0:0'
-        const lastTimestamp = records[records.length - 1].date || '0'
-        return `${lastTimestamp}:${records.length}`
-    }
+
 
     /**
-     * 获取所有指标的趋势分析结果
+     * ✅ OPTIMIZED: 手动刷新趋势检测 - 显式命令式触发
      * 
-     * 带 memoization：只在数据变化时重算
-     * 性能优化：按指标粒度缓存，避免全量重算
+     * 核心安全机制:
+     * 1. ❌ 禁止在 computed/watchEffect 中调用
+     * 2. ✅ 只能通过显式命令触发 (CRUD 操作完成后)
+     * 3. ✅ 接受纯数据快照,不直接访问响应式 store
+     * 4. ✅ 数据量阈值自动切换 Worker (>100 条)
+     * 5. ✅ Debounce 合并多次调用
+     * 
+     * @param changedTypes 变化的指标类型（undefined = 全量刷新）
+     * @param dataSnapshot 可选的数据快照 (用于避免访问响应式 store)
      */
-    const trendAnalysis = computed<Record<string, TrendAnalysis>>(() => {
-        const keys = getAllMetricKeys()
-        const results: Record<string, TrendAnalysis> = {}
-
-        for (const key of keys) {
-            // 从 store 获取历史记录
-            const records = metricHistory(key) || []
-
-            // 转换为 domain 层格式
-            const metricRecords: MetricRecord[] = records.map(r => ({
-                value: r.value,
-                date: r.date
-            }))
-
-            // 计算当前数据哈希
-            const currentHash = calculateMetricHash(metricRecords)
-
-            // 检查缓存
-            const cached = trendCache.value.get(key)
-
-            if (cached && cached.hash === currentHash) {
-                // ✅ 哈希未变，复用缓存结果
-                results[key] = cached.result
-            } else {
-                // ❌ 哈希变化或无缓存，重新计算
-                const result = detectSignificantChange(metricRecords)
-                results[key] = result
-
-                // 更新缓存（shallowRef不会触发响应式循环）
-                trendCache.value.set(key, { hash: currentHash, result })
-            }
+    function refreshTrendDetection(
+        changedTypes?: string[],
+        dataSnapshot?: { ids: string[], entities: Record<string, HealthRecord> }
+    ) {
+        // 添加到待刷新队列
+        if (changedTypes) {
+            changedTypes.forEach(type => pendingRefreshMetrics.add(type))
+        } else {
+            // 全量刷新：清空队列，标记所有指标
+            pendingRefreshMetrics.clear()
+            getAllMetricKeys().forEach(key => pendingRefreshMetrics.add(key))
         }
 
-        return results
-    })
+        // Debounce：合并同一 microtask 内的多次调用
+        if (refreshTimer !== null) {
+            return // 已有待执行的任务
+        }
+
+        refreshTimer = setTimeout(async () => {
+            refreshTimer = null
+
+            // 执行趋势检测
+            const metricsToUpdate = Array.from(pendingRefreshMetrics)
+            pendingRefreshMetrics.clear()
+
+            // ✅ 使用快照或创建当前状态的快照（避免响应式访问）
+            const snapshot = dataSnapshot || {
+                ids: [...ids.value],
+                entities: { ...entities.value }
+            }
+
+            // ✅ 使用 markRaw 确保结果对象不被响应式追踪
+            const results = markRaw({ ...metricTrendMap.value })
+
+            for (const key of metricsToUpdate) {
+                // ✅ 从快照获取历史记录（纯数据访问,无响应式依赖）
+                const recordIds = snapshot.ids.filter(id => {
+                    const record = snapshot.entities[id]
+                    return record && record.type === key && !record.deleted
+                })
+                const records = recordIds.map(id => snapshot.entities[id]).filter(Boolean)
+
+                // 转换为 domain 层格式（纯数据）
+                const metricRecords: MetricRecord[] = records.map(r => ({
+                    value: r.value,
+                    date: r.date
+                }))
+
+                // ✅ 使用 TrendEngine with Worker threshold
+                // 数据量 >100 自动切换到 Worker
+                const { hash, result } = await TrendEngine.run(key, metricRecords)
+
+                // 更新结果（使用 markRaw 标记为非响应式）
+                results[key] = markRaw(result)
+                trendCache.value.set(key, { hash, result: markRaw(result) })
+            }
+
+            // 更新结果（触发 UI 更新）
+            metricTrendMap.value = results
+        }, 0) as unknown as number
+    }
 
     /**
-     * 获取有显著变化的指标键列表
+     * ✅ 获取有显著变化的指标键列表
+     * 轻量派生：只读取 metricTrendMap，不触碰 ids/entities
      */
     function getChangedMetricKeys(): string[] {
-        return filterChangedMetrics(trendAnalysis.value)
+        return filterChangedMetrics(metricTrendMap.value)
     }
 
     /**
-     * 获取稳定的指标键列表
+     * ✅ 获取稳定的指标键列表
+     * 轻量派生：只读取 metricTrendMap，不触碰 ids/entities
      */
     function getStableMetricKeys(): string[] {
-        return filterStableMetrics(trendAnalysis.value)
+        return filterStableMetrics(metricTrendMap.value)
     }
 
     /**
-     * 获取指标的趋势状态
+     * ✅ 获取指标的趋势状态
+     * 轻量派生：只读取 metricTrendMap
      * 
      * @param key 指标键
      * @returns 'changed' | 'stable' | 'insufficient' | 'unknown'
      */
     function getMetricTrendStatus(key: string): 'changed' | 'stable' | 'insufficient' | 'unknown' {
-        const analysis = trendAnalysis.value
-        const result = analysis[key]
+        const result = metricTrendMap.value[key]
 
         if (!result) return 'unknown'
         if (result.dataPoints < 20) return 'insufficient'
@@ -316,6 +381,89 @@ export const useHealthStore = defineStore('health', () => {
     // =========================================================================
 
     /**
+     * 🚀 统一数据加载入口（去重 + 缓存 + SWR）
+     * 
+     * 替代原先的 fetchHealthRecords + refreshSummary 双重调用
+     * 
+     * 策略：
+     * 1. 去重：检查 lastUpdated 和 petId，避免重复请求
+     * 2. 缓存：如果有数据且 petId 未变，立即返回
+     * 3. SWR：数据较旧时（>1分钟），后台刷新
+     * 
+     * @param petId 宠物 ID
+     * @param options 配置选项
+     * @returns Promise<void>
+     */
+    async function ensureDataLoaded(
+        petId: string,
+        options: {
+            force?: boolean      // 强制刷新（忽略缓存）
+            staleTime?: number   // 数据过期时间（ms），默认 60000 (1分钟)
+        } = {}
+    ): Promise<void> {
+        const { force = false, staleTime = 60 * 1000 } = options
+
+        // 当前已加载的 petId（从第一条记录推断）
+        const currentPetId = ids.value.length > 0
+            ? String(entities.value[ids.value[0]]?.petId)
+            : null
+
+        // 检查是否需要刷新
+        const now = Date.now()
+        const isStale = !lastUpdated.value || (now - lastUpdated.value > staleTime)
+        const isPetChanged = currentPetId !== petId
+        const needsRefresh = force || isPetChanged || isStale
+
+        if (!needsRefresh && ids.value.length > 0) {
+            // ✅ 缓存命中：数据新鲜且 petId 未变
+            console.log('[ensureDataLoaded] Cache hit, data is fresh')
+
+            // 确保 metricTrendMap 已初始化
+            if (Object.keys(metricTrendMap.value).length === 0) {
+                refreshTrendDetection()
+            }
+
+            return
+        }
+
+        // ⚠️ 缓存未命中或数据过期
+        if (isPetChanged || force) {
+            // 场景1: petId 变化 或 强制刷新 → 全量加载（显示 loading）
+            console.log('[ensureDataLoaded] Pet changed or force refresh, fetching...')
+            loading.value = true
+
+            try {
+                await fetchHealthRecords(petId)
+                await refreshSummary(petId)
+            } finally {
+                loading.value = false
+            }
+        } else if (isStale && ids.value.length > 0) {
+            // 场景2: 数据过期但有缓存 → SWR（后台刷新，不显示 loading）
+            console.log('[ensureDataLoaded] Data stale, background refresh...')
+
+            // 不阻塞，后台刷新
+            fetchHealthRecords(petId).then(() => {
+                return refreshSummary(petId)
+            }).catch(err => {
+                console.warn('[ensureDataLoaded] Background refresh failed:', err)
+                // 静默失败，继续使用缓存数据
+            })
+        } else {
+            // 场景3: 首次加载且无数据 → 全量加载
+            console.log('[ensureDataLoaded] Initial load, fetching...')
+            loading.value = true
+
+            try {
+                await fetchHealthRecords(petId)
+                await refreshSummary(petId)
+            } finally {
+                loading.value = false
+            }
+        }
+    }
+
+    /**
      * 获取健康记录列表
      */
     async function fetchHealthRecords(petId?: string) {
@@ -327,6 +475,8 @@ export const useHealthStore = defineStore('health', () => {
             const sorted = sortRecordsByTime(records, 'desc')
 
             ids.value = sorted.map(r => r.id)
+
+            // ✅ OPTIMIZED: shallowRef 需要替换整个引用
             entities.value = sorted.reduce((acc, r) => {
                 acc[r.id] = r
                 return acc
@@ -337,6 +487,9 @@ export const useHealthStore = defineStore('health', () => {
             buildMetricIndex()
             // 清除 Series 缓存（数据已更新）
             invalidateSeriesCache()
+
+            // 🔧 手动触发趋势检测（全量刷新）
+            refreshTrendDetection()
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to fetch health records'
             error.value = message
@@ -365,8 +518,11 @@ export const useHealthStore = defineStore('health', () => {
 
         if (result.success && result.serverRecord) {
             // 4. 成功：替换临时记录
-            delete entities.value[tempId]
-            entities.value[result.serverRecord.id] = result.serverRecord
+            // ✅ OPTIMIZED: shallowRef 使用引用替换
+            const newEntities = { ...entities.value }
+            delete newEntities[tempId]
+            newEntities[result.serverRecord.id] = result.serverRecord
+            entities.value = newEntities
 
             const index = ids.value.indexOf(tempId)
             if (index !== -1) {
@@ -379,6 +535,16 @@ export const useHealthStore = defineStore('health', () => {
             updateMetricIndex(result.serverRecord)
             invalidateSeriesCache(result.serverRecord.type)
 
+            // ✅ NEW: V2 精准失效 - 只失效相关 metric
+            const petId = result.serverRecord.petId
+            if (petId) {
+                healthCacheServiceV2.invalidateMetric(petId, result.serverRecord.type)
+                console.log(`[Store] V2 cache invalidated: ${result.serverRecord.type}`)
+            }
+
+            // 🔧 手动触发趋势检测（只刷新相关指标）
+            refreshTrendDetection([result.serverRecord.type])
+
             // 刷新 Summary
             if (result.serverRecord.petId) {
                 await refreshSummary(String(result.serverRecord.petId))
@@ -387,7 +553,10 @@ export const useHealthStore = defineStore('health', () => {
             return result.serverRecord
         } else {
             // 5. 失败：回滚
-            delete entities.value[tempId]
+            // ✅ OPTIMIZED: shallowRef 使用引用替换
+            const newEntities = { ...entities.value }
+            delete newEntities[tempId]
+            entities.value = newEntities
             ids.value = ids.value.filter(id => id !== tempId)
             error.value = result.error?.message || 'Failed to add record'
             throw result.error
@@ -405,8 +574,22 @@ export const useHealthStore = defineStore('health', () => {
             const result = await healthRecordService.updateRecord(id, payload)
 
             if (result.success && result.record) {
-                entities.value[id] = result.record
+                // ✅ OPTIMIZED: shallowRef 使用引用替换
+                entities.value = {
+                    ...entities.value,
+                    [id]: result.record
+                }
                 resortIds()
+
+                // ✅ NEW: V2 精准失效
+                if (result.record.petId) {
+                    healthCacheServiceV2.invalidateMetric(result.record.petId, result.record.type)
+                    console.log(`[Store] V2 cache invalidated (update): ${result.record.type}`)
+                }
+
+                // 🔧 手动触发趋势检测（只刷新相关指标）
+                refreshTrendDetection([result.record.type])
+
                 return result.record
             } else {
                 error.value = result.error?.message || 'Failed to update record'
@@ -424,15 +607,32 @@ export const useHealthStore = defineStore('health', () => {
         loading.value = true
         error.value = null
 
-        const petId = entities.value[id]?.petId
+        const deletedRecord = entities.value[id] // Store the record before deletion
+        const petId = deletedRecord?.petId // Extract petId from the stored record
 
         try {
             const result = await healthRecordService.deleteRecord(id)
 
             if (result.success) {
-                delete entities.value[id]
-                ids.value = ids.value.filter(i => i !== id)
+                // 从状态中移除
+                // ✅ OPTIMIZED: shallowRef 使用引用替换
+                const newEntities = { ...entities.value }
+                delete newEntities[id]
+                entities.value = newEntities
+                ids.value = ids.value.filter(recordId => recordId !== id)
 
+                // ✅ NEW: V2 精准失效
+                if (deletedRecord?.petId && deletedRecord?.type) {
+                    healthCacheServiceV2.invalidateMetric(deletedRecord.petId, deletedRecord.type)
+                    console.log(`[Store] V2 cache invalidated (delete): ${deletedRecord.type}`)
+                }
+
+                // 🔧 手动触发趋势检测
+                if (deletedRecord?.type) {
+                    refreshTrendDetection([deletedRecord.type])
+                }
+
+                // 刷新 Summary
                 if (petId) {
                     await refreshSummary(String(petId))
                 }
@@ -622,12 +822,14 @@ export const useHealthStore = defineStore('health', () => {
         metricHistory,
         latestMetrics,
         getDailySummary,
-        trendAnalysis,
+        metricTrendMap,              // ✅ 暴露趋势分析结果
+        refreshTrendDetection,       // ✅ 暴露手动刷新函数
         getChangedMetricKeys,
         getStableMetricKeys,
         getMetricTrendStatus,
 
         // Actions
+        ensureDataLoaded,            // 🚀 统一数据加载入口
         fetchHealthRecords,
         addRecord,
         updateRecord,

@@ -70,17 +70,22 @@ const getMetricColor = (key: string) => {
     return COLORS[colorKey as keyof typeof COLORS]?.hex || '#ff453a'
 }
 
+// ============================================================================
+// Lifecycle & Data Loading
+// ============================================================================
+
 onMounted(async () => {
     if (selectedPetId.value) {
-        await healthStore.fetchHealthRecords(selectedPetId.value)
-        await healthStore.refreshSummary(selectedPetId.value)
+        // ✅ 使用统一入口，替代双重全量请求
+        await healthStore.ensureDataLoaded(selectedPetId.value)
     }
 })
 
 // Update when pet changes
 watch(selectedPetId, async (newPetId) => {
     if (newPetId) {
-        await healthStore.fetchHealthRecords(newPetId)
+        // ✅ 使用统一入口（自动去重）
+        await healthStore.ensureDataLoaded(newPetId)
     }
 })
 </script>
