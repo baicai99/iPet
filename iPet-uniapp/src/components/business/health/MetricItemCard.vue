@@ -21,7 +21,8 @@
             <view class="value-section" :class="{ wide: isWide }">
                 <view class="value-row">
                     <text :class="isValueText ? 'value-text' : 'value'">{{ valueStr }}</text>
-                    <text v-if="unitStr" class="unit">{{ unitStr }}</text>
+                    <text v-if="unitStr && valueStr !== '暂无数据' && valueStr !== '暂无待办计划'" class="unit">{{ unitStr
+                    }}</text>
                 </view>
             </view>
 

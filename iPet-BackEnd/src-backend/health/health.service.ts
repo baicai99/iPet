@@ -33,6 +33,8 @@ export class HealthService {
     }
 
     async findAll(userId: string, petId?: string, page?: number, limit?: number, type?: string): Promise<HealthRecord[]> {
+        console.log('[HealthService] findAll called with:', { userId, petId, page, limit, type });
+
         const where: any = {
             pet: { userId },
             deleted: false,
@@ -49,7 +51,8 @@ export class HealthService {
             orderBy: { date: 'desc' },
         };
 
-        if (page && limit) {
+        // Improved pagination validation
+        if (page !== undefined && limit !== undefined) {
             const p = Number(page);
             const l = Number(limit);
             if (!isNaN(p) && !isNaN(l) && p > 0 && l > 0) {
@@ -58,12 +61,21 @@ export class HealthService {
             }
         }
 
-        const records = await this.prisma.healthRecord.findMany(query);
-        return records.map(record => ({
-            ...record,
-            updatedAt: record.updatedAt.getTime(),
-            metadata: (record.metadata || undefined) as Record<string, any> | undefined,
-        }));
+        console.log('[HealthService] Executing query:', JSON.stringify(query, null, 2));
+
+        try {
+            const records = await this.prisma.healthRecord.findMany(query);
+            console.log('[HealthService] Query returned', records.length, 'records');
+            return records.map(record => ({
+                ...record,
+                updatedAt: record.updatedAt ? record.updatedAt.getTime() : Date.now(),
+                metadata: (record.metadata || undefined) as Record<string, any> | undefined,
+            }));
+        } catch (error) {
+            console.error('[HealthService] Error in findAll:', error);
+            console.error('[HealthService] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+            throw error;
+        }
     }
 
     /**

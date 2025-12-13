@@ -16,7 +16,7 @@
             </view>
 
             <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="pinnedState" empty-reason="no-pinned" min-height="708rpx">
+            <AppSectionState :section-state="pinnedState" empty-reason="no-pinned" :min-height="pinnedMinHeight">
                 <!-- Data Slot -->
                 <PinnedMetricsWidget :metric-keys="pinnedMetricKeys" @add="goManageMetrics"
                     @metric-click="goToMetric" />
@@ -154,6 +154,19 @@ const { stepTrendData, isLoading, loadSummaryData, refresh, startAutoRefresh, st
 
 const pinnedMetricKeys = computed(() => {
     return rawPinnedMetrics.value.map(m => m.key)
+})
+
+/**
+ * ✅ Dynamic min-height for pinned section
+ * - Formula: cardHeight * count + gap * (count-1)
+ * - Card height: 180rpx, Gap: 16rpx
+ * - Examples: 1 card = 180rpx, 2 cards = 376rpx, 3 cards = 548rpx
+ */
+const pinnedMinHeight = computed(() => {
+    const count = pinnedMetricKeys.value.length
+    if (count === 0) return '180rpx' // Minimum height for empty state
+    const totalHeight = 180 * count + 16 * (count - 1)
+    return `${totalHeight}rpx`
 })
 
 /**
@@ -435,18 +448,61 @@ onHide(() => {
 })
 
 // ============================================================================
-// Pet Watch (Passive - Only Cancel Requests)
+// Pet Watch (Active - Load Data on Switch)
 // ============================================================================
 
-// ✅ PASSIVE WATCH: 只取消旧请求，不主动触发新请求
-// 数据加载由 onShow 统一触发
-watch(selectedPetId, (newPetId, oldPetId) => {
-    if (oldPetId && newPetId !== oldPetId) {
-        // 取消旧宠物的待处理请求
+// ✅ ACTIVE WATCH: Load new pet data when switching
+watch(selectedPetId, async (newPetId, oldPetId) => {
+    if (oldPetId && newPetId !== oldPetId && newPetId) {
+        console.log('[Summary] 🔄 Pet switched:', oldPetId, '→', newPetId)
+
+        // 1. Cancel old requests
         cancelPendingRequests()
+
+        // 2. Reset section states to loading (no cache on switch)
+        pinnedState.startLoading({ hasCache: false })
+        trendsState.startLoading({ hasCache: false })
+        articlesState.startLoading({ hasCache: false })
+
+        // 3. Clear existing data to prevent showing stale content
+        rawPinnedMetrics.value = []
+        trends.value = []
+        tasks.value = []
+        dailySummaries.value = {}
+
+        // 4. Load data for new pet
+        try {
+            await healthStore.ensureDataLoaded(newPetId)
+            await nextTick()
+
+            // Update section states based on loaded data
+            const hasPinnedData = rawPinnedMetrics.value.length > 0
+            const hasTrendsData = trends.value.length > 0
+            const hasArticlesData = articles.value.length > 0
+
+            pinnedState.loadSuccess({ hasData: hasPinnedData })
+            trendsState.loadSuccess({ hasData: hasTrendsData })
+            articlesState.loadSuccess({ hasData: hasArticlesData })
+
+            console.log('[Summary] ✅ Pet data loaded:', {
+                pinned: hasPinnedData,
+                trends: hasTrendsData,
+                articles: hasArticlesData
+            })
+
+            // 5. Save new cache
+            healthCacheService.setSummarySnapshot({
+                tasks: tasks.value,
+                pinnedMetrics: rawPinnedMetrics.value,
+                trends: trends.value,
+                dailySummaries: dailySummaries.value
+            })
+        } catch (error) {
+            console.error('[Summary] ❌ Failed to load pet data:', error)
+            pinnedState.loadError(error as Error)
+            trendsState.loadError(error as Error)
+        }
     }
-    // ❌ DO NOT call loadSummaryData() here
-    // ✅ 数据将在下次 onShow 时自动加载
 })
 
 onPullDownRefresh(async () => {

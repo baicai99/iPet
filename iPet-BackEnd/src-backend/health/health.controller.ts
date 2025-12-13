@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, NotFoundException, BadRequestException } from '@nestjs/common';
 import { HealthService } from './health.service';
 import { CreateHealthRecordDto } from './dto/create-health-record.dto';
 import { UpdateHealthRecordDto } from './dto/update-health-record.dto';
@@ -34,15 +34,54 @@ export class HealthController {
     findAll(
         @Req() req: AuthenticatedRequest,
         @Query('petId') petId?: string,
-        @Query('page') page?: number,
-        @Query('limit') limit?: number,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
         @Query('type') type?: string
     ) {
-        const uid = req.user?.uid;
-        if (!uid) throw new Error('User ID missing');
-        const userId = req.user?.uid;
-        if (!userId) throw new NotFoundException('User ID not found');
-        return this.healthService.findAll(userId, petId, page, limit, type);
+        try {
+            const uid = req.user?.uid;
+            if (!uid) throw new Error('User ID missing');
+            const userId = req.user?.uid;
+            if (!userId) throw new NotFoundException('User ID not found');
+
+            console.log('[HealthController] findAll called with:', { petId, page, limit, type, userId });
+
+            // ✅ Improved parameter sanitization
+            const sanitizedPetId = petId?.trim() || undefined;
+            const sanitizedType = type?.trim() || undefined;
+
+            // ✅ Handle numeric parameters: empty string or invalid → undefined, invalid → 400
+            let sanitizedPage: number | undefined;
+            let sanitizedLimit: number | undefined;
+
+            if (page !== undefined && page !== '') {
+                const parsed = parseInt(page, 10);
+                if (isNaN(parsed) || parsed <= 0) {
+                    throw new BadRequestException('Invalid page parameter');
+                }
+                sanitizedPage = parsed;
+            }
+
+            if (limit !== undefined && limit !== '') {
+                const parsed = parseInt(limit, 10);
+                if (isNaN(parsed) || parsed <= 0) {
+                    throw new BadRequestException('Invalid limit parameter');
+                }
+                sanitizedLimit = parsed;
+            }
+
+            console.log('[HealthController] Sanitized params:', {
+                sanitizedPetId,
+                sanitizedPage,
+                sanitizedLimit,
+                sanitizedType
+            });
+
+            return this.healthService.findAll(userId, sanitizedPetId, sanitizedPage, sanitizedLimit, sanitizedType);
+        } catch (error) {
+            console.error('[HealthController] Error in findAll:', error);
+            throw error;
+        }
     }
 
     @Get('summary')

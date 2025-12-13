@@ -1,6 +1,5 @@
 <template>
     <view class="article-detail-page">
-        <u-navbar title="文章详情" :autoBack="true" placeholder></u-navbar>
         <u-loading-page :loading="loading"></u-loading-page>
 
         <view v-if="article" class="content-wrapper">

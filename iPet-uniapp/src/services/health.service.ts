@@ -3,10 +3,18 @@ import type { HealthRecord } from '@shared/types/health'
 
 export const healthService = {
     async getHealthRecords(petId?: string, page?: number, limit?: number, metricKey?: string): Promise<HealthRecord[]> {
+        // ✅ Filter out undefined parameters to avoid sending empty strings
+        // When undefined, uni-app request converts them to "" which causes backend 500
+        const params: Record<string, any> = {}
+        if (petId !== undefined) params.petId = petId
+        if (page !== undefined) params.page = page
+        if (limit !== undefined) params.limit = limit
+        if (metricKey !== undefined) params.type = metricKey
+
         return request({
             url: '/health',
             method: 'GET',
-            data: { petId, page, limit, type: metricKey }
+            data: params
         })
     },
 
