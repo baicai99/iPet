@@ -16,7 +16,7 @@
             </view>
 
             <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="pinnedState" empty-reason="no-pinned">
+            <AppSectionState :section-state="pinnedState" empty-reason="no-pinned" min-height="708rpx">
                 <!-- Data Slot -->
                 <PinnedMetricsWidget :metric-keys="pinnedMetricKeys" @add="goManageMetrics"
                     @metric-click="goToMetric" />
@@ -35,13 +35,19 @@
             </view>
 
             <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="trendsState" empty-reason="no-trends">
-                <!-- Data Slot -->
-                <view class="trends-section">
+            <AppSectionState :section-state="trendsState" empty-reason="no-trends" :min-height="trendsMinHeight">
+                <!-- ✅ Three-State Rendering Logic -->
+                <!-- State 1: Has Trends - Show TrendCard list -->
+                <view v-if="changedMetricKeys.length > 0" class="trends-section">
                     <TrendCard v-for="key in changedMetricKeys.slice(0, 3)" :key="key" :metricKey="key"
                         :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
                         :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :themeBg="getMetricBg(key)" />
                 </view>
+                <!-- State 2: No Change - Show stable state card -->
+                <view v-else class="trends-section">
+                    <TrendNoChangeCard />
+                </view>
+                <!-- State 3: Loading - Skeleton handled by AppSectionState -->
             </AppSectionState>
 
             <view class="action-button">
@@ -57,7 +63,7 @@
             </view>
 
             <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="articlesState" empty-reason="no-articles">
+            <AppSectionState :section-state="articlesState" empty-reason="no-articles" min-height="500rpx">
                 <!-- Data Slot -->
                 <view class="articles-list">
                     <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id"
@@ -82,6 +88,7 @@ import { useI18n } from 'vue-i18n'
 import PetSelectorBar from '@/components/profile/PetSelectorBar.vue'
 import PinnedMetricsWidget from '@/components/widgets/PinnedMetricsWidget.vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
+import TrendNoChangeCard from '@/components/widgets/TrendNoChangeCard.vue'  // ✅ NEW: No-change state card
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
 import AppSectionState from '@/components/common/AppSectionState.vue'  // ✅ NEW: 统一状态组件
 import { usePetViewModel } from '@/composables/usePetViewModel'
@@ -120,7 +127,7 @@ const articlesState = useSectionState() // 文章独立状态
 
 // 🐛 DEBUG: Watch state transitions
 watch(() => pinnedState.state.value, (newState) => {
-    console.log('[DEBUG] pinnedState changed:', newState, 
+    console.log('[DEBUG] pinnedState changed:', newState,
         'shouldShowSkeleton:', pinnedState.shouldShowSkeleton.value,
         'shouldShowData:', pinnedState.shouldShowData.value)
 })
@@ -150,6 +157,15 @@ const { stepTrendData, isLoading, loadSummaryData, refresh, startAutoRefresh, st
 
 const pinnedMetricKeys = computed(() => {
     return rawPinnedMetrics.value.map(m => m.key)
+})
+
+/**
+ * ✅ Dynamic min-height for trends section
+ * - Has trends (3 cards): 732rpx = 220*3 + 24*2 (gaps)
+ * - No change (1 card): 264rpx = 240 (card height) + 24 (gap reserve)
+ */
+const trendsMinHeight = computed(() => {
+    return changedMetricKeys.value.length > 0 ? '732rpx' : '264rpx'
 })
 
 const articles = computed<Article[]>(() => articleStore.getLatestArticles(3))
@@ -289,18 +305,33 @@ onMounted(() => {
             console.log('[DEBUG] pinnedState after loadSuccess:', pinnedState.state.value)
             console.log('[Summary] ✅ Wave 1 complete: Pinned metrics ready')
 
+            // ✅ Save summary snapshot to cache after successful load
+            healthCacheService.setSummarySnapshot({
+                tasks: tasks.value,
+                pinnedMetrics: rawPinnedMetrics.value,
+                trends: trends.value,
+                dailySummaries: dailySummaries.value
+            })
+            console.log('[Summary] 💾 Summary snapshot saved to cache')
+
             // ============================================================================
             // ✅ Wave 2: 趋势数据（次优先级，延迟 100ms）
+            // ⚠️ BUG FIX: Wave 1 已加载 pinnedMetrics,Wave 2 不应再次请求
+            // 否则会导致 pinnedMetrics 重新赋值 → 组件重新渲染 → 闪烁!
             // ============================================================================
             setTimeout(async () => {
                 console.log('[Summary] 🌊 Wave 2: Loading trends (delayed 100ms)')
                 console.log('[DEBUG] trendsState before Wave 2:', trendsState.state.value)
 
                 try {
-                    await loadSummaryData(selectedPetId.value)
+                    if (!selectedPetId.value) return
 
-                    // ✅ Wait for Vue reactivity to settle
-                    await nextTick()
+                    // ✅ BUG FIX: 注释掉 loadSummaryData,因为它会重新加载 pinnedMetrics
+                    // await loadSummaryData(selectedPetId.value)
+
+                    // ✅ Wave 2 只需要判断 trends 是否有数据
+                    // trends 数据已经在 Wave 1 的 ensureDataLoaded 中加载了
+                    // await nextTick()  // 不再需要,因为没有异步加载
 
                     const hasTrendsData = trends.value.length > 0
                     console.log('[DEBUG] hasTrendsData:', hasTrendsData, 'trends:', trends.value.length)

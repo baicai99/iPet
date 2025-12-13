@@ -1,8 +1,13 @@
 <template>
-    <view class="app-section-state">
-        <!-- ✅ Skeleton State (v-show for DOM stability) -->
-        <view v-show="showSkeleton" class="skeleton-container"
-            :style="{ minHeight: skeletonHeight }">
+    <!-- ✅ P0 FIX: 固定壳 + Overlay 架构，彻底消灭 CLS -->
+    <view class="app-section-state" :style="{ minHeight: shellMinHeight }">
+        <!-- ✅ 数据容器：始终存在，提供稳定的高度基准 -->
+        <view class="data-container" :class="{ 'data-visible': showData }">
+            <slot></slot>
+        </view>
+
+        <!-- ✅ Skeleton Overlay：绝对定位盖在数据层上 -->
+        <view v-show="showSkeleton" class="skeleton-overlay">
             <slot name="skeleton">
                 <!-- 默认 Skeleton（3 卡片） -->
                 <view class="default-skeleton-card" v-for="i in skeletonCount" :key="i">
@@ -13,13 +18,8 @@
             </slot>
         </view>
 
-        <!-- ✅ Data State (Ready or Showing Cache) -->
-        <view v-show="showData" class="data-container">
-            <slot></slot>
-        </view>
-
-        <!-- ✅ Empty State -->
-        <view v-show="showEmpty" class="empty-container">
+        <!-- ✅ Empty Overlay：绝对定位盖在数据层上 -->
+        <view v-show="showEmpty" class="empty-overlay">
             <slot name="empty">
                 <!-- 默认 Empty -->
                 <view class="empty-state">
@@ -32,8 +32,8 @@
             </slot>
         </view>
 
-        <!-- ✅ Error State -->
-        <view v-show="showError" class="error-container">
+        <!-- ✅ Error Overlay：绝对定位盖在数据层上 -->
+        <view v-show="showError" class="error-overlay">
             <slot name="error">
                 <!-- 默认 Error -->
                 <view class="error-state">
@@ -82,18 +82,22 @@ export interface AppSectionStateProps {
     /** Show retry button on error */
     showRetry?: boolean
 
-    /** Skeleton height (避免 CLS) */
+    /** Skeleton height (避免 CLS) - 已废弃，由 minHeight 统一控制 */
     skeletonHeight?: string
 
     /** Number of skeleton cards */
     skeletonCount?: number
+
+    /** ✅ NEW: Section 最小高度（锁定首屏稳定性） */
+    minHeight?: string
 }
 
 const props = withDefaults(defineProps<AppSectionStateProps>(), {
     emptyReason: 'no-data',
     showRetry: true,
-    skeletonHeight: '220rpx',  // 锁定高度避免 CLS
-    skeletonCount: 3
+    skeletonHeight: '220rpx',  // 向后兼容
+    skeletonCount: 3,
+    minHeight: '708rpx'  // ✅ 默认 = skeleton 3卡高度 (220*3 + 24*2)
 })
 
 // ============================================================================
@@ -109,6 +113,11 @@ const emit = defineEmits<{
 // Computed
 // ============================================================================
 
+/** ✅ Shell 最小高度（优先使用 minHeight，回退到 skeletonHeight） */
+const shellMinHeight = computed(() => {
+    return props.minHeight
+})
+
 /** Should show skeleton screen */
 const showSkeleton = computed(() => {
     const result = props.sectionState?.shouldShowSkeleton?.value || props.state === 'loading'
@@ -118,6 +127,17 @@ const showSkeleton = computed(() => {
 /** Should show data */
 const showData = computed(() => {
     const result = props.sectionState?.shouldShowData?.value || props.state === 'ready'
+    
+    // ✅ DEBUG: 追踪 showData 变化
+    if (import.meta.env.DEV) {
+        console.log('[AppSectionState] showData:', {
+            result,
+            state: props.sectionState?.state?.value,
+            shouldShowData: props.sectionState?.shouldShowData?.value,
+            propsState: props.state
+        })
+    }
+    
     return result
 })
 
@@ -191,29 +211,63 @@ function handleCTA() {
 </script>
 
 <style lang="scss" scoped>
+/* ============================================================================
+   P0 FIX: 固定壳 + Overlay 架构
+   ============================================================================
+   核心原则：
+   1. .app-section-state 是固定高度的壳（min-height 锁定）
+   2. .data-container 始终存在，提供基准高度
+   3. 所有状态层（skeleton/empty/error）都是绝对定位的 overlay
+   4. 状态切换只改变 z-index/opacity，不改变布局高度
+   ============================================================================ */
+
 .app-section-state {
     width: 100%;
-    position: relative; /* Stable positioning context */
+    position: relative;
+    /* ✅ 锁定最小高度 = skeleton 高度，避免 CLS */
+    /* min-height 由 props.minHeight 动态设置 */
 }
 
 /* ============================================================================
-   Smooth State Transitions (Anti-Collapse)
+   Data Container (Always Present - Provides Stable Height)
    ============================================================================ */
 
-/* Add fade transitions to all state containers */
-.skeleton-container,
-.data-container,
-.empty-container,
-.error-container {
+.data-container {
+    width: 100%;
+    min-height: inherit; /* 继承外壳的 min-height */
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;  /* 首次显示时的过渡 */
+    
+    /* ✅ 数据可见时才显示 */
+    &.data-visible {
+        opacity: 1;
+        z-index: 1; /* 确保在最上层 */
+        transition: none;  /* ✅ BUG FIX: 禁用 transition,防止 Wave 2/3 触发响应式更新时闪烁 */
+    }
+}
+
+/* ============================================================================
+   Overlay Layers (Absolute Positioned - No Layout Impact)
+   ============================================================================ */
+
+.skeleton-overlay,
+.empty-overlay,
+.error-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 10; /* 盖在数据层上 */
+    background-color: transparent;
     transition: opacity 0.2s ease-in-out;
 }
 
 /* ============================================================================
-   Skeleton Container
+   Skeleton Overlay
    ============================================================================ */
 
-.skeleton-container {
-    width: 100%;
+.skeleton-overlay {
     display: flex;
     flex-direction: column;
     gap: 24rpx;
@@ -223,8 +277,7 @@ function handleCTA() {
     background-color: white;
     border-radius: 30rpx;
     padding: 30rpx;
-    height: 220rpx;
-    /* 锁定高度避免 CLS */
+    height: 220rpx; /* ✅ 锁定高度 */
     display: flex;
     flex-direction: column;
     gap: 16rpx;
@@ -267,19 +320,12 @@ function handleCTA() {
 }
 
 /* ============================================================================
-   Data Container
+   Empty Overlay
    ============================================================================ */
 
-.data-container {
-    width: 100%;
-}
-
-/* ============================================================================
-   Empty State
-   ============================================================================ */
-
-.empty-container {
-    width: 100%;
+.empty-overlay {
+    background-color: rgba(255, 255, 255, 0.98); /* 半透明背景 */
+    backdrop-filter: blur(4px); /* 模糊背后内容 */
 }
 
 .empty-state {
@@ -290,6 +336,7 @@ function handleCTA() {
     padding: 80rpx 32rpx;
     background-color: white;
     border-radius: 30rpx;
+    min-height: 400rpx; /* 确保空态有足够高度 */
 }
 
 .empty-title {
@@ -306,11 +353,12 @@ function handleCTA() {
 }
 
 /* ============================================================================
-   Error State
+   Error Overlay
    ============================================================================ */
 
-.error-container {
-    width: 100%;
+.error-overlay {
+    background-color: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(4px);
 }
 
 .error-state {
@@ -321,6 +369,7 @@ function handleCTA() {
     padding: 80rpx 32rpx;
     background-color: white;
     border-radius: 30rpx;
+    min-height: 400rpx;
 }
 
 .error-title {

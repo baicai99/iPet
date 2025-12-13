@@ -49,6 +49,9 @@ export function useSectionState(initialState: SectionState = 'unknown') {
     const state = ref<SectionState>(initialState)
     const error = ref<string | null>(null)
 
+    // ✅ P0-2: 记录是否曾经有过数据（防止回退到 empty）
+    const hasEverHadData = ref(false)
+
     // -------------------------------------------------------------------------
     // State Queries (Computed)
     // -------------------------------------------------------------------------
@@ -77,9 +80,20 @@ export function useSectionState(initialState: SectionState = 'unknown') {
     )
 
     /** 是否应该显示数据（ready 或 showing_cache） */
-    const shouldShowData = computed(() =>
-        state.value === 'ready' || state.value === 'showing_cache'
-    )
+    const shouldShowData = computed(() => {
+        const result = state.value === 'ready' || state.value === 'showing_cache'
+
+        // ✅ DEBUG: 追踪状态
+        if (import.meta.env.DEV) {
+            console.log('[useSectionState] shouldShowData:', {
+                result,
+                state: state.value,
+                hasEverHadData: hasEverHadData.value
+            })
+        }
+
+        return result
+    })
 
     /** 是否应该显示空态（已确认为空，且非加载中） */
     const shouldShowEmpty = computed(() =>
@@ -103,6 +117,7 @@ export function useSectionState(initialState: SectionState = 'unknown') {
     function startLoading(options: StateTransitionOptions = {}) {
         if (options.hasCache) {
             state.value = 'showing_cache'
+            hasEverHadData.value = true  // ✅ 有缓存 = 曾经有数据
         } else {
             state.value = 'loading'
         }
@@ -110,15 +125,44 @@ export function useSectionState(initialState: SectionState = 'unknown') {
     }
 
     /**
-     * 加载成功
-     * loading/showing_cache → ready (有数据)
-     * loading/showing_cache → empty (无数据)
+     * ✅ P0-2 FIX: 加载成功（防止回退到 empty）
+     * 
+     * 核心规则：
+     * 1. 如果曾经有过数据(hasEverHadData=true)，且当前是 ready/showing_cache
+     * 2. 新数据为空(hasData=false)
+     * 3. 不切换到 empty，保持当前状态（展示旧数据）
+     * 
+     * 允许的路径：
+     * - loading → ready (首次有数据)
+     * - loading → empty (首次确认无数据)
+     * - showing_cache → ready (刷新成功)
+     * - ready → ready (刷新成功)
+     * 
+     * 禁止的路径：
+     * - showing_cache → empty ❌ (保持 showing_cache)
+     * - ready → empty ❌ (保持 ready)
      */
     function loadSuccess(options: StateTransitionOptions = {}) {
+        const currentHasData = state.value === 'ready' || state.value === 'showing_cache'
+
         if (options.hasData) {
+            // ✅ 有新数据：正常切换到 ready
             state.value = 'ready'
+            hasEverHadData.value = true
         } else {
-            state.value = 'empty'
+            // ⚠️ 新数据为空
+            // P0-2 规则：如果曾经有数据，不允许回退到 empty
+            if (hasEverHadData.value && currentHasData) {
+                // 🔒 保持当前状态（ready 或 showing_cache），不回退
+                console.warn(
+                    `[SectionState] P0-2: Preventing regression to empty. ` +
+                    `Current state: ${state.value}, keeping old data.`
+                )
+                // state.value 保持不变
+            } else {
+                // ✅ 首次加载且确认无数据 → 可以切换到 empty
+                state.value = 'empty'
+            }
         }
         error.value = null
     }
@@ -148,6 +192,7 @@ export function useSectionState(initialState: SectionState = 'unknown') {
     function reset() {
         state.value = 'unknown'
         error.value = null
+        hasEverHadData.value = false  // ✅ 重置数据历史
     }
 
     /**
@@ -160,6 +205,11 @@ export function useSectionState(initialState: SectionState = 'unknown') {
         } else {
             error.value = null
         }
+
+        // ✅ 更新数据历史标记
+        if (newState === 'ready' || newState === 'showing_cache') {
+            hasEverHadData.value = true
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -170,6 +220,7 @@ export function useSectionState(initialState: SectionState = 'unknown') {
         // Raw State
         state,
         error,
+        hasEverHadData,  // ✅ 暴露数据历史标记（供调试）
 
         // State Queries
         isUnknown,
@@ -195,7 +246,7 @@ export function useSectionState(initialState: SectionState = 'unknown') {
 }
 
 // ============================================================================
-// State Machine Diagram
+// State Machine Diagram (P0-2 Updated)
 // ============================================================================
 
 /**
@@ -222,15 +273,29 @@ export function useSectionState(initialState: SectionState = 'unknown') {
  *       │                               │
  *       ▼                               ▼
  *  ┌────────┐                      ┌───────┐
- *  │ ready  │                      │ empty │
- *  └────────┘                      └───────┘
- *       ▲
+ *  │ ready  │                      │ empty │ (仅首次无数据时)
+ *  └────┬───┘                      └───────┘
  *       │
- *       │ loadError() + hasCache
- *       │
- *  ┌────────────────┐
- *  │ showing_cache  │
- *  └────────────────┘
+ *       │ loadSuccess(hasData=true)
+ *       ├──────────────────────────────┐
+ *       │                              │
+ *       ▼                              │
+ *  ┌────────┐                          │
+ *  │ ready  │ (数据刷新)                │
+ *  └────────┘                          │
+ *                                      │
+ *  🔒 P0-2 防回退规则：                 │
+ *  如果 hasEverHadData=true:            │
+ *    ready → empty ❌ (保持 ready)     │
+ *    showing_cache → empty ❌          │
+ *                   (保持 showing_cache)│
+ *                                      │
+ *       loadError() + hasCache         │
+ *              │                       │
+ *              ▼                       │
+ *      ┌────────────────┐             │
+ *      │ showing_cache  │◄────────────┘
+ *      └────────────────┘
  * 
  *       loadError() + !hasCache
  *              │
