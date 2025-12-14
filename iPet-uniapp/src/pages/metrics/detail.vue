@@ -101,6 +101,7 @@ import { useMetricDetail } from '@/composables/useMetricDetail'
 import { useChartOptions, getDateFormat } from '@/composables/useChartOptions'
 import { useHealthStore } from '@/stores/healthStore'
 import { useArticleStore } from '@/stores/articleStore'  // ✅ 用于 ensureLoaded()
+import { usePetViewModel } from '@/composables/usePetViewModel'  // ✅ FIX: Get selectedPetId
 import { useUnitConverter } from '@/composables/useUnitConverter'
 import { getMetricMetadata } from '@/data/metricMetadata'
 import { STRINGS } from '@/locale/zh-Hans'
@@ -155,6 +156,8 @@ const pendingHistoryRefresh = ref(false)
 
 const healthStore = useHealthStore()
 const articleStore = useArticleStore()  // ✅ 需要用于 ensureLoaded()
+const petViewModel = usePetViewModel()  // ✅ FIX: Get selectedPetId
+const { selectedPetId } = petViewModel
 const { formatValueWithUnit } = useUnitConverter()
 
 // Chart Component Map
@@ -219,7 +222,8 @@ const formattedRelatedMetrics = computed(() => {
 const isPinned = computed({
     get: () => healthStore.pinnedMetrics.some(m => m.key === metricKey.value),
     set: async (val) => {
-        const petId = healthStore.currentPetId
+        // ✅ FIX: Use selectedPetId from petViewModel (healthStore.currentPetId doesn't exist)
+        const petId = selectedPetId.value
         if (petId && metricKey.value) {
             try {
                 await healthStore.togglePin(petId, metricKey.value, val)

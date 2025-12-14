@@ -38,10 +38,25 @@ const STORES_REQUIRING_RESET = [
   petStore,
   preferenceStore,
   healthStore,
-
-
 ];
 const PERSISTED_PINIA_KEYS = ['user', 'pet', 'preferences', 'health'];
+
+const resetStoreSafely = (store) => {
+  if (!store) return
+  if (typeof store.resetStore === 'function') {
+    store.resetStore()
+    return
+  }
+  if (typeof store.$reset === 'function') {
+    store.$reset()
+    return
+  }
+  if (typeof store.reset === 'function') {
+    store.reset()
+    return
+  }
+  console.warn('[PRIVACY] Store does not implement a reset method:', store?.$id || 'unknown')
+}
 
 const removeStorageItem = (key) => {
   const canUseUni = typeof uni !== 'undefined' && typeof uni.removeStorageSync === 'function'
@@ -63,11 +78,7 @@ const removeStorageItem = (key) => {
 }
 
 const resetPersistedAppState = () => {
-  STORES_REQUIRING_RESET.forEach((store) => {
-    if (store && typeof store.$reset === 'function') {
-      store.$reset()
-    }
-  })
+  STORES_REQUIRING_RESET.forEach(resetStoreSafely)
 
   clearAuthToken()
   removeStorageItem('refreshToken')

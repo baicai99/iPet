@@ -1,46 +1,72 @@
 <template>
     <view class="trends-page">
         <view class="content">
-            <!-- Changed Metrics Section -->
-            <view class="section-container">
-                <view class="section-header">
-                    <text class="section-title">有趋势变化</text>
-                </view>
-                <view class="trend-grid" v-if="changedMetricKeys.length">
-                    <TrendCard v-for="key in changedMetricKeys" :key="key" :metricKey="key" :title="getMetricTitle(key)"
-                        :icon="getMetricIcon(key)" :unit="getMetricUnit(key)" :petId="selectedPetId || ''"
-                        :primaryColor="getMetricColor(key)" />
-                </view>
-                <u-empty v-else mode="data" text="暂无变化趋势"></u-empty>
-            </view>
+            <!-- ============================================ -->
+            <!-- Unified Hint Card (shown when no trends) -->
+            <!-- ============================================ -->
+            <TrendHintCard v-if="trendStatus.status !== 'has-trends'" :message="trendStatus.message"
+                navigate-to="/pages/metrics/list" />
 
-            <!-- Stable Metrics Section -->
-            <view class="section-container">
-                <view class="section-header">
-                    <text class="section-title">无趋势变化</text>
+            <!-- ============================================ -->
+            <!-- Sections (only shown when has trends) -->
+            <!-- ============================================ -->
+            <template v-else>
+                <!-- Changed Metrics Section -->
+                <view v-if="changedMetricKeys.length" class="section-container">
+                    <view class="section-header">
+                        <text class="section-title">有趋势变化</text>
+                    </view>
+                    <view class="trend-grid">
+                        <TrendCard v-for="key in changedMetricKeys" :key="key" :metricKey="key"
+                            :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
+                            :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" />
+                    </view>
                 </view>
-                <view class="trend-grid" v-if="stableMetricKeys.length">
-                    <TrendCard v-for="key in stableMetricKeys" :key="key" :metricKey="key" :title="getMetricTitle(key)"
-                        :icon="getMetricIcon(key)" :unit="getMetricUnit(key)" :petId="selectedPetId || ''"
-                        :primaryColor="getMetricColor(key)" :isStable="true" />
+
+                <!-- Stable Metrics Section -->
+                <view v-if="stableMetricKeys.length" class="section-container">
+                    <view class="section-header">
+                        <text class="section-title">无趋势变化</text>
+                    </view>
+                    <view class="trend-grid">
+                        <TrendCard v-for="key in stableMetricKeys" :key="key" :metricKey="key"
+                            :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
+                            :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :isStable="true" />
+                    </view>
                 </view>
-                <u-empty v-else mode="data" text="暂无稳定趋势"></u-empty>
-            </view>
+            </template>
         </view>
     </view>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
+import TrendHintCard from '@/components/widgets/TrendHintCard.vue'
 import { useHealthStore } from '@/stores/healthStore'
 import { usePetViewModel } from '@/composables/usePetViewModel'
 import { METRIC_METADATA, type MetricKey } from '@/data/metricMetadata'
 import { COLORS, CATEGORY_COLOR_MAP } from '@/config/theme'
+import { getTrendStatus } from '@/domain/trend/getTrendStatus'
 
 const healthStore = useHealthStore()
 const petViewModel = usePetViewModel()
 const { selectedPetId } = petViewModel
+
+// ============================================================================
+// Trend Status Detection
+// ============================================================================
+
+/**
+ * ✅ 动态判断趋势数据状态
+ * - 数据不足 → 显示采样提示
+ * - 全部稳定 → 显示稳定提示
+ * - 有趋势 → 显示趋势卡片
+ */
+const trendStatus = computed(() => {
+    const totalDays = healthStore.getTotalRecordDays()
+    return getTrendStatus(healthStore.metricTrendMap, totalDays)
+})
 
 // ============================================================================
 // Trend Detection (from Store Getters)

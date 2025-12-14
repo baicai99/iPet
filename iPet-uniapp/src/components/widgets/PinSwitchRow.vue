@@ -1,19 +1,31 @@
 <template>
     <view class="footer-row">
         <text class="footer-label">{{ label }}</text>
-        <u-switch :modelValue="modelValue" @change="$emit('update:modelValue', $event)" activeColor="#F97316" size="20"></u-switch>
+        <u-switch v-model="internalValue" activeColor="#F97316" size="20"></u-switch>
     </view>
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
     modelValue: Boolean,
     label: {
         type: String,
         default: '将此卡片置顶到首页'
     }
 })
-defineEmits(['update:modelValue'])
+
+const emit = defineEmits(['update:modelValue'])
+
+/**
+ * ✅ FIX: Bidirectional binding for v-model
+ * Replaces incorrect :modelValue/@change pattern
+ */
+const internalValue = computed({
+    get: () => props.modelValue,
+    set: (val) => emit('update:modelValue', val)
+})
 </script>
 
 <style lang="scss" scoped>

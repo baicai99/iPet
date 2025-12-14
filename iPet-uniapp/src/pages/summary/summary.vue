@@ -15,12 +15,12 @@
                 <text class="section-title">{{ t('SUMMARY.PINNED_TITLE') }}</text>
             </view>
 
-            <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="pinnedState" empty-reason="no-pinned" :min-height="pinnedMinHeight">
-                <!-- Data Slot -->
-                <PinnedMetricsWidget :metric-keys="pinnedMetricKeys" @add="goManageMetrics"
-                    @metric-click="goToMetric" />
-            </AppSectionState>
+            <!-- ✅ Show data when has pinned metrics -->
+            <PinnedMetricsWidget v-if="pinnedMetricKeys.length > 0" :metric-keys="pinnedMetricKeys"
+                @add="goManageMetrics" @metric-click="goToMetric" />
+
+            <!-- ✅ Show hint card when no pinned metrics -->
+            <TrendHintCard v-else message="当前没有任何置顶" navigate-to="/pages/metrics/list" />
 
             <view class="action-button">
                 <u-button type="primary" plain shape="circle" :text="t('SUMMARY.PINNED_CTA')"
@@ -35,7 +35,7 @@
             </view>
 
             <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="trendsState" empty-reason="no-trends" :min-height="trendsMinHeight">
+            <AppSectionState :section-state="trendsState" :min-height="trendsMinHeight">
                 <!-- ✅ Three-State Rendering Logic -->
                 <!-- State 1: Has Trends - Show TrendCard list -->
                 <view v-if="changedMetricKeys.length > 0" class="trends-section">
@@ -43,9 +43,9 @@
                         :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
                         :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :themeBg="getMetricBg(key)" />
                 </view>
-                <!-- State 2: No Change - Show stable state card -->
+                <!-- State 2: No Change - Show dynamic hint (insufficient data OR stable) -->
                 <view v-else class="trends-section">
-                    <TrendNoChangeCard />
+                    <TrendHintCard :message="trendStatusHint.message" navigate-to="/pages/trends/trends" />
                 </view>
                 <!-- State 3: Loading - Skeleton handled by AppSectionState -->
             </AppSectionState>
@@ -88,7 +88,7 @@ import { useI18n } from 'vue-i18n'
 import PetSelectorBar from '@/components/profile/PetSelectorBar.vue'
 import PinnedMetricsWidget from '@/components/widgets/PinnedMetricsWidget.vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
-import TrendNoChangeCard from '@/components/widgets/TrendNoChangeCard.vue'  // ✅ NEW: No-change state card
+import TrendHintCard from '@/components/widgets/TrendHintCard.vue'  // ✅ UPDATED: Use generic hint card
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
 import AppSectionState from '@/components/common/AppSectionState.vue'  // ✅ NEW: 统一状态组件
 import { usePetViewModel } from '@/composables/usePetViewModel'
@@ -104,6 +104,7 @@ import { COLORS, CATEGORY_COLOR_MAP } from '@/config/theme'
 import type { Article } from '@/types/article'
 import healthCacheService from '@/services/healthCacheService'  // ✅ NEW: 同步读取缓存
 import { useSectionState } from '@/composables/useSectionState'  // ✅ NEW: 分区状态机
+import { getTrendStatus } from '@/domain/trend/getTrendStatus'  // ✅ FIX: Import trend status detection
 
 const { t } = useI18n()
 
@@ -197,6 +198,15 @@ const isArticleNew = (updateTime: string, index: number): boolean => {
 // ============================================================================
 
 const changedMetricKeys = computed(() => healthStore.getChangedMetricKeys())
+
+/**
+ * ✅ FIX: 动态判断趋势提示状态
+ * 区分"数据不足"和"所有指标稳定"两种情况
+ */
+const trendStatusHint = computed(() => {
+    const totalDays = healthStore.getTotalRecordDays()
+    return getTrendStatus(healthStore.metricTrendMap, totalDays)
+})
 
 // Helper functions for TrendCard props
 const getMetricTitle = (key: string) => METRIC_METADATA[key as MetricKey]?.title || key

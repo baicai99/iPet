@@ -291,6 +291,27 @@ export const useHealthStore = defineStore('health', () => {
         return result.hasSignificantChange ? 'changed' : 'stable'
     }
 
+    /**
+     * ✅ 获取历史记录覆盖的总天数
+     * 用于判断趋势数据状态（数据采样是否充足）
+     * 
+     * @returns 唯一记录日期数量
+     */
+    function getTotalRecordDays(): number {
+        if (ids.value.length === 0) return 0
+
+        const dates = new Set<string>()
+        for (const id of ids.value) {
+            const record = entities.value[id]
+            if (record?.date) {
+                // Extract date part (YYYY-MM-DD)
+                const dateStr = record.date.split('T')[0]
+                dates.add(dateStr)
+            }
+        }
+        return dates.size
+    }
+
     // =========================================================================
     // Internal Helpers
     // =========================================================================
@@ -748,6 +769,41 @@ export const useHealthStore = defineStore('health', () => {
     }
 
     /**
+     * 全量重置 Store（供账号注销/登出使用）
+     */
+    function resetStore() {
+        ids.value = []
+        entities.value = {}
+        loading.value = false
+        error.value = null
+
+        resetSummarySnapshot()
+        lastUpdated.value = null
+        metricIndex.value = {}
+        seriesCache.value = {}
+        trendCache.value = markRaw(new Map())
+        metricTrendMap.value = markRaw({})
+
+        pendingRefreshMetrics = new Set()
+        if (refreshTimer !== null) {
+            clearTimeout(refreshTimer)
+            refreshTimer = null
+        }
+
+        tasks.value = []
+        pinnedMetrics.value = []
+        trends.value = []
+        dailySummaries.value = {}
+
+        healthCacheService.clear()
+        try {
+            healthCacheServiceV2.invalidateByPattern('*')
+        } catch (err) {
+            console.warn('[HealthStore] Failed to clear V2 cache', err)
+        }
+    }
+
+    /**
      * 初始化 Summary 页面
      */
     async function initSummaryPage(petId: string, options: { force?: boolean } = {}) {
@@ -888,6 +944,7 @@ export const useHealthStore = defineStore('health', () => {
         getChangedMetricKeys,
         getStableMetricKeys,
         getMetricTrendStatus,
+        getTotalRecordDays,          // ✅ 获取历史记录总天数
 
         // Actions
         ensureDataLoaded,            // 🚀 统一数据加载入口
@@ -898,6 +955,7 @@ export const useHealthStore = defineStore('health', () => {
         removeRecordsByPetId,
         refreshSummary,
         resetSummarySnapshot,
+        resetStore,
         initSummaryPage,
         metricSeries: getMetricSeriesData,  // 保持向后兼容的别名
         metricSeriesV2,                      // 新版统一入口
