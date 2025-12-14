@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateHealthRecordDto } from './dto/create-health-record.dto';
 import { UpdateHealthRecordDto } from './dto/update-health-record.dto';
@@ -6,76 +6,91 @@ import { v4 as uuidv4 } from 'uuid';
 import { HealthRecord } from '@shared/types/health';
 
 @Injectable()
-export class HealthService {
+export class HealthService implements OnModuleInit {
+    private readonly logger = new Logger(HealthService.name);
+    private schemaReady = false;
+    private schemaPromise?: Promise<void>;
+
     constructor(
         private prisma: PrismaService,
     ) { }
 
-    async create(userId: string, createHealthRecordDto: CreateHealthRecordDto) {
-        // Verify pet ownership
-        const pet = await this.prisma.pet.findFirst({
-            where: { id: createHealthRecordDto.petId, userId, deleted: false },
-        });
-        if (!pet) {
-            throw new NotFoundException('Pet not found or does not belong to user');
+    async onModuleInit(): Promise<void> {
+        try {
+            await this.ensureSchemaReady();
+        } catch (error) {
+            const err = error as Error;
+            this.logger.error('[HealthService] Failed to ensure health schema on startup', err?.stack ?? String(err));
         }
+    }
 
-        const result = await this.prisma.healthRecord.create({
-            data: {
-                id: uuidv4(),
-                ...createHealthRecordDto,
-            },
+    async create(userId: string, createHealthRecordDto: CreateHealthRecordDto) {
+        return this.guardSchema(async () => {
+            // Verify pet ownership
+            const pet = await this.prisma.pet.findFirst({
+                where: { id: createHealthRecordDto.petId, userId, deleted: false },
+            });
+            if (!pet) {
+                throw new NotFoundException('Pet not found or does not belong to user');
+            }
+
+            const result = await this.prisma.healthRecord.create({
+                data: {
+                    id: uuidv4(),
+                    ...createHealthRecordDto,
+                },
+            });
+
+            return result;
         });
-
-
-
-        return result;
     }
 
     async findAll(userId: string, petId?: string, page?: number, limit?: number, type?: string): Promise<HealthRecord[]> {
-        console.log('[HealthService] findAll called with:', { userId, petId, page, limit, type });
+        return this.guardSchema(async () => {
+            console.log('[HealthService] findAll called with:', { userId, petId, page, limit, type });
 
-        const where: any = {
-            pet: { userId },
-            deleted: false,
-        };
-        if (petId) {
-            where.petId = petId;
-        }
-        if (type) {
-            where.type = type;
-        }
-
-        const query: any = {
-            where,
-            orderBy: { date: 'desc' },
-        };
-
-        // Improved pagination validation
-        if (page !== undefined && limit !== undefined) {
-            const p = Number(page);
-            const l = Number(limit);
-            if (!isNaN(p) && !isNaN(l) && p > 0 && l > 0) {
-                query.skip = (p - 1) * l;
-                query.take = l;
+            const where: any = {
+                pet: { userId },
+                deleted: false,
+            };
+            if (petId) {
+                where.petId = petId;
             }
-        }
+            if (type) {
+                where.type = type;
+            }
 
-        console.log('[HealthService] Executing query:', JSON.stringify(query, null, 2));
+            const query: any = {
+                where,
+                orderBy: { date: 'desc' },
+            };
 
-        try {
-            const records = await this.prisma.healthRecord.findMany(query);
-            console.log('[HealthService] Query returned', records.length, 'records');
-            return records.map(record => ({
-                ...record,
-                updatedAt: record.updatedAt ? record.updatedAt.getTime() : Date.now(),
-                metadata: (record.metadata || undefined) as Record<string, any> | undefined,
-            }));
-        } catch (error) {
-            console.error('[HealthService] Error in findAll:', error);
-            console.error('[HealthService] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
-            throw error;
-        }
+            // Improved pagination validation
+            if (page !== undefined && limit !== undefined) {
+                const p = Number(page);
+                const l = Number(limit);
+                if (!isNaN(p) && !isNaN(l) && p > 0 && l > 0) {
+                    query.skip = (p - 1) * l;
+                    query.take = l;
+                }
+            }
+
+            console.log('[HealthService] Executing query:', JSON.stringify(query, null, 2));
+
+            try {
+                const records = await this.prisma.healthRecord.findMany(query);
+                console.log('[HealthService] Query returned', records.length, 'records');
+                return records.map(record => ({
+                    ...record,
+                    updatedAt: record.updatedAt ? record.updatedAt.getTime() : Date.now(),
+                    metadata: (record.metadata || undefined) as Record<string, any> | undefined,
+                }));
+            } catch (error) {
+                console.error('[HealthService] Error in findAll:', error);
+                console.error('[HealthService] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+                throw error;
+            }
+        });
     }
 
     /**
@@ -87,158 +102,160 @@ export class HealthService {
      * - Expected P95 reduction: ~180ms → ~20ms (89% faster)
      */
     async getSummary(userId: string, petId: string) {
-        // Verify pet ownership
-        const pet = await this.prisma.pet.findFirst({
-            where: { id: petId, userId, deleted: false },
-        });
-        if (!pet) {
-            throw new NotFoundException('Pet not found or does not belong to user');
-        }
-
-        // ====================================================================
-        // STEP 1: Batch Query - Fetch all required keys and records
-        // ====================================================================
-
-        const trendKeys = ['weight', 'water', 'walk_duration', 'meal'];
-        const summableMetrics = ['meal', 'water', 'walk_duration'];
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-
-        // Query 1: Get pinned metric keys
-        const pinnedRecords = await this.prisma.pinnedMetric.findMany({
-            where: { petId },
-            select: {
-                metricKey: true
+        return this.guardSchema(async () => {
+            // Verify pet ownership
+            const pet = await this.prisma.pet.findFirst({
+                where: { id: petId, userId, deleted: false },
+            });
+            if (!pet) {
+                throw new NotFoundException('Pet not found or does not belong to user');
             }
-        });
-        const pinnedKeys = pinnedRecords.map(p => p.metricKey);
 
-        // Combine all metric keys we need to query
-        const allMetricKeys = Array.from(new Set([...pinnedKeys, ...trendKeys]));
+            // ====================================================================
+            // STEP 1: Batch Query - Fetch all required keys and records
+            // ====================================================================
 
-        // Query 2: Batch fetch ALL health records for these metrics
-        // This is the KEY optimization - single query instead of N queries
-        // ✅ OPTIMIZED: Use select to reduce data transfer by ~40-50%
-        const allHealthRecords = await this.prisma.healthRecord.findMany({
-            where: {
-                petId,
-                type: { in: allMetricKeys },
-                deleted: false,
-            },
-            select: {
-                id: true,
-                type: true,
-                value: true,
-                date: true,
-                // Exclude: unit, notes, source, metadata, updatedAt, version
-                // This reduces payload size significantly
-            },
-            orderBy: {
-                date: 'desc',
-            },
-            // Limit to prevent excessive data (adjust based on your needs)
-            // Assuming max 30 records per metric × ~10 metrics = 300
-            take: 500,
-        });
+            const trendKeys = ['weight', 'water', 'walk_duration', 'meal'];
+            const summableMetrics = ['meal', 'water', 'walk_duration'];
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
 
-        // ====================================================================
-        // STEP 2: In-Memory Aggregation - Group by metric type
-        // ====================================================================
-
-        // Group records by type (O(N) operation, very fast in memory)
-        const recordsByType = new Map<string, any[]>();
-        for (const record of allHealthRecords) {
-            if (!recordsByType.has(record.type)) {
-                recordsByType.set(record.type, []);
-            }
-            recordsByType.get(record.type)!.push(record);
-        }
-
-        // ====================================================================
-        // STEP 3: Process Pinned Metrics
-        // ====================================================================
-
-        const pinnedMetrics: any[] = [];
-
-        for (const key of pinnedKeys) {
-            const records = recordsByType.get(key) || [];
-
-            // Take first 10 for trend calculation (already sorted by date desc)
-            const recentRecords = records.slice(0, 10);
-            const latestRecord = records[0] || null;
-
-            // Calculate trend
-            let trend = 'flat';
-            let trendValue = '0';
-
-            if (recentRecords.length >= 2) {
-                const latest = Number(recentRecords[0].value);
-                const previous = Number(recentRecords[1].value);
-                const diff = latest - previous;
-                if (diff > 0) {
-                    trend = 'up';
-                    trendValue = `+${diff.toFixed(1)}`;
-                } else if (diff < 0) {
-                    trend = 'down';
-                    trendValue = `${diff.toFixed(1)}`;
+            // Query 1: Get pinned metric keys
+            const pinnedRecords = await this.prisma.pinnedMetric.findMany({
+                where: { petId },
+                select: {
+                    metricKey: true
                 }
+            });
+            const pinnedKeys = pinnedRecords.map(p => p.metricKey);
+
+            // Combine all metric keys we need to query
+            const allMetricKeys = Array.from(new Set([...pinnedKeys, ...trendKeys]));
+
+            // Query 2: Batch fetch ALL health records for these metrics
+            // This is the KEY optimization - single query instead of N queries
+            // ✅ OPTIMIZED: Use select to reduce data transfer by ~40-50%
+            const allHealthRecords = await this.prisma.healthRecord.findMany({
+                where: {
+                    petId,
+                    type: { in: allMetricKeys },
+                    deleted: false,
+                },
+                select: {
+                    id: true,
+                    type: true,
+                    value: true,
+                    date: true,
+                    // Exclude: unit, notes, source, metadata, updatedAt, version
+                    // This reduces payload size significantly
+                },
+                orderBy: {
+                    date: 'desc',
+                },
+                // Limit to prevent excessive data (adjust based on your needs)
+                // Assuming max 30 records per metric × ~10 metrics = 300
+                take: 500,
+            });
+
+            // ====================================================================
+            // STEP 2: In-Memory Aggregation - Group by metric type
+            // ====================================================================
+
+            // Group records by type (O(N) operation, very fast in memory)
+            const recordsByType = new Map<string, any[]>();
+            for (const record of allHealthRecords) {
+                if (!recordsByType.has(record.type)) {
+                    recordsByType.set(record.type, []);
+                }
+                recordsByType.get(record.type)!.push(record);
             }
 
-            pinnedMetrics.push({
-                key,
-                latestRecord,
-                trend,
-                trendValue,
-                history: recentRecords
-            });
-        }
+            // ====================================================================
+            // STEP 3: Process Pinned Metrics
+            // ====================================================================
 
-        // ====================================================================
-        // STEP 4: Process Trends
-        // ====================================================================
+            const pinnedMetrics: any[] = [];
 
-        const trends: any[] = [];
+            for (const key of pinnedKeys) {
+                const records = recordsByType.get(key) || [];
 
-        for (const key of trendKeys) {
-            const records = recordsByType.get(key) || [];
-            // Take last 30 records for trends
-            const trendRecords = records.slice(0, 30);
+                // Take first 10 for trend calculation (already sorted by date desc)
+                const recentRecords = records.slice(0, 10);
+                const latestRecord = records[0] || null;
 
-            trends.push({
-                key,
-                records: trendRecords
-            });
-        }
+                // Calculate trend
+                let trend = 'flat';
+                let trendValue = '0';
 
-        // ====================================================================
-        // STEP 5: Calculate Daily Summaries
-        // ====================================================================
+                if (recentRecords.length >= 2) {
+                    const latest = Number(recentRecords[0].value);
+                    const previous = Number(recentRecords[1].value);
+                    const diff = latest - previous;
+                    if (diff > 0) {
+                        trend = 'up';
+                        trendValue = `+${diff.toFixed(1)}`;
+                    } else if (diff < 0) {
+                        trend = 'down';
+                        trendValue = `${diff.toFixed(1)}`;
+                    }
+                }
 
-        const dailySummaries: Record<string, number> = {};
-        const todayStartTime = todayStart.getTime();
+                pinnedMetrics.push({
+                    key,
+                    latestRecord,
+                    trend,
+                    trendValue,
+                    history: recentRecords
+                });
+            }
 
-        for (const key of summableMetrics) {
-            const records = recordsByType.get(key) || [];
+            // ====================================================================
+            // STEP 4: Process Trends
+            // ====================================================================
 
-            // Filter records for today and sum (in-memory filtering)
-            const todayRecords = records.filter(r => {
-                const recordDate = new Date(r.date);
-                return recordDate.getTime() >= todayStartTime;
-            });
+            const trends: any[] = [];
 
-            const sum = todayRecords.reduce((acc, curr) => acc + curr.value, 0);
-            dailySummaries[key] = sum;
-        }
+            for (const key of trendKeys) {
+                const records = recordsByType.get(key) || [];
+                // Take last 30 records for trends
+                const trendRecords = records.slice(0, 30);
 
-        // ====================================================================
-        // STEP 6: Return Result
-        // ====================================================================
+                trends.push({
+                    key,
+                    records: trendRecords
+                });
+            }
 
-        return {
-            pinnedMetrics,
-            trends,
-            dailySummaries
-        };
+            // ====================================================================
+            // STEP 5: Calculate Daily Summaries
+            // ====================================================================
+
+            const dailySummaries: Record<string, number> = {};
+            const todayStartTime = todayStart.getTime();
+
+            for (const key of summableMetrics) {
+                const records = recordsByType.get(key) || [];
+
+                // Filter records for today and sum (in-memory filtering)
+                const todayRecords = records.filter(r => {
+                    const recordDate = new Date(r.date);
+                    return recordDate.getTime() >= todayStartTime;
+                });
+
+                const sum = todayRecords.reduce((acc, curr) => acc + curr.value, 0);
+                dailySummaries[key] = sum;
+            }
+
+            // ====================================================================
+            // STEP 6: Return Result
+            // ====================================================================
+
+            return {
+                pinnedMetrics,
+                trends,
+                dailySummaries
+            };
+        });
     }
 
     /**
@@ -263,13 +280,14 @@ export class HealthService {
         range: string,
         bucket: string
     ) {
-        // Verify pet ownership
-        const pet = await this.prisma.pet.findFirst({
-            where: { id: petId, userId, deleted: false },
-        });
-        if (!pet) {
-            throw new NotFoundException('Pet not found or does not belong to user');
-        }
+        return this.guardSchema(async () => {
+            // Verify pet ownership
+            const pet = await this.prisma.pet.findFirst({
+                where: { id: petId, userId, deleted: false },
+            });
+            if (!pet) {
+                throw new NotFoundException('Pet not found or does not belong to user');
+            }
 
         // ====================================================================
         // STEP 1: Determine time range cutoff
@@ -423,94 +441,250 @@ export class HealthService {
         // STEP 5: Return result
         // ====================================================================
 
-        return {
-            series: aggregatedData,
-            stats,
-            meta: {
-                metricKey,
-                range,
-                bucket,
-                cutoffDate: cutoffDate.toISOString(),
-                recordCount: filteredRecords.length,
-                aggregatedCount: aggregatedData.length
-            }
-        };
+            return {
+                series: aggregatedData,
+                stats,
+                meta: {
+                    metricKey,
+                    range,
+                    bucket,
+                    cutoffDate: cutoffDate.toISOString(),
+                    recordCount: filteredRecords.length,
+                    aggregatedCount: aggregatedData.length
+                }
+            };
+        });
     }
 
     async findOne(id: string, userId: string): Promise<HealthRecord> {
-        const record = await this.prisma.healthRecord.findFirst({
-            where: { id, pet: { userId }, deleted: false },
+        return this.guardSchema(async () => {
+            const record = await this.prisma.healthRecord.findFirst({
+                where: { id, pet: { userId }, deleted: false },
+            });
+            if (!record) {
+                throw new NotFoundException(`Health record with ID ${id} not found`);
+            }
+            return {
+                ...record,
+                updatedAt: record.updatedAt.getTime(),
+                metadata: (record.metadata || undefined) as Record<string, any> | undefined,
+            };
         });
-        if (!record) {
-            throw new NotFoundException(`Health record with ID ${id} not found`);
-        }
-        return {
-            ...record,
-            updatedAt: record.updatedAt.getTime(),
-            metadata: (record.metadata || undefined) as Record<string, any> | undefined,
-        };
     }
 
     async update(id: string, userId: string, updateHealthRecordDto: UpdateHealthRecordDto) {
-        const record = await this.findOne(id, userId);
+        return this.guardSchema(async () => {
+            await this.findOne(id, userId);
 
-        const result = await this.prisma.healthRecord.update({
-            where: { id },
-            data: updateHealthRecordDto,
+            const result = await this.prisma.healthRecord.update({
+                where: { id },
+                data: updateHealthRecordDto,
+            });
+
+            return result;
         });
-
-        return result;
     }
 
     async remove(id: string, userId: string) {
-        const record = await this.findOne(id, userId);
+        return this.guardSchema(async () => {
+            await this.findOne(id, userId);
 
-        const result = await this.prisma.healthRecord.update({
-            where: { id },
-            data: { deleted: true },
+            const result = await this.prisma.healthRecord.update({
+                where: { id },
+                data: { deleted: true },
+            });
+
+            return result;
         });
-
-        return result;
     }
 
     async toggleMetricPin(userId: string, petId: string, metricKey: string, isPinned: boolean) {
-        // Verify pet ownership
-        const pet = await this.prisma.pet.findFirst({
-            where: { id: petId, userId, deleted: false },
-        });
-        if (!pet) {
-            throw new NotFoundException('Pet not found or does not belong to user');
-        }
-
-        if (isPinned) {
-            // Create pin if not exists
-            // Use upsert or create with catch to handle duplicates safely, or findFirst then create
-            const existing = await this.prisma.pinnedMetric.findUnique({
-                where: {
-                    petId_metricKey: {
-                        petId,
-                        metricKey
-                    }
-                }
+        return this.guardSchema(async () => {
+            // Verify pet ownership
+            const pet = await this.prisma.pet.findFirst({
+                where: { id: petId, userId, deleted: false },
             });
-            if (!existing) {
-                await this.prisma.pinnedMetric.create({
-                    data: {
+            if (!pet) {
+                throw new NotFoundException('Pet not found or does not belong to user');
+            }
+
+            if (isPinned) {
+                const existing = await this.prisma.pinnedMetric.findUnique({
+                    where: {
+                        petId_metricKey: {
+                            petId,
+                            metricKey
+                        }
+                    }
+                });
+                if (!existing) {
+                    await this.prisma.pinnedMetric.create({
+                        data: {
+                            petId,
+                            metricKey
+                        }
+                    });
+                }
+            } else {
+                // Remove pin
+                await this.prisma.pinnedMetric.deleteMany({
+                    where: {
                         petId,
                         metricKey
                     }
                 });
             }
-        } else {
-            // Remove pin
-            await this.prisma.pinnedMetric.deleteMany({
-                where: {
-                    petId,
-                    metricKey
+
+            return { success: true };
+        });
+    }
+
+    private async guardSchema<T>(operation: () => Promise<T>): Promise<T> {
+        await this.ensureSchemaReady();
+        try {
+            return await operation();
+        } catch (error) {
+            if (this.isMissingTableError(error)) {
+                this.logger.warn('[HealthService] Missing health tables detected. Attempting automatic recovery...');
+                await this.ensureSchemaReady(true);
+                return operation();
+            }
+            throw error;
+        }
+    }
+
+    private isMissingTableError(error: unknown): boolean {
+        if (!error || typeof error !== 'object') {
+            return false;
+        }
+        const code = (error as any).code;
+        if (code === 'P2021') {
+            return true;
+        }
+        const message = (error as any).message;
+        return typeof message === 'string' && message.includes('does not exist');
+    }
+
+    private async ensureSchemaReady(force = false): Promise<void> {
+        if (force) {
+            this.schemaReady = false;
+            this.schemaPromise = undefined;
+        }
+        if (this.schemaReady) {
+            return;
+        }
+        if (!this.schemaPromise) {
+            this.schemaPromise = (async () => {
+                try {
+                    await this.syncSchema();
+                    this.schemaReady = true;
+                } catch (error) {
+                    this.schemaReady = false;
+                    throw error;
+                } finally {
+                    this.schemaPromise = undefined;
                 }
-            });
+            })();
+        }
+        await this.schemaPromise;
+    }
+
+    private async syncSchema(): Promise<void> {
+        const hasHealthTable = await this.tableExists('HealthRecord');
+        if (!hasHealthTable) {
+            this.logger.warn('[HealthService] HealthRecord table missing. Creating automatically...');
+            await this.createHealthRecordTable();
+        } else {
+            await this.ensureHealthRecordColumns();
         }
 
-        return { success: true };
+        const hasPinnedMetricTable = await this.tableExists('PinnedMetric');
+        if (!hasPinnedMetricTable) {
+            this.logger.warn('[HealthService] PinnedMetric table missing. Creating automatically...');
+            await this.createPinnedMetricTable();
+        }
+
+        await this.ensureHealthIndexes();
+    }
+
+    private async tableExists(tableName: string): Promise<boolean> {
+        const result = await this.prisma.$queryRaw<{ exists: boolean }[]>`
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                  AND table_name = ${tableName}
+            ) as "exists";
+        `;
+        return Boolean(result[0]?.exists);
+    }
+
+    private async createHealthRecordTable(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "HealthRecord" (
+                "id" TEXT NOT NULL,
+                "petId" TEXT NOT NULL,
+                "type" TEXT NOT NULL,
+                "value" DOUBLE PRECISION NOT NULL,
+                "unit" TEXT NOT NULL,
+                "date" TEXT NOT NULL,
+                "notes" TEXT,
+                "source" TEXT,
+                "metadata" JSONB,
+                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "deleted" BOOLEAN NOT NULL DEFAULT false,
+                "version" INTEGER NOT NULL DEFAULT 1,
+                CONSTRAINT "HealthRecord_pkey" PRIMARY KEY ("id"),
+                CONSTRAINT "HealthRecord_petId_fkey"
+                    FOREIGN KEY ("petId") REFERENCES "Pet"("id")
+                    ON DELETE CASCADE ON UPDATE CASCADE
+            );
+        `);
+    }
+
+    private async ensureHealthRecordColumns(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            ALTER TABLE "HealthRecord"
+                ADD COLUMN IF NOT EXISTS "notes" TEXT,
+                ADD COLUMN IF NOT EXISTS "source" TEXT,
+                ADD COLUMN IF NOT EXISTS "metadata" JSONB,
+                ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                ADD COLUMN IF NOT EXISTS "deleted" BOOLEAN NOT NULL DEFAULT false,
+                ADD COLUMN IF NOT EXISTS "version" INTEGER NOT NULL DEFAULT 1;
+        `);
+    }
+
+    private async createPinnedMetricTable(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "PinnedMetric" (
+                "id" TEXT NOT NULL,
+                "petId" TEXT NOT NULL,
+                "metricKey" TEXT NOT NULL,
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "PinnedMetric_pkey" PRIMARY KEY ("id"),
+                CONSTRAINT "PinnedMetric_petId_fkey"
+                    FOREIGN KEY ("petId") REFERENCES "Pet"("id")
+                    ON DELETE CASCADE ON UPDATE CASCADE,
+                CONSTRAINT "PinnedMetric_petId_metricKey_key" UNIQUE ("petId","metricKey")
+            );
+        `);
+    }
+
+    private async ensureHealthIndexes(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "idx_health_record_covering"
+            ON "HealthRecord"("petId","type","deleted","date" DESC)
+            WHERE "deleted" = false;
+        `);
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "idx_pinned_metric_lookup"
+            ON "PinnedMetric"("petId","metricKey");
+        `);
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE UNIQUE INDEX IF NOT EXISTS "PinnedMetric_petId_metricKey_key"
+            ON "PinnedMetric"("petId","metricKey");
+        `);
     }
 }
