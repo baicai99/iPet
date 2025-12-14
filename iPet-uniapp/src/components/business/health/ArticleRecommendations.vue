@@ -13,9 +13,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useArticleStore } from '@/stores/articleStore'
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
-import type { Article } from '@/types/article'
+import { useArticleStore } from '@/modules/articles/store/articleStore'
+import { recommendByMetric, recommendByTags } from '@/modules/articles/domain/recommendationService'
+import type { ArticleManifestItem } from '@/modules/articles/domain/types'
 
 interface Props {
     /** 当前指标键 */
@@ -26,6 +27,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const articleStore = useArticleStore()
+articleStore.ensureLoaded().catch(err => console.error('[ArticleRecommendations] Failed to load articles', err))
 
 /**
  * ✅ 推荐文章计算逻辑（带记忆化）
@@ -39,33 +41,20 @@ const articleStore = useArticleStore()
  * - F-04 强制置顶：优先展示 article.id === metricKey 的文章
  * - F-05 模糊匹配：按 tags 交集匹配度排序
  */
-const articles = computed<Article[]>(() => {
-    const allArticles = articleStore.articles
-    if (!allArticles?.length || !props.metricKey) {
-        return []
-    }
+const articles = computed<ArticleManifestItem[]>(() => {
+    const manifest = articleStore.manifest
+    if (!manifest.length || !props.metricKey) return []
 
-    // F-04: 强制置顶 - 查找 ID 与 metricKey 匹配的文章
-    const pinnedArticle = allArticles.find(a => a.id === props.metricKey)
+    const relatedTags = [props.metricKey, ...(props.relatedMetrics || [])]
+    const pinnedArticle = manifest.find(article => article.id === props.metricKey)
+    const metricMatches = recommendByMetric(manifest, props.metricKey, props.metricKey, 1)
+    const tagMatches = recommendByTags(manifest, relatedTags, props.metricKey, 2)
+    const combined = [
+        ...metricMatches,
+        ...tagMatches.filter(article => !metricMatches.some(item => item.id === article.id))
+    ]
 
-    // F-05: 模糊匹配 - 按 tags 交集排序
-    const relatedArticles = allArticles
-        .filter(a => a.id !== props.metricKey) // 排除置顶文章
-        .map(article => ({
-            article,
-            matchCount: (article.tags || []).filter(tag =>
-                tag === props.metricKey || (props.relatedMetrics || []).includes(tag)
-            ).length
-        }))
-        .filter(item => item.matchCount > 0)
-        .sort((a, b) => b.matchCount - a.matchCount)
-        .slice(0, 2) // 取前2篇相关文章
-        .map(item => item.article)
-
-    // 组合结果：置顶 + 相关
-    return pinnedArticle
-        ? [pinnedArticle, ...relatedArticles]
-        : relatedArticles
+    return pinnedArticle ? [pinnedArticle, ...combined] : combined
 })
 </script>
 

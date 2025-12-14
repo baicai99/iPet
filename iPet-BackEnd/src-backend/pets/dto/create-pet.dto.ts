@@ -33,6 +33,10 @@ export class CreatePetDto {
     birthday?: string;
 
     @IsOptional()
+    @IsString()
+    arrivalDate?: string;
+
+    @IsOptional()
     @IsArray()
     @IsString({ each: true })
     personality?: string[];

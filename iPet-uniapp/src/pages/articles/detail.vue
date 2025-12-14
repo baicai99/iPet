@@ -9,12 +9,13 @@
                 <text class="title">{{ article.title }}</text>
                 <view class="meta">
                     <text class="author">{{ article.author || 'iPet' }}</text>
-                    <text class="date">{{ formatDate(article.createdAt, 'YYYY年MM月DD日') }}</text>
+                    <text class="date">{{ formatDate(article.updateTime, 'YYYY年MM月DD日') }}</text>
                 </view>
                 <text v-if="article.summary" class="summary">{{ article.summary }}</text>
             </view>
             <view class="article-body">
-                <u-parse :content="article.content"></u-parse>
+                <ArticleContentRenderer v-if="article.content" :markdown-text="article.content" />
+                <view v-else class="content-loading">加载内容中...</view>
             </view>
         </view>
 
@@ -25,17 +26,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import type { Article } from '@/types/article'
 import { getArticleDetail } from '@/services/articleService'
 import { formatDate } from '@/utils/common/formatHelper'
+import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'
+import type { ArticleWithContent } from '@/modules/articles/domain/types'
 
 const loading = ref(true)
-const article = ref<Article | null>(null)
+const article = ref<ArticleWithContent | null>(null)
 
 const fetchArticle = async (id: string) => {
     loading.value = true
     try {
+        // ✅ 触发懒加载 Content
         article.value = await getArticleDetail(id)
+        console.log('[ArticleDetail] Content loaded:', {
+            id,
+            hasContent: !!article.value?.content,
+            contentLength: article.value?.content?.length || 0
+        })
     } catch (error) {
         console.error('Failed to load article', error)
         article.value = null

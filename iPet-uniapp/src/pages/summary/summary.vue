@@ -94,14 +94,14 @@ import AppSectionState from '@/components/common/AppSectionState.vue'  // ✅ NE
 import { usePetViewModel } from '@/composables/usePetViewModel'
 import { usePetCommands } from '@/composables/usePetCommands'
 import { useHealthStore } from '@/stores/healthStore'
-import { useArticleStore } from '../../stores/articleStore'
+import { useArticleStore } from '@/modules/articles/store/articleStore'
 import { useAppStore } from '@/stores/appStore'
 import { storeToRefs } from 'pinia'
 import { onDataChanged } from '@/services/syncEvents'
 import { useSummaryData } from '@/composables/useSummaryData'
 import { METRIC_METADATA, type MetricKey } from '@/data/metricMetadata'
 import { COLORS, CATEGORY_COLOR_MAP } from '@/config/theme'
-import type { Article } from '@/types/article'
+import type { ArticleManifestItem } from '@/modules/articles/domain/types'
 import healthCacheService from '@/services/healthCacheService'  // ✅ NEW: 同步读取缓存
 import { useSectionState } from '@/composables/useSectionState'  // ✅ NEW: 分区状态机
 import { getTrendStatus } from '@/domain/trend/getTrendStatus'  // ✅ FIX: Import trend status detection
@@ -179,7 +179,7 @@ const trendsMinHeight = computed(() => {
     return changedMetricKeys.value.length > 0 ? '732rpx' : '264rpx'
 })
 
-const articles = computed<Article[]>(() => articleStore.getLatestArticles(3))
+const articles = computed<ArticleManifestItem[]>(() => articleStore.getLatestArticles(3))
 
 /**
  * 判断文章是否为"最新"（updateTime 在7天内，或是第一篇）

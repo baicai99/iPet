@@ -96,11 +96,26 @@
                         </u-form-item>
                     </view>
 
-                    <!-- Height (Added for Onboarding consistency) -->
-                    <view class="input-group">
-                        <text class="label">肩高 (cm)</text>
-                        <input type="number" :value="modelValue.height"
-                            @input="updateField('height', $event.detail.value)" placeholder="选填" class="custom-input" />
+                    <!-- Height & Arrival Date -->
+                    <view class="row-2-col">
+                        <u-form-item prop="height" class="col-item">
+                            <view class="input-group">
+                                <text class="label">肩高 (cm)</text>
+                                <input type="number" :value="modelValue.height"
+                                    @input="updateField('height', $event.detail.value)" placeholder="选填"
+                                    class="custom-input" />
+                            </view>
+                        </u-form-item>
+
+                        <u-form-item prop="arrivalDate" class="col-item">
+                            <view class="input-group">
+                                <text class="label">到家日期</text>
+                                <view class="custom-input" @click="openArrivalDatePicker">
+                                    <text v-if="modelValue.arrivalDate">{{ modelValue.arrivalDate }}</text>
+                                    <text v-else class="input-placeholder">选择日期</text>
+                                </view>
+                            </view>
+                        </u-form-item>
                     </view>
                 </view>
 
@@ -199,7 +214,7 @@
                     <view v-for="(breed, index) in filteredBreeds" :key="index" class="breed-item"
                         @click="selectBreed(breed)">
                         <text class="breed-name" :class="{ 'selected-breed': modelValue.breed === breed }">{{ breed
-                        }}</text>
+                            }}</text>
                         <u-icon v-if="modelValue.breed === breed" name="checkmark" size="18" color="#f97316"></u-icon>
                     </view>
                     <view v-if="filteredBreeds.length === 0" class="empty-result">
@@ -215,6 +230,9 @@
 
         <u-datetime-picker :show="showVaccinePicker" v-model="vaccineValue" mode="date" :maxDate="maxDate"
             @confirm="confirmVaccine" @cancel="showVaccinePicker = false"></u-datetime-picker>
+
+        <u-datetime-picker :key="arrivalPickerKey" :show="showArrivalPicker" v-model="arrivalValue" mode="date"
+            :maxDate="maxDate" @confirm="confirmArrivalDate" @cancel="showArrivalPicker = false"></u-datetime-picker>
     </view>
 </template>
 
@@ -233,6 +251,7 @@ interface PetProfile {
     weight: string;
     height?: string; // Optional
     birthday: string;
+    arrivalDate: string;  // ✅ Date pet arrived home
     chipId: string;
     vaccineDate: string;
     personality: string[];
@@ -258,6 +277,14 @@ const showBirthdayPicker = ref(false)
 const birthdayValue = ref(Number(new Date()))
 const showVaccinePicker = ref(false)
 const vaccineValue = ref(Number(new Date()))
+const showArrivalPicker = ref(false)
+const arrivalValue = ref(Number(new Date()))
+
+/**
+ * ✅ FIX: Dynamic key to force picker rebuild
+ * Prevents state pollution when birthday changes
+ */
+const arrivalPickerKey = computed(() => `arrival-picker-${props.modelValue.birthday || 'empty'}`)
 
 // Validation Rules
 const rules = {
@@ -265,7 +292,27 @@ const rules = {
     type: [{ required: true, message: '请选择宠物种类', trigger: ['change'] }],
     breed: [{ required: true, message: '请选择品种', trigger: ['change'] }],
     birthday: [{ required: true, message: '请选择生日', trigger: ['change'] }],
-    weight: [{ required: true, message: '请输入体重', trigger: ['blur', 'change'] }]
+    weight: [{ required: true, message: '请输入体重', trigger: ['blur', 'change'] }],
+    arrivalDate: [
+        {
+            validator: (rule: any, value: any, callback: any) => {
+                if (!value) return callback()  // Optional field
+
+                const birthday = props.modelValue.birthday
+                if (birthday && value < birthday) {
+                    return callback(new Error('到家日期不能早于出生日期'))
+                }
+
+                const today = new Date().toISOString().split('T')[0]
+                if (value > today) {
+                    return callback(new Error('到家日期不能是未来时间'))
+                }
+
+                callback()
+            },
+            trigger: ['change']
+        }
+    ]
 }
 
 // Logic
@@ -326,6 +373,20 @@ const confirmVaccine = (e: any) => {
     const d = String(date.getDate()).padStart(2, '0')
     updateField('vaccineDate', `${y}-${m}-${d}`)
     showVaccinePicker.value = false
+}
+
+const openArrivalDatePicker = () => {
+    arrivalValue.value = props.modelValue.arrivalDate ? Number(new Date(props.modelValue.arrivalDate)) : Number(new Date())
+    showArrivalPicker.value = true
+}
+
+const confirmArrivalDate = (e: any) => {
+    const date = new Date(e.value)
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    updateField('arrivalDate', `${y}-${m}-${d}`)
+    showArrivalPicker.value = false
 }
 
 // Tags

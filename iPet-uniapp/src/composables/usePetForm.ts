@@ -26,6 +26,7 @@ export function usePetForm() {
         breed: '',
         gender: PetGender.Male,
         birthday: '',
+        arrivalDate: '',  // ✅ Added for arrival date support
         weight: '',
         isSterilized: false,
         chipId: '',
@@ -81,6 +82,7 @@ export function usePetForm() {
             formData.value.breed = pet.breed || '';
             formData.value.gender = (pet.gender || PetGender.Male) as PetGender;
             formData.value.birthday = pet.birthday || '';
+            formData.value.arrivalDate = pet.arrivalDate || '';  // ✅ Load arrival date
             formData.value.weight = pet.weight ? String(pet.weight) : '';
             formData.value.isSterilized = !!pet.isSterilized;
             formData.value.chipId = pet.chipId || '';
@@ -169,6 +171,8 @@ export function usePetForm() {
                 gender: formData.value.gender as 'male' | 'female',
                 birthday: formData.value.birthday,
                 birthTimestamp: formData.value.birthday ? new Date(formData.value.birthday).getTime() : undefined,
+                arrivalDate: formData.value.arrivalDate || undefined,  // ✅ Save arrival date
+                arrivalTimestamp: formData.value.arrivalDate ? new Date(formData.value.arrivalDate).getTime() : undefined,
                 weight: formData.value.weight ? parseFloat(formData.value.weight) : undefined,
                 isSterilized: formData.value.isSterilized,
                 chipId: formData.value.chipId || undefined,

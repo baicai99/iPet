@@ -66,6 +66,7 @@ model Pet {
   gender    String?
   avatar    String?
   birthday  String? // YYYY-MM-DD
+  arrivalDate String? // YYYY-MM-DD - Date pet arrived home
   
   // New fields
   personality  String? // JSON string

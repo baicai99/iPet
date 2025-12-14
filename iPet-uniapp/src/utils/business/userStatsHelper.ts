@@ -40,20 +40,39 @@ export const resolvePetReferenceDate = (pet?: Pet): number | null => {
     return Math.min(...references)
 }
 
+/**
+ * Calculate total days with all pets
+ * Uses arrivalDate if available, falls back to birthday
+ * @param pets - List of pets
+ * @returns Total days with pets (sum of all pets' companionship days)
+ */
 export const calculateDaysWithPets = (pets: Pet[] = []): number => {
-    const referenceDates = pets
-        .map(resolvePetReferenceDate)
-        .filter((timestamp): timestamp is number => typeof timestamp === 'number')
-
-    if (!referenceDates.length) {
+    if (!pets || pets.length === 0) {
         return 0
     }
 
-    const earliest = Math.min(...referenceDates)
-    const today = dayjs().startOf('day')
-    const start = dayjs(earliest).startOf('day')
-    const diff = today.diff(start, 'day')
-    return diff < 0 ? 0 : diff
+    const now = Date.now()
+    let totalDays = 0
+
+    for (const pet of pets) {
+        // ✅ Use arrivalDate if available, fallback to birthday
+        const startDate = pet.arrivalDate || pet.birthday
+
+        if (!startDate) {
+            continue
+        }
+
+        const start = new Date(startDate).getTime()
+        if (isNaN(start) || start > now) {
+            continue
+        }
+
+        const diffMs = now - start
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+        totalDays += Math.max(0, days)
+    }
+
+    return totalDays
 }
 
 export const calculateRecordCount = (records: HealthRecord[] = []): number =>

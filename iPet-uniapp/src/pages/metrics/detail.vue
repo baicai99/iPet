@@ -100,7 +100,7 @@ import TextChart from '@/components/widgets/charts/TextChart.vue'
 import { useMetricDetail } from '@/composables/useMetricDetail'
 import { useChartOptions, getDateFormat } from '@/composables/useChartOptions'
 import { useHealthStore } from '@/stores/healthStore'
-import { useArticleStore } from '@/stores/articleStore'  // ✅ 用于 ensureLoaded()
+import { useArticleStore } from '@/modules/articles/store/articleStore'  // ✅ 用于 ensureLoaded()
 import { usePetViewModel } from '@/composables/usePetViewModel'  // ✅ FIX: Get selectedPetId
 import { useUnitConverter } from '@/composables/useUnitConverter'
 import { getMetricMetadata } from '@/data/metricMetadata'

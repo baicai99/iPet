@@ -24,12 +24,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
-import { useArticleStore } from '../../stores/articleStore'
+import { useArticleStore } from '@/modules/articles/store/articleStore'
 import { storeToRefs } from 'pinia'
 import { onLoad } from '@dcloudio/uni-app'
 
 const articleStore = useArticleStore()
-const { articles: allArticles } = storeToRefs(articleStore)
+const { manifest } = storeToRefs(articleStore)
 
 const loading = ref(true)
 
@@ -63,10 +63,11 @@ const tabList = [
 
 const filteredArticles = computed(() => {
     const activeValue = tabList[currentTab.value].value
+    const articles = manifest.value || []
     if (activeValue === 'all') {
-        return allArticles.value
+        return articles
     }
-    return allArticles.value.filter(article => article.category === activeValue)
+    return articles.filter(article => article.category === activeValue)
 })
 
 const handleTabClick = (item) => {

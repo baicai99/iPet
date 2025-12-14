@@ -10,6 +10,8 @@ export interface Pet {
     avatar?: string | null;
     birthday?: string | null;
     birthTimestamp?: number | null;
+    arrivalDate?: string | null;  // Date pet arrived home (ISO format YYYY-MM-DD)
+    arrivalTimestamp?: number | null;  // Timestamp for arrival date
     ownerId?: string | null;
 
     type: 'dog' | 'cat' | 'other';

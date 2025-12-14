@@ -1,0 +1,30 @@
+---
+id: calcium
+title: 钙质补充：骨骼健康的基础
+summary: 了解钙的重要性和正确补充方法，避免过量风险。
+cover: /static/images/articles/calcium.png
+category: education
+author: iPet 健康团队
+tags:
+  - calcium
+  - supplement
+  - bone_health
+  - nutrition
+updateTime: 2025-03-14
+source: local
+---
+
+## 钙的重要作用
+
+钙是骨骼和牙齿的主要成分，参与神经传导、肌肉收缩、血液凝固等重要功能。
+
+## 每日需求量
+
+成年犬约需50-100mg/kg体重。幼犬和哺乳期母犬需求更高。
+
+## 补钙注意事项
+
+- 优质狗粮通常已含足够钙质
+- 过量补钙可能导致骨骼发育异常
+- 需配合维生素D促进吸收
+- 大型犬幼犬尤其需注意钙磷比例

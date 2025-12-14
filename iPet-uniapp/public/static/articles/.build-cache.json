@@ -1,0 +1,39 @@
+{
+  "fingerprint": {
+    "scriptVersion": "articles-build@2025-phase1",
+    "files": {
+      "anxiety.md": "ff66b3a596856f5b60e5cd51541927dc06dc5cf8",
+      "bathing.md": "d440231f1b03ff7e45d05f726caf7469bf1a6ad0",
+      "bmi.md": "4e06fcca714a324adcc9d86fdc8db4060da5aa3b",
+      "body_fat.md": "4f9225b09e72284ea3cc1e1f4a7efe3e50e59eaa",
+      "body_temp.md": "1c91957d6ff4667399e442bc547f720f7fd31d8c",
+      "calcium.md": "058d661eab04d624da67077848da3edd94cce7fb",
+      "carb.md": "3af38b3aac25e430a7a3e95d7525ba2ad5ec14a4",
+      "depression.md": "1cef660eb765df75b7074dc0cb704d181919d797",
+      "deworming.md": "3b33c8afbb73fad7303c5c06e32eda90e1aaeccf",
+      "diet_energy.md": "3298e67137294dd61b4db614bc50beebf0a65fd5",
+      "fat.md": "7fbf2be0442e02b64414eb83399f93ffb589d23d",
+      "fiber.md": "4bea042bbba74a41669cbb8e2683c666ab78973d",
+      "fish_oil.md": "06a61a7d25bf069ff25519c144bacb266731e2ef",
+      "fitness_training.md": "1acf062b99a4f6f1b338926b23cb0e4efaddaeaa",
+      "lean_mass.md": "d384e681ad7841fee57fbcc79746cf4746ddff49",
+      "meal.md": "86bc3e90ddf52e08a61cd77b0a69584bc2f7bafc",
+      "protein.md": "9aeeacf05cad7173687849489e5f9c104d5275f8",
+      "rabies_vaccine.md": "b4d04c45ebe3cb296f2c959ef0a078b66aed3d0e",
+      "run_distance.md": "a4a8b98fa774f6dbf345fe90ae08a9de8300c0db",
+      "run_pace.md": "b563587e1be941d71573dff06a076e134e90deb3",
+      "shoulder_height.md": "94fbac9b696fc53a34fe4f20b446a3849cbdc93d",
+      "stool.md": "ef8827ec2bbff6f5799fdaa29b178a9b0ab3e3a4",
+      "tooth_brushing.md": "520f3245117acc7332682171d08b3e1855a75bbc",
+      "training.md": "7ef6f5fa8a9b2cc42337640b56ea295febd86210",
+      "vomiting.md": "0844a584aea82d68ba34b905a86e2b807be1c0d8",
+      "waist.md": "3612d4d3126e1b94d9fb9e1a1142124238ffaf12",
+      "walk_duration.md": "3bb2f99a50e6a2a0d317d72ef7e955825b4336f9",
+      "water.md": "2cd24a1a49fa7dfa6415dc530adc1e9619825984",
+      "weight.md": "3ba386bfa2c5a26cfbc9526167ba9d74b991f511"
+    },
+    "imagesHash": "bfbfdb52efec0d7acf91c45ada5de18a1a5e427e"
+  },
+  "contentVersion": "20251214-002",
+  "generatedAt": "2025-12-14T09:37:33.047Z"
+}

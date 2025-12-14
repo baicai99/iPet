@@ -1,19 +1,20 @@
 <template>
     <view class="recipe-detail-page">
         <u-loading-page :loading="loading"></u-loading-page>
-        
+
         <view v-if="article" class="content-wrapper">
             <image v-if="article.cover" :src="article.cover" class="cover-image" mode="aspectFill"></image>
             <view class="article-header">
                 <text class="title">{{ article.title }}</text>
                 <view class="meta">
                     <text class="author">{{ article.author || 'iPet' }}</text>
-                    <text class="date">{{ formatDate(article.createdAt) }}</text>
+                    <text class="date">{{ formatDate(article.updateTime, 'YYYY年MM月DD日') }}</text>
                 </view>
             </view>
-            
+
             <view class="article-body">
-                <u-parse :content="article.content"></u-parse>
+                <ArticleContentRenderer v-if="article.content" :markdown-text="article.content" />
+                <view v-else class="content-loading">内容加载中...</view>
             </view>
         </view>
     </view>
@@ -24,10 +25,11 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getArticleDetail } from '@/services/articleService'
 import { formatDate } from '@/utils/common/formatHelper'
-import type { Article } from '@/types/article'
+import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'
+import type { ArticleWithContent } from '@/modules/articles/domain/types'
 
 const loading = ref(true)
-const article = ref<Article | null>(null)
+const article = ref<ArticleWithContent | null>(null)
 
 const fetchArticle = async (id: string) => {
     loading.value = true
@@ -95,5 +97,11 @@ onLoad((options) => {
     font-size: 30rpx;
     line-height: 1.8;
     color: #374151;
+
+    .content-loading {
+        text-align: center;
+        color: #9ca3af;
+        padding: 40rpx 0;
+    }
 }
 </style>
