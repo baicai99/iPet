@@ -2,7 +2,7 @@
 id: tooth_brushing
 title: 狗狗口腔护理：健康从"齿"开始
 summary: 牙齿健康影响全身，学习正确的刷牙方法和口腔护理技巧。
-cover: /static/images/articles/dental-care.png
+cover: "/static/images/articles/dental-care.webp"
 category: education
 author: iPet 健康团队
 tags:

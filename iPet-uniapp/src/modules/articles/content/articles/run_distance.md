@@ -2,7 +2,7 @@
 id: run_distance
 title: 狗狗跑步训练：循序渐进的耐力提升
 summary: 科学规划跑步距离，避免运动损伤。
-cover: /static/images/articles/run_distance.png
+cover: "/static/images/articles/run_distance.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: carb
 title: 碳水化合物：能量来源的平衡之道
 summary: 合理摄入碳水化合物，为狗狗提供充足能量。
-cover: /static/images/articles/carb.png
+cover: "/static/images/articles/carb.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: fish_oil
 title: 鱼油补充：Omega-3的神奇功效
 summary: 鱼油富含Omega-3脂肪酸，对皮肤、关节和心脏都有益处。
-cover: /static/images/articles/fish_oil.png
+cover: "/static/images/articles/fish_oil.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: lean_mass
 title: 去脂体重：肌肉质量的关键指标
 summary: 去脂体重反映肌肉和骨骼质量，是评估健康的重要参数。
-cover: /static/images/articles/lean-mass.png
+cover: "/static/images/articles/lean-mass.webp"
 category: education
 author: iPet 健康团队
 tags:

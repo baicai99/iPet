@@ -2,7 +2,7 @@
 id: rabies_vaccine
 title: 疫苗接种指南：科学免疫，安心养宠
 summary: 了解狗狗必须接种的疫苗类型、时间节点和注意事项。
-cover: /static/images/articles/vaccination.png
+cover: "/static/images/articles/vaccination.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: water
 title: 狗狗饮水管理：生命之源不可忽视
 summary: 充足饮水对健康至关重要，了解正确的饮水量和注意事项。
-cover: /static/images/articles/water.png
+cover: "/static/images/articles/water.webp"
 category: education
 author: iPet 健康团队
 tags:

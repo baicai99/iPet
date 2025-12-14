@@ -2,7 +2,7 @@
 id: weight
 title: 狗狗体重管理指南：科学控制，健康常伴
 summary: 了解如何科学管理狗狗体重，预防肥胖带来的健康问题。
-cover: /static/images/articles/weight-management.png
+cover: "/static/images/articles/weight-management.webp"
 category: education
 author: iPet 健康团队
 tags:

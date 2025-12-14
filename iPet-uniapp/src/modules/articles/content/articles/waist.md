@@ -2,7 +2,7 @@
 id: waist
 title: 狗狗腰围测量：脂肪分布的晴雨表
 summary: 腰围变化能及时反映脂肪堆积情况，预防肥胖。
-cover: /static/images/articles/waist.png
+cover: "/static/images/articles/waist.webp"
 category: education
 author: iPet 健康团队
 tags:

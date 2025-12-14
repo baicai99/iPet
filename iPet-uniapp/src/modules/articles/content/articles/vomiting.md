@@ -2,7 +2,7 @@
 id: vomiting
 title: 狗狗呕吐：原因分析与应对
 summary: 了解呕吐的常见原因，判断何时需要就医。
-cover: /static/images/articles/vomiting.png
+cover: "/static/images/articles/vomiting.webp"
 category: education
 author: iPet 健康团队
 tags:

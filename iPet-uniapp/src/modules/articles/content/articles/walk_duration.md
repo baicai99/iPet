@@ -2,7 +2,7 @@
 id: walk_duration
 title: 狗狗运动指南：活力满满每一天
 summary: 不同品种、年龄的狗狗运动需求各异，掌握科学运动方法。
-cover: /static/images/articles/dog-exercise.png
+cover: "/static/images/articles/dog-exercise.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: fat
 title: 脂肪营养：必需但需适量
 summary: 脂肪提供能量和必需脂肪酸，但过量会导致肥胖。
-cover: /static/images/articles/fat.png
+cover: "/static/images/articles/fat.webp"
 category: education
 author: iPet 健康团队
 tags:

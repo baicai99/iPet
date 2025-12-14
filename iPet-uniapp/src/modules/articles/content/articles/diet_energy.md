@@ -2,7 +2,7 @@
 id: diet_energy
 title: 膳食能量管理：热量平衡的艺术
 summary: 了解狗狗的能量需求，实现摄入与消耗的平衡。
-cover: /static/images/articles/diet_energy.png
+cover: "/static/images/articles/diet_energy.webp"
 category: education
 author: iPet 健康团队
 tags:

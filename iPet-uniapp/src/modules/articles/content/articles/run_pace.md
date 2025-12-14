@@ -2,7 +2,7 @@
 id: run_pace
 title: 跑步配速控制：找到最佳运动强度
 summary: 合理控制配速，提升训练效果，预防过度疲劳。
-cover: /static/images/articles/run_pace.png
+cover: "/static/images/articles/run_pace.webp"
 category: education
 author: iPet 健康团队
 tags:

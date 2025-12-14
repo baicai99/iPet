@@ -2,7 +2,7 @@
 id: training
 title: 狗狗训练指南：培养良好行为习惯
 summary: 系统的训练方法，让狗狗更听话、更快乐。
-cover: /static/images/articles/training.png
+cover: "/static/images/articles/training.webp"
 category: education
 author: iPet 健康团队
 tags:

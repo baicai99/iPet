@@ -2,7 +2,7 @@
 id: anxiety
 title: 狗狗焦虑症：识别与缓解
 summary: 了解焦虑的表现和原因，帮助狗狗建立安全感。
-cover: /static/images/articles/anxiety.png
+cover: "/static/images/articles/anxiety.webp"
 category: education
 author: iPet 健康团队
 tags:

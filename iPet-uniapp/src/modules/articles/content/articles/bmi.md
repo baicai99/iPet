@@ -2,7 +2,7 @@
 id: bmi
 title: 狗狗BMI指数：快速评估体型
 summary: 了解宠物BMI的计算方法和意义，科学评估体型。
-cover: /static/images/articles/bmi.png
+cover: "/static/images/articles/bmi.webp"
 category: education
 author: iPet 健康团队
 tags:

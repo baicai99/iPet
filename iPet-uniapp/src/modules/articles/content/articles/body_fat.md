@@ -2,7 +2,7 @@
 id: body_fat
 title: 狗狗体脂率管理：健康体态的秘密
 summary: 体脂率比体重更能反映真实健康状况，学会科学管理。
-cover: /static/images/articles/body-fat.png
+cover: "/static/images/articles/body-fat.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: deworming
 title: 驱虫全攻略：守护毛孩健康防线
 summary: 体内外驱虫的正确方法、频率和注意事项一网打尽。
-cover: /static/images/articles/deworming.png
+cover: "/static/images/articles/deworming.webp"
 category: education
 author: iPet 健康团队
 tags:

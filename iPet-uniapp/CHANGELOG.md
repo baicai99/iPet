@@ -1,6 +1,13 @@
 ## 0.0.4 (2025-12-14)
 
 ### Added
+- [x] 实现全新模块化文章系统，包含专用服务、内容管理、缓存和相关工具
+  - 新增文章服务层，支持本地和远程内容管理
+  - 新增内容缓存机制，提升加载性能
+  - 新增文章相关工具函数
+- [x] 新增 `TrendHintCard` 趋势提示卡片组件
+- [x] 新增 `getTrendStatus` 工具函数，统一趋势状态显示逻辑
+- [x] 新增健康服务模式就绪检查和日志记录功能
 - [x] 新增 `AppSectionState.vue` 组件，采用叠加层架构防止累积布局偏移 (CLS)
   - 支持 `minHeight` 属性确保骨架屏到数据的平滑过渡
   - 使用 `v-show` 替代 `v-if` 避免 DOM 销毁
@@ -47,11 +54,22 @@
   - 混沌注入功能
 
 ### Changed
-- [x] 优化 Shell-first 加载策略，实现骨架屏优先渲染
+- [x] 统一趋势状态显示，使用 `TrendHintCard` 和 `getTrendStatus` 工具替代 `TrendNoChangeCard`
+- [x] 增强 Store 重置安全性，防止数据丢失
+- [x] 优化宠物切换数据加载逻辑
+  - 改进健康服务 API 调用
+  - 增强后端健康检查的鲁棒性
+- [x] 更新文章配图资源
+- [x] 重构加载状态管理
+  - 使用统一的加载状态替代骨架屏
+  - 动态渲染趋势卡片
+- [x] 重构 `AppSectionState` 组件，采用叠加层架构防止累积布局偏移 (CLS)
+  - 新增 `minHeight` 属性支持
+  - 使用 `v-show` 替代 `v-if` 避免 DOM 销毁
 - [x] 改进 UI 状态转换和响应式时机
-  - 使用 `v-show` 提升性能
   - 使用 `nextTick` 优化渲染时序
-- [x] 移除 `PinnedMetricsWidget` 内部空状态处理逻辑
+  - 移除 `PinnedMetricsWidget` 内部空状态处理逻辑
+- [x] 优化 Shell-first 加载策略，实现骨架屏优先渲染
 - [x] 优化健康数据检索和处理
   - 批量查询支持
   - 服务端聚合
@@ -69,15 +87,19 @@
 - [x] 数值统计格式化为一位小数
 
 ### Fixed
-- [x] 修复 Summary Snapshot Mock 契约验证问题，增强健康摘要 Mock 数据生成
+- [x] 修复 Summary Snapshot Mock 契约验证问题
+- [x] 增强健康摘要 Mock 数据生成的可靠性
+
+### Removed
+- [x] 移除 `TrendNoChangeCard` 组件（功能已被 `TrendHintCard` 替代）
+- [x] 删除 `TimelineSection` 组件及其在指标详情页的使用
 
 ### Refactor
+- [x] 重构趋势状态显示逻辑，统一使用 `getTrendStatus` 工具
+- [x] 重构健康服务操作，增加模式检查和日志
 - [x] 重构 `AppSectionState` 采用叠加层架构防止 CLS
 - [x] 重构趋势检测逻辑，集中管理
 - [x] 重构状态网格图表组件和工具函数
-
-### Removed
-- [x] 删除 `TimelineSection` 组件及其在指标详情页的使用
 
 ### Test
 - [x] 新增 Vitest 单元测试覆盖时间工具和增量聚合器

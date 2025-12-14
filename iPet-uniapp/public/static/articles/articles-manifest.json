@@ -1,13 +1,13 @@
 {
   "schemaVersion": "1.0.0",
-  "contentVersion": "20251214-002",
-  "generatedAt": "2025-12-14T09:37:33.047Z",
+  "contentVersion": "20251214-003",
+  "generatedAt": "2025-12-14T10:29:13.181Z",
   "articles": [
     {
       "id": "weight",
       "title": "狗狗体重管理指南：科学控制，健康常伴",
       "summary": "了解如何科学管理狗狗体重，预防肥胖带来的健康问题。",
-      "cover": "/static/images/articles/weight-management.png",
+      "cover": "/static/images/articles/weight-management.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -31,7 +31,7 @@
       "id": "meal",
       "title": "狗狗饮食营养全攻略",
       "summary": "从主粮选择到喂食量计算，全面解读狗狗的营养需求。",
-      "cover": "/static/images/articles/dog-nutrition.png",
+      "cover": "/static/images/articles/dog-nutrition.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -55,7 +55,7 @@
       "id": "walk_duration",
       "title": "狗狗运动指南：活力满满每一天",
       "summary": "不同品种、年龄的狗狗运动需求各异，掌握科学运动方法。",
-      "cover": "/static/images/articles/dog-exercise.png",
+      "cover": "/static/images/articles/dog-exercise.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -79,7 +79,7 @@
       "id": "deworming",
       "title": "驱虫全攻略：守护毛孩健康防线",
       "summary": "体内外驱虫的正确方法、频率和注意事项一网打尽。",
-      "cover": "/static/images/articles/deworming.png",
+      "cover": "/static/images/articles/deworming.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -103,7 +103,7 @@
       "id": "rabies_vaccine",
       "title": "疫苗接种指南：科学免疫，安心养宠",
       "summary": "了解狗狗必须接种的疫苗类型、时间节点和注意事项。",
-      "cover": "/static/images/articles/vaccination.png",
+      "cover": "/static/images/articles/vaccination.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -128,7 +128,7 @@
       "id": "tooth_brushing",
       "title": "狗狗口腔护理：健康从\"齿\"开始",
       "summary": "牙齿健康影响全身，学习正确的刷牙方法和口腔护理技巧。",
-      "cover": "/static/images/articles/dental-care.png",
+      "cover": "/static/images/articles/dental-care.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -152,7 +152,7 @@
       "id": "bathing",
       "title": "狗狗洗澡完全手册",
       "summary": "洗澡频率、水温控制、洗护用品选择，一文掌握洗澡全流程。",
-      "cover": "/static/images/articles/bathing.png",
+      "cover": "/static/images/articles/bathing.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -175,7 +175,7 @@
       "id": "shoulder_height",
       "title": "狗狗肩高测量与生长发育指南",
       "summary": "肩高是评估狗狗体型和发育的重要指标，了解正确测量方法。",
-      "cover": "/static/images/articles/shoulder-height.png",
+      "cover": "/static/images/articles/shoulder-height.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -198,7 +198,7 @@
       "id": "body_temp",
       "title": "狗狗体温监测：及时发现健康异常",
       "summary": "体温是重要的健康指标，学会正确测量和判断异常体温。",
-      "cover": "/static/images/articles/body-temp.png",
+      "cover": "/static/images/articles/body-temp.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -221,7 +221,7 @@
       "id": "body_fat",
       "title": "狗狗体脂率管理：健康体态的秘密",
       "summary": "体脂率比体重更能反映真实健康状况，学会科学管理。",
-      "cover": "/static/images/articles/body-fat.png",
+      "cover": "/static/images/articles/body-fat.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -244,7 +244,7 @@
       "id": "bmi",
       "title": "狗狗BMI指数：快速评估体型",
       "summary": "了解宠物BMI的计算方法和意义，科学评估体型。",
-      "cover": "/static/images/articles/bmi.png",
+      "cover": "/static/images/articles/bmi.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -267,7 +267,7 @@
       "id": "lean_mass",
       "title": "去脂体重：肌肉质量的关键指标",
       "summary": "去脂体重反映肌肉和骨骼质量，是评估健康的重要参数。",
-      "cover": "/static/images/articles/lean-mass.png",
+      "cover": "/static/images/articles/lean-mass.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -290,7 +290,7 @@
       "id": "waist",
       "title": "狗狗腰围测量：脂肪分布的晴雨表",
       "summary": "腰围变化能及时反映脂肪堆积情况，预防肥胖。",
-      "cover": "/static/images/articles/waist.png",
+      "cover": "/static/images/articles/waist.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -313,7 +313,7 @@
       "id": "water",
       "title": "狗狗饮水管理：生命之源不可忽视",
       "summary": "充足饮水对健康至关重要，了解正确的饮水量和注意事项。",
-      "cover": "/static/images/articles/water.png",
+      "cover": "/static/images/articles/water.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -336,7 +336,7 @@
       "id": "protein",
       "title": "蛋白质营养：肌肉和免疫的基石",
       "summary": "蛋白质是狗狗最重要的营养素，了解需求量和优质来源。",
-      "cover": "/static/images/articles/protein.png",
+      "cover": "/static/images/articles/protein.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -359,7 +359,7 @@
       "id": "carb",
       "title": "碳水化合物：能量来源的平衡之道",
       "summary": "合理摄入碳水化合物，为狗狗提供充足能量。",
-      "cover": "/static/images/articles/carb.png",
+      "cover": "/static/images/articles/carb.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -382,7 +382,7 @@
       "id": "fat",
       "title": "脂肪营养：必需但需适量",
       "summary": "脂肪提供能量和必需脂肪酸，但过量会导致肥胖。",
-      "cover": "/static/images/articles/fat.png",
+      "cover": "/static/images/articles/fat.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -405,7 +405,7 @@
       "id": "diet_energy",
       "title": "膳食能量管理：热量平衡的艺术",
       "summary": "了解狗狗的能量需求，实现摄入与消耗的平衡。",
-      "cover": "/static/images/articles/diet_energy.png",
+      "cover": "/static/images/articles/diet_energy.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -428,7 +428,7 @@
       "id": "run_distance",
       "title": "狗狗跑步训练：循序渐进的耐力提升",
       "summary": "科学规划跑步距离，避免运动损伤。",
-      "cover": "/static/images/articles/run_distance.png",
+      "cover": "/static/images/articles/run_distance.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -451,7 +451,7 @@
       "id": "run_pace",
       "title": "跑步配速控制：找到最佳运动强度",
       "summary": "合理控制配速，提升训练效果，预防过度疲劳。",
-      "cover": "/static/images/articles/run_pace.png",
+      "cover": "/static/images/articles/run_pace.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -474,7 +474,7 @@
       "id": "fitness_training",
       "title": "狗狗体能训练：打造强健体魄",
       "summary": "系统的体能训练计划，提升狗狗整体运动能力。",
-      "cover": "/static/images/articles/fitness_training.png",
+      "cover": "/static/images/articles/fitness_training.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -497,7 +497,7 @@
       "id": "training",
       "title": "狗狗训练指南：培养良好行为习惯",
       "summary": "系统的训练方法，让狗狗更听话、更快乐。",
-      "cover": "/static/images/articles/training.png",
+      "cover": "/static/images/articles/training.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -520,7 +520,7 @@
       "id": "stool",
       "title": "狗狗排便健康：消化系统的晴雨表",
       "summary": "通过观察排便情况，及时发现消化系统问题。",
-      "cover": "/static/images/articles/stool.png",
+      "cover": "/static/images/articles/stool.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -543,7 +543,7 @@
       "id": "anxiety",
       "title": "狗狗焦虑症：识别与缓解",
       "summary": "了解焦虑的表现和原因，帮助狗狗建立安全感。",
-      "cover": "/static/images/articles/anxiety.png",
+      "cover": "/static/images/articles/anxiety.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -566,7 +566,7 @@
       "id": "depression",
       "title": "狗狗抑郁症：别让毛孩心情低落",
       "summary": "识别抑郁信号，采取措施改善狗狗情绪。",
-      "cover": "/static/images/articles/depression.png",
+      "cover": "/static/images/articles/depression.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -589,7 +589,7 @@
       "id": "fish_oil",
       "title": "鱼油补充：Omega-3的神奇功效",
       "summary": "鱼油富含Omega-3脂肪酸，对皮肤、关节和心脏都有益处。",
-      "cover": "/static/images/articles/fish_oil.png",
+      "cover": "/static/images/articles/fish_oil.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -612,7 +612,7 @@
       "id": "calcium",
       "title": "钙质补充：骨骼健康的基础",
       "summary": "了解钙的重要性和正确补充方法，避免过量风险。",
-      "cover": "/static/images/articles/calcium.png",
+      "cover": "/static/images/articles/calcium.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -635,7 +635,7 @@
       "id": "fiber",
       "title": "膳食纤维：肠道健康的守护者",
       "summary": "适量纤维促进消化，了解来源和推荐摄入量。",
-      "cover": "/static/images/articles/fiber.png",
+      "cover": "/static/images/articles/fiber.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [
@@ -658,7 +658,7 @@
       "id": "vomiting",
       "title": "狗狗呕吐：原因分析与应对",
       "summary": "了解呕吐的常见原因，判断何时需要就医。",
-      "cover": "/static/images/articles/vomiting.png",
+      "cover": "/static/images/articles/vomiting.webp",
       "category": "education",
       "author": "iPet 健康团队",
       "tags": [

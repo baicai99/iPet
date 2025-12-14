@@ -2,7 +2,7 @@
 id: protein
 title: 蛋白质营养：肌肉和免疫的基石
 summary: 蛋白质是狗狗最重要的营养素，了解需求量和优质来源。
-cover: /static/images/articles/protein.png
+cover: "/static/images/articles/protein.webp"
 category: education
 author: iPet 健康团队
 tags:

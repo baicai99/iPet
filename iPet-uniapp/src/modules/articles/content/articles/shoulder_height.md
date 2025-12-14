@@ -2,7 +2,7 @@
 id: shoulder_height
 title: 狗狗肩高测量与生长发育指南
 summary: 肩高是评估狗狗体型和发育的重要指标，了解正确测量方法。
-cover: /static/images/articles/shoulder-height.png
+cover: "/static/images/articles/shoulder-height.webp"
 category: education
 author: iPet 健康团队
 tags:

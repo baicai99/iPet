@@ -2,7 +2,7 @@
 id: fiber
 title: 膳食纤维：肠道健康的守护者
 summary: 适量纤维促进消化，了解来源和推荐摄入量。
-cover: /static/images/articles/fiber.png
+cover: "/static/images/articles/fiber.webp"
 category: education
 author: iPet 健康团队
 tags:

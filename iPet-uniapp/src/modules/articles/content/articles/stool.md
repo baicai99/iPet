@@ -2,7 +2,7 @@
 id: stool
 title: 狗狗排便健康：消化系统的晴雨表
 summary: 通过观察排便情况，及时发现消化系统问题。
-cover: /static/images/articles/stool.png
+cover: "/static/images/articles/stool.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: bathing
 title: 狗狗洗澡完全手册
 summary: 洗澡频率、水温控制、洗护用品选择，一文掌握洗澡全流程。
-cover: /static/images/articles/bathing.png
+cover: "/static/images/articles/bathing.webp"
 category: education
 author: iPet 健康团队
 tags:

@@ -2,7 +2,7 @@
 id: body_temp
 title: 狗狗体温监测：及时发现健康异常
 summary: 体温是重要的健康指标，学会正确测量和判断异常体温。
-cover: /static/images/articles/body-temp.png
+cover: "/static/images/articles/body-temp.webp"
 category: education
 author: iPet 健康团队
 tags:

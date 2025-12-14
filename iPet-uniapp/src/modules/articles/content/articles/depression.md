@@ -2,7 +2,7 @@
 id: depression
 title: 狗狗抑郁症：别让毛孩心情低落
 summary: 识别抑郁信号，采取措施改善狗狗情绪。
-cover: /static/images/articles/depression.png
+cover: "/static/images/articles/depression.webp"
 category: education
 author: iPet 健康团队
 tags:

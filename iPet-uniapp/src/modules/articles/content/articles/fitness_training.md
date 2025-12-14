@@ -2,7 +2,7 @@
 id: fitness_training
 title: 狗狗体能训练：打造强健体魄
 summary: 系统的体能训练计划，提升狗狗整体运动能力。
-cover: /static/images/articles/fitness_training.png
+cover: "/static/images/articles/fitness_training.webp"
 category: education
 author: iPet 健康团队
 tags:

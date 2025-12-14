@@ -2,7 +2,7 @@
 id: calcium
 title: 钙质补充：骨骼健康的基础
 summary: 了解钙的重要性和正确补充方法，避免过量风险。
-cover: /static/images/articles/calcium.png
+cover: "/static/images/articles/calcium.webp"
 category: education
 author: iPet 健康团队
 tags:

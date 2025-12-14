@@ -2,7 +2,7 @@
 id: meal
 title: 狗狗饮食营养全攻略
 summary: 从主粮选择到喂食量计算，全面解读狗狗的营养需求。
-cover: /static/images/articles/dog-nutrition.png
+cover: "/static/images/articles/dog-nutrition.webp"
 category: education
 author: iPet 健康团队
 tags:
