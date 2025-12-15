@@ -3,8 +3,9 @@
         <view class="header-container">
             <!-- 非任务模式：图表区域 -->
             <template v-if="!isTaskMode">
+                <!-- ✅ 使用 chartSpec 替代 echartsOptions -->
                 <MetricChartArea :active-tab="activeTab" :tabs="tabs" :latest-metric-display="latestMetricDisplay"
-                    :current-data="currentData" :is-chart-type="isChartType" :echarts-options="echartsOptions"
+                    :current-data="currentData" :is-standard-chart="isStandardChart" :chart-spec="chartSpec"
                     :current-chart-component="currentChartComponent" :chart-options="chartOptions" :theme="theme"
                     :x-axis-labels="xAxisLabels" @update:activeTab="setActiveTab" @point-click="onChartPointClick" />
             </template>
@@ -200,7 +201,8 @@ const xAxisLabels = computed(() => {
     return [labels[0], labels[Math.floor(len / 2)], labels[len - 1]]
 })
 
-const { isChartType, echartsOptions } = useChartOptions(metricMetadata, currentData, theme, activeTab)
+// ✅ 使用新的 chartSpec 输出
+const { isStandardChart, chartSpec } = useChartOptions(metricMetadata, currentData, theme, activeTab)
 
 // ============================================================================
 // Computed: Related Metrics

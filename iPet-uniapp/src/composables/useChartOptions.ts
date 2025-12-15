@@ -1,6 +1,8 @@
 import { computed } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import { getMetricProcessingConfig } from '@/data/metricMetadata'
+import type { MetricMetadata } from '@/data/metricMetadata'
+import type { ChartSpec } from '@/types/chart'
 
 /**
  * Type Definitions
@@ -22,15 +24,6 @@ interface YAxisRange {
     min: number
     max: number
     interval?: number
-}
-
-interface MetricMetadata {
-    visualization?: {
-        type?: string
-        options?: Record<string, unknown>
-    }
-    displayUnit?: string
-    unit?: string
 }
 
 interface Theme {
@@ -181,6 +174,7 @@ const alignSeriesData = (
     })
 
     const alignedValues: (number | null)[] = []
+    let lastValidValue: number | null = null  // ✅ Track last valid value for carry
 
     axisTimestamps.forEach((axisTs: number) => {
         const d = new Date(axisTs)
@@ -195,10 +189,18 @@ const alignSeriesData = (
         }
 
         if (dataMap.has(key)) {
-            alignedValues.push(dataMap.get(key)!)
+            const value = dataMap.get(key)!
+            alignedValues.push(value)
+            lastValidValue = value  // ✅ Update last valid value
         } else {
-            // Missing data handling based on missingPolicy
-            alignedValues.push(missingPolicy === 'zero' ? 0 : null)
+            // ✅ Missing data handling based on missingPolicy
+            if (missingPolicy === 'zero') {
+                alignedValues.push(0)
+            } else if (missingPolicy === 'carry' && lastValidValue !== null) {
+                alignedValues.push(lastValidValue)  // ✅ Use last valid value
+            } else {
+                alignedValues.push(null)
+            }
         }
     })
 
@@ -252,23 +254,25 @@ export function useChartOptions(
     theme: Ref<Theme>,
     activeRange: Ref<TimeRange | string>
 ) {
-    const isChartType = computed(() => {
+    // ✅ Renamed from isChartType to isStandardChart
+    const isStandardChart = computed(() => {
         const type = metricMetadata.value.visualization?.type
         return ['trend_line', 'daily_bar'].includes(type || '')
     })
 
-    const echartsOptions = computed(() => {
-        if (!isChartType.value) return {}
+    // ✅ New: Generate ChartSpec instead of echarts options
+    const chartSpec = computed((): ChartSpec | null => {
+        if (!isStandardChart.value) return null
 
         const type = metricMetadata.value.visualization?.type
         const range = activeRange.value as TimeRange
 
         // Metadata-driven processing config
-        const metricKey = (metricMetadata.value as { key?: string }).key || ''
+        const metricKey = metricMetadata.value.key || ''
         const processingConfig = getMetricProcessingConfig(metricKey)
 
         // 1. Generate Time Axis
-        const { timestamps: axisTimestamps, labels: axisLabels, formatLabel } = generateTimeAxis(range)
+        const { timestamps: axisTimestamps, labels: axisLabels } = generateTimeAxis(range)
 
         // 2. Align Data using metadata-driven missingPolicy
         const alignedValues = alignSeriesData(currentData.value, axisTimestamps, processingConfig.missingPolicy, range)
@@ -276,7 +280,40 @@ export function useChartOptions(
         // 3. Calculate Y-Axis
         const yAxisRange = calculateSmartYAxis(alignedValues)
 
-        // 4. Build Tooltip Formatter
+        // 4. Build ChartSpec
+        return {
+            type: type === 'trend_line' ? 'area' : 'bar',  // ✅ trend_line → area, daily_bar → bar
+            categories: axisLabels,
+            series: [{
+                name: metricMetadata.value.title || 'Value',
+                data: alignedValues,  // ✅ Preserve null values
+                areaStyle: type === 'trend_line'
+            }],
+            min: yAxisRange.min,
+            max: yAxisRange.max,
+            color: theme.value.hex,
+            yAxisName: metricMetadata.value.displayUnit || metricMetadata.value.unit || '',
+            animation: false,
+            showLegend: false,
+            connectNulls: processingConfig.connectAcrossMissing,  // ✅ New field
+            missingPolicy: processingConfig.missingPolicy          // ✅ New field
+        }
+    })
+
+    // ⚠️ DEPRECATED: Keep echartsOptions for backward compatibility
+    // This will be removed after migration is complete
+    const echartsOptions = computed(() => {
+        if (!isStandardChart.value) return {}
+
+        const type = metricMetadata.value.visualization?.type
+        const range = activeRange.value as TimeRange
+        const metricKey = metricMetadata.value.key || ''
+        const processingConfig = getMetricProcessingConfig(metricKey)
+
+        const { timestamps: axisTimestamps, labels: axisLabels, formatLabel } = generateTimeAxis(range)
+        const alignedValues = alignSeriesData(currentData.value, axisTimestamps, processingConfig.missingPolicy, range)
+        const yAxisRange = calculateSmartYAxis(alignedValues)
+
         const tooltipFormatter = (params: { dataIndex: number; value: number | null; color: string } | Array<{ dataIndex: number; value: number | null; color: string }>) => {
             const point = Array.isArray(params) ? params[0] : params
             if (!point) return ''
@@ -288,8 +325,6 @@ export function useChartOptions(
             if (value === null || value === undefined) return ''
 
             const dateStr = formatLabel(ts)
-
-            // Get unit
             const unit = metricMetadata.value.displayUnit || metricMetadata.value.unit || ''
 
             return `
@@ -309,7 +344,6 @@ export function useChartOptions(
             containLabel: true
         }
 
-        // X-Axis Configuration
         const xAxis = {
             type: 'category',
             data: axisLabels,
@@ -322,7 +356,7 @@ export function useChartOptions(
             axisLabel: {
                 color: '#94a3b8',
                 fontSize: 10,
-                interval: 0, // Show all labels (some are empty strings)
+                interval: 0,
             },
             splitLine: {
                 show: range === 'day',
@@ -330,7 +364,6 @@ export function useChartOptions(
             }
         }
 
-        // Y-Axis Configuration
         const yAxis = {
             type: 'value',
             min: yAxisRange.min,
@@ -350,33 +383,22 @@ export function useChartOptions(
             }
         }
 
-        // Determine if we need to show symbols (points)
-        // Only show symbol for single data point (no line to draw)
         const validDataCount = alignedValues.filter(v => v !== null && v !== undefined).length
         const shouldShowSymbol = validDataCount === 1
-
-        // ✅ OPTIMIZED: 降采样策略
-        // 大数据量时启用 ECharts 降采样和渐进式渲染
         const shouldEnableSampling = validDataCount > 50 && range === 'year'
         const shouldEnableProgressive = validDataCount > 100
 
-        // Series Configuration
         const seriesItem = {
             data: alignedValues,
             type: type === 'trend_line' ? 'line' : 'bar',
             smooth: true,
-            connectNulls: processingConfig.connectAcrossMissing, // Metadata-driven null connection
+            connectNulls: processingConfig.connectAcrossMissing,
             symbol: 'circle',
-            symbolSize: validDataCount === 1 ? 10 : 6, // Larger dot for single point
-            showSymbol: shouldShowSymbol, // Show symbols for sparse data
-
-            // ✅ 降采样配置 (大数据量优化)
-            sampling: shouldEnableSampling ? 'lttb' : undefined,  // Largest-Triangle-Three-Buckets 算法
-
-            // ✅ 渐进式渲染 (分块加载)
+            symbolSize: validDataCount === 1 ? 10 : 6,
+            showSymbol: shouldShowSymbol,
+            sampling: shouldEnableSampling ? 'lttb' : undefined,
             progressive: shouldEnableProgressive ? 500 : undefined,
             progressiveThreshold: shouldEnableProgressive ? 1000 : undefined,
-
             itemStyle: {
                 color: theme.value.hex,
                 borderRadius: type === 'daily_bar' ? [4, 4, 0, 0] : 0
@@ -393,9 +415,9 @@ export function useChartOptions(
                     x2: 0,
                     y2: 1,
                     colorStops: [{
-                        offset: 0, color: theme.value.hex // 0%
+                        offset: 0, color: theme.value.hex
                     }, {
-                        offset: 1, color: 'rgba(255, 255, 255, 0)' // 100%
+                        offset: 1, color: 'rgba(255, 255, 255, 0)'
                     }],
                     global: false
                 },
@@ -431,7 +453,8 @@ export function useChartOptions(
     })
 
     return {
-        isChartType,
-        echartsOptions
+        isStandardChart,  // ✅ Renamed
+        chartSpec,        // ✅ New: ChartSpec output
+        echartsOptions    // ⚠️ Deprecated: Keep for backward compatibility, will be removed
     }
 }

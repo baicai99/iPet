@@ -28,31 +28,33 @@
 
         <!-- 图表绘制区 -->
         <view class="chart-area">
-            <BaseChart v-if="isChartType" :options="echartsOptions" height="320rpx" width="100%"
+            <!-- 标准图表 + DEBUG -->
+            <view v-if="isStandardChart && !chartSpec" class="debug-info" style="padding: 20rpx; background: #f8d7da; color: #721c24;">
+                <text>DEBUG: chartSpec is null</text>
+            </view>
+            <BaseCanvasChart v-else-if="isStandardChart && chartSpec" :spec="chartSpec" height="320rpx" width="100%"
                 @point-click="onChartPointClick" />
-            <!-- 替换动态组件为条件渲染 -->
-            <template v-else>
-                <TrendLineChart v-if="chartComponentName === 'TrendLineChart'" :data="currentData"
-                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
-                <DailyBarChart v-else-if="chartComponentName === 'DailyBarChart'" :data="currentData"
-                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
-                <RangeSliderChart v-else-if="chartComponentName === 'RangeSliderChart'" :data="currentData"
-                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
-                <StatusIconChart v-else-if="chartComponentName === 'StatusIconChart'" :data="currentData"
-                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
-                <StatusGridChart v-else-if="chartComponentName === 'StatusGridChart'" :data="currentData"
-                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
-                <RiskGridTrendChart v-else-if="chartComponentName === 'RiskGridTrendChart'" :data="currentData"
-                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
-                <EventTimelineChart v-else-if="chartComponentName === 'EventTimelineChart'" :data="currentData"
-                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
-                <TextChart v-else-if="chartComponentName === 'TextChart'" :data="currentData" :options="chartOptions"
-                    :color="theme.hex" :time-range="activeTab" height="280rpx" />
-            </template>
+            
+            <!-- 自定义图表组件 -->
+            <TrendLineChart v-else-if="chartComponentName === 'TrendLineChart'" :data="chartOptions.data"
+                :color="theme.hex" :height="chartOptions.height || '280rpx'" />
+            <DailyBarChart v-else-if="chartComponentName === 'DailyBarChart'" :data="chartOptions.data"
+                :color="theme.hex" :height="chartOptions.height || '280rpx'" />
+            <RangeSliderChart v-else-if="chartComponentName === 'RangeSliderChart'" :current="chartOptions.current"
+                :min="chartOptions.min" :max="chartOptions.max" :unit="chartOptions.unit"
+                :comfort-zone="chartOptions.comfortZone" />
+            <StatusIconChart v-else-if="chartComponentName === 'StatusIconChart'" :current="chartOptions.current"
+                :previous="chartOptions.previous" />
+            <StatusGridChart v-else-if="chartComponentName === 'StatusGridChart'" :data="chartOptions.data"
+                :active-range="activeTab" />
+            <RiskGridTrendChart v-else-if="chartComponentName === 'RiskGridTrendChart'" :data="chartOptions.data"
+                :active-range="activeTab" />
+            <EventTimelineChart v-else-if="chartComponentName === 'EventTimelineChart'" :data="chartOptions.data" />
+            <TextChart v-else-if="chartComponentName === 'TextChart'" :data="chartOptions.data" />
         </view>
 
         <!-- 底部：辅助 X 轴标签 -->
-        <view class="x-axis-labels" v-if="!isChartType">
+        <view class="x-axis-labels" v-if="!isStandardChart">
             <text v-for="(label, idx) in xAxisLabels" :key="idx" class="axis-label"
                 :class="{ 'text-dark': idx === xAxisLabels.length - 1 }">
                 {{ label }}
@@ -63,7 +65,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import BaseChart from '@/components/BaseChart.vue'
+import BaseCanvasChart from '@/components/BaseCanvasChart.vue'
 import TrendLineChart from '@/components/widgets/charts/TrendLineChart.vue'
 import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
 import RangeSliderChart from '@/components/widgets/charts/RangeSliderChart.vue'
@@ -78,8 +80,8 @@ const props = defineProps<{
     tabs: any[]
     latestMetricDisplay: any
     currentData: any
-    isChartType: boolean
-    echartsOptions: any
+    isStandardChart: boolean      // ✅ 重命名
+    chartSpec: any                // ✅ 改用 ChartSpec
     currentChartComponent: any
     chartOptions: any
     theme: any
