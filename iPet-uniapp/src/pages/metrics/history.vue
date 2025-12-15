@@ -1,5 +1,7 @@
 <template>
-    <view class="history-page">
+    <view class="page-container">
+        <AppNavbar title="历史记录" />
+        <view class="history-page">
         <view v-if="historyData.length" class="history-list">
             <up-swipe-action>
                 <up-swipe-action-item v-for="item in historyData" :key="item.id" :options="swipeOptions"
@@ -31,12 +33,14 @@
         <view class="no-more" v-if="!loading && !hasMore && historyData.length > 0">
             <text>没有更多了</text>
         </view>
+        </view>
     </view>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
 import { onLoad, onReachBottom } from '@dcloudio/uni-app'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import { useHealthStore } from '@/stores/healthStore'
 import { getMetricMetadata } from '@/data/metricMetadata'
 import { usePetViewModel } from '@/composables/usePetViewModel'

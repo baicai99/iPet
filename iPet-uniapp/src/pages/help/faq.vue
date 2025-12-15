@@ -1,15 +1,19 @@
 <template>
-  <view class="">
-    <u-collapse accordion>
-      <u-collapse-item v-for="(item, index) in faqList" :key="index" :title="item.question">
-        <text class="answer-text">{{ item.answer }}</text>
-      </u-collapse-item>
-    </u-collapse>
-  </view>
+    <view class="page-container">
+        <AppNavbar title="常见问题" />
+        <view class="faq-page">
+            <u-collapse accordion>
+                <u-collapse-item v-for="(item, index) in faqList" :key="index" :title="item.question">
+                    <text class="answer-text">{{ item.answer }}</text>
+                </u-collapse-item>
+            </u-collapse>
+        </view>
+    </view>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import AppNavbar from '@/components/common/AppNavbar.vue';
 
 const faqList = ref([
   {

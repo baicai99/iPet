@@ -29,6 +29,7 @@
 import { ref, computed, onUnmounted } from 'vue';
 import { useImageCacheStore } from '@/stores/imageCacheStore';
 import { uploadService } from '@/services/uploadService';
+import { convertToWebPSimple } from '@/utils/common/imageConverter';
 
 const props = defineProps<{
     modelValue?: string | null;
@@ -71,7 +72,7 @@ const onChooseAvatar = async () => {
         areaHeight: '300rpx',
         exportWidth: '50px',
         exportHeight: '50px',
-        quality: 0.1
+        quality: 0.9       // 提高裁剪质量，因为后续会用 WebP 压缩
     });
 };
 
@@ -83,7 +84,10 @@ const onCropperConfirm = async (rsp: { avatar?: string; path?: string; index?: n
         return;
     }
     localPreviewPath.value = filePath; // 立即显示预览
-    await uploadImage(filePath);
+    
+    // 转换为 WebP 格式以降低文件体积
+    const webpPath = await convertToWebPSimple(filePath, 80);
+    await uploadImage(webpPath);
 };
 
 const uploadImage = async (filePath: string) => {

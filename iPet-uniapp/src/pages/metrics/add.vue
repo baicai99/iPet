@@ -1,11 +1,13 @@
 <template>
-    <view class="container">
-        <!-- Notification -->
-        <view v-if="notification" class="notification" :class="[notification.type]">
-            <u-icon :name="notification.type === 'success' ? 'checkmark-circle-fill' : 'info-circle-fill'"
-                :color="notification.type === 'success' ? '#065f46' : '#991b1b'" size="18"></u-icon>
-            <text class="notification-text">{{ notification.message }}</text>
-        </view>
+    <view class="page-container">
+        <AppNavbar :title="pageTitle" />
+        <view class="container">
+            <!-- Notification -->
+            <view v-if="notification" class="notification" :class="[notification.type]">
+                <u-icon :name="notification.type === 'success' ? 'checkmark-circle-fill' : 'info-circle-fill'"
+                    :color="notification.type === 'success' ? '#065f46' : '#991b1b'" size="18"></u-icon>
+                <text class="notification-text">{{ notification.message }}</text>
+            </view>
 
         <view class="main-content">
             <!-- Section 1: Header -->
@@ -248,12 +250,14 @@
         <u-action-sheet :show="showRepeatSheet" :actions="repeatOptions" title="选择重复频率" @select="onRepeatSelect"
             @close="showRepeatSheet = false"></u-action-sheet>
 
+        </view>
     </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import dayjs from 'dayjs'
 import { useHealthStore } from '@/stores/healthStore'
 import { usePetStore } from '@/stores/petStore'
@@ -462,8 +466,6 @@ onLoad(async (options: any) => {
             await (healthStore as any).fetchHealthRecords(petStore.selectedPetId)
         }
     }
-
-    uni.setNavigationBarTitle({ title: pageTitle.value })
 })
 
 // Action Handlers

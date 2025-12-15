@@ -1,26 +1,30 @@
 <template>
-  <view class="about-page">
-    <view class="logo-section">
-      <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
-      <text class="app-name">iPet</text>
-      <text class="version">Version 0.0.1</text>
-    </view>
+  <view class="page-container">
+    <AppNavbar title="关于我们" />
+    <view class="about-page">
+      <view class="logo-section">
+        <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
+        <text class="app-name">iPet</text>
+        <text class="version">Version 0.0.1</text>
+      </view>
 
-    <view class="menu-group">
-      <u-cell-group :border="false">
-        <u-cell title="用户协议" is-link url="/pages/about/agreement"></u-cell>
-        <u-cell title="隐私政策" is-link url="/pages/about/privacy-policy"></u-cell>
-        <u-cell title="去评分" is-link @click="handleRate"></u-cell>
-      </u-cell-group>
-    </view>
+      <view class="menu-group">
+        <u-cell-group :border="false">
+          <u-cell title="用户协议" is-link url="/pages/about/agreement"></u-cell>
+          <u-cell title="隐私政策" is-link url="/pages/about/privacy-policy"></u-cell>
+          <u-cell title="去评分" is-link @click="handleRate"></u-cell>
+        </u-cell-group>
+      </view>
 
-    <view class="copyright">
-      <text>Copyright © 2023 iPet Team. All Rights Reserved.</text>
+      <view class="copyright">
+        <text>Copyright © 2023 iPet Team. All Rights Reserved.</text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
+import AppNavbar from '@/components/common/AppNavbar.vue'
 const handleRate = () => {
   // In a real app, this would open the app store
   uni.showToast({

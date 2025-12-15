@@ -30,8 +30,25 @@
         <view class="chart-area">
             <BaseChart v-if="isChartType" :options="echartsOptions" height="320rpx" width="100%"
                 @point-click="onChartPointClick" />
-            <component v-else :is="currentChartComponent" :data="currentData" :options="chartOptions" :color="theme.hex"
-                :time-range="activeTab" height="280rpx" />
+            <!-- 替换动态组件为条件渲染 -->
+            <template v-else>
+                <TrendLineChart v-if="chartComponentName === 'TrendLineChart'" :data="currentData"
+                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
+                <DailyBarChart v-else-if="chartComponentName === 'DailyBarChart'" :data="currentData"
+                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
+                <RangeSliderChart v-else-if="chartComponentName === 'RangeSliderChart'" :data="currentData"
+                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
+                <StatusIconChart v-else-if="chartComponentName === 'StatusIconChart'" :data="currentData"
+                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
+                <StatusGridChart v-else-if="chartComponentName === 'StatusGridChart'" :data="currentData"
+                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
+                <RiskGridTrendChart v-else-if="chartComponentName === 'RiskGridTrendChart'" :data="currentData"
+                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
+                <EventTimelineChart v-else-if="chartComponentName === 'EventTimelineChart'" :data="currentData"
+                    :options="chartOptions" :color="theme.hex" :time-range="activeTab" height="280rpx" />
+                <TextChart v-else-if="chartComponentName === 'TextChart'" :data="currentData" :options="chartOptions"
+                    :color="theme.hex" :time-range="activeTab" height="280rpx" />
+            </template>
         </view>
 
         <!-- 底部：辅助 X 轴标签 -->
@@ -45,7 +62,16 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import BaseChart from '@/components/BaseChart.vue'
+import TrendLineChart from '@/components/widgets/charts/TrendLineChart.vue'
+import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
+import RangeSliderChart from '@/components/widgets/charts/RangeSliderChart.vue'
+import StatusIconChart from '@/components/widgets/charts/StatusIconChart.vue'
+import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
+import RiskGridTrendChart from '@/components/widgets/charts/RiskGridTrendChart.vue'
+import EventTimelineChart from '@/components/widgets/charts/EventTimelineChart.vue'
+import TextChart from '@/components/widgets/charts/TextChart.vue'
 
 const props = defineProps<{
     activeTab: string
@@ -61,6 +87,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['update:activeTab', 'point-click'])
+
+// 从组件对象中提取组件名称
+const chartComponentName = computed(() => {
+    if (!props.currentChartComponent) return ''
+    // 获取组件的 name 属性或者从 __name 获取
+    return props.currentChartComponent.__name || props.currentChartComponent.name || ''
+})
 
 const onTabClick = (id: string) => {
     emit('update:activeTab', id)

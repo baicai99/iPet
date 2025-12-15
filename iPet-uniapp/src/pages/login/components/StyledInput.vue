@@ -52,8 +52,8 @@ const togglePassword = () => {
   gap: 20rpx;
   padding: 24rpx;
   border-radius: 24rpx;
-  border: 1px solid #f1f5f9;
-  background-color: #ffffff;
+  border: 1px solid var(--app-border-color);
+  background-color: var(--app-card-bg);
   transition: all 0.3s;
   box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.03);
 
@@ -67,7 +67,7 @@ const togglePassword = () => {
 .icon-wrapper {
   padding: 12rpx;
   border-radius: 16rpx;
-  background-color: #f8fafc;
+  background-color: var(--app-active-bg);
   transition: all 0.3s;
 
   &.is-focused {
@@ -84,11 +84,10 @@ const togglePassword = () => {
 }
 
 .label {
-  font-size: 18rpx;
-  font-weight: bold;
+  @include text-caption-2;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #94a3b8;
+  color: var(--app-text-muted);
   margin-bottom: 2rpx;
   transition: color 0.3s;
 
@@ -100,9 +99,9 @@ const togglePassword = () => {
 .input {
   width: 100%;
   background-color: transparent;
-  font-size: 32rpx;
+  @include text-body;
   font-weight: bold;
-  color: #1e293b;
+  color: var(--app-text-primary);
 }
 
 .toggle-password {

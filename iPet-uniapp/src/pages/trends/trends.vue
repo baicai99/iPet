@@ -1,46 +1,50 @@
 <template>
-    <view class="trends-page">
-        <view class="content">
-            <!-- ============================================ -->
-            <!-- Unified Hint Card (shown when no trends) -->
-            <!-- ============================================ -->
-            <TrendHintCard v-if="trendStatus.status !== 'has-trends'" :message="trendStatus.message"
-                navigate-to="/pages/metrics/list" />
+    <view class="page-container">
+        <AppNavbar title="趋势分析" />
+        <view class="trends-page">
+            <view class="content">
+                <!-- ============================================ -->
+                <!-- Unified Hint Card (shown when no trends) -->
+                <!-- ============================================ -->
+                <TrendHintCard v-if="trendStatus.status !== 'has-trends'" :message="trendStatus.message"
+                    navigate-to="/pages/metrics/list" />
 
-            <!-- ============================================ -->
-            <!-- Sections (only shown when has trends) -->
-            <!-- ============================================ -->
-            <template v-else>
-                <!-- Changed Metrics Section -->
-                <view v-if="changedMetricKeys.length" class="section-container">
-                    <view class="section-header">
-                        <text class="section-title">有趋势变化</text>
+                <!-- ============================================ -->
+                <!-- Sections (only shown when has trends) -->
+                <!-- ============================================ -->
+                <template v-else>
+                    <!-- Changed Metrics Section -->
+                    <view v-if="changedMetricKeys.length" class="section-container">
+                        <view class="section-header">
+                            <text class="section-title">有趋势变化</text>
+                        </view>
+                        <view class="trend-grid">
+                            <TrendCard v-for="key in changedMetricKeys" :key="key" :metricKey="key"
+                                :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
+                                :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" />
+                        </view>
                     </view>
-                    <view class="trend-grid">
-                        <TrendCard v-for="key in changedMetricKeys" :key="key" :metricKey="key"
-                            :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
-                            :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" />
-                    </view>
-                </view>
 
-                <!-- Stable Metrics Section -->
-                <view v-if="stableMetricKeys.length" class="section-container">
-                    <view class="section-header">
-                        <text class="section-title">无趋势变化</text>
+                    <!-- Stable Metrics Section -->
+                    <view v-if="stableMetricKeys.length" class="section-container">
+                        <view class="section-header">
+                            <text class="section-title">无趋势变化</text>
+                        </view>
+                        <view class="trend-grid">
+                            <TrendCard v-for="key in stableMetricKeys" :key="key" :metricKey="key"
+                                :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
+                                :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :isStable="true" />
+                        </view>
                     </view>
-                    <view class="trend-grid">
-                        <TrendCard v-for="key in stableMetricKeys" :key="key" :metricKey="key"
-                            :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
-                            :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :isStable="true" />
-                    </view>
-                </view>
-            </template>
+                </template>
+            </view>
         </view>
     </view>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
 import TrendHintCard from '@/components/widgets/TrendHintCard.vue'
 import { useHealthStore } from '@/stores/healthStore'

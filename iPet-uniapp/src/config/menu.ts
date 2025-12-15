@@ -65,18 +65,10 @@ export const services = [
 
 
 export const appSettings = [
-
-
     {
         label: '隐私设置',
         icon: 'lock',
         path: '/pages/settings/privacy'
-    },
-    {
-        label: '深色模式',
-        icon: 'moon',
-        isSwitch: true,
-        switchValue: false
     }
 ]
 

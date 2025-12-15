@@ -15,28 +15,23 @@
                     </linearGradient>
                 </defs>
 
-                <!-- Empty state: no valid data points -->
-                <template v-if="chartPointsCount === 0">
-                    <!-- Show nothing when no data -->
-                </template>
-
                 <!-- Single Point: Show dot only, no line -->
-                <template v-else-if="chartPointsCount === 1">
+                <g v-if="chartPointsCount === 1">
                     <circle :cx="singlePointX" :cy="singlePointY" r="3" :fill="color" />
-                </template>
+                </g>
 
                 <!-- Multiple Points: Draw line connecting valid points -->
-                <template v-else>
+                <g v-else-if="chartPointsCount > 1">
                     <!-- Fill Area -->
                     <path :d="fillPath" :fill="`url(#grad-${uniqueId})`" stroke="none" />
 
                     <!-- Line -->
-                    <polyline fill="none" :stroke="color" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        vector-effect="non-scaling-stroke" :points="points" />
+                    <polyline fill="none" :stroke="color" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" vector-effect="non-scaling-stroke" :points="points" />
 
                     <!-- End Dot -->
                     <circle v-if="points" :cx="endX" :cy="endY" r="2" :fill="color" />
-                </template>
+                </g>
             </svg>
         </view>
     </view>
@@ -65,16 +60,16 @@ const pointsData = computed(() => {
     // 1. Normalize Data (from props.data.values) - now preserves null
     const data = normalizeData(props.data.values);
     if (!data.length) return { points: '', fillPath: '', endY: 0, endX: 100, chartPoints: [] };
-    
+
     // 2. Generate Points (now skips null values)
     const chartPoints = generatePoints(data, width, height);
-    
+
     // No valid points
     if (!chartPoints.length) return { points: '', fillPath: '', endY: 0, endX: 100, chartPoints: [] };
 
     // 3. Generate Paths (Polyline & Area)
     const pointsStr = chartPoints.map(p => `${p.x},${p.y}`).join(' ');
-    
+
     // Use helper for area path
     const fillPath = generateAreaPath(chartPoints, height);
 

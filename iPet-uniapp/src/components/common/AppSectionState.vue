@@ -6,14 +6,14 @@
             <slot></slot>
         </view>
 
-        <!-- ✅ Loading Overlay：简洁的加载状态 -->
-        <view v-show="showLoading" class="loading-overlay">
+        <!-- ✅ Loading Overlay: 使用 v-if 完全移除 DOM (小程序兼容) -->
+        <view v-if="showLoading" class="loading-overlay">
             <u-loading-icon mode="circle" size="24" />
             <text class="loading-text">加载中...</text>
         </view>
 
-        <!-- ✅ Empty Overlay：绝对定位盖在数据层上 -->
-        <view v-show="showEmpty" class="empty-overlay">
+        <!-- ✅ Empty Overlay: 使用 v-if 完全移除 DOM (小程序兼容) -->
+        <view v-if="showEmpty" class="empty-overlay">
             <slot name="empty">
                 <!-- 默认 Empty -->
                 <view class="empty-state">
@@ -27,7 +27,7 @@
         </view>
 
         <!-- ✅ Error Overlay：绝对定位盖在数据层上 -->
-        <view v-show="showError" class="error-overlay">
+        <view v-if="showError" class="error-overlay">
             <slot name="error">
                 <!-- 默认 Error -->
                 <view class="error-state">
@@ -263,14 +263,17 @@ function handleCTA() {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16rpx;
     min-height: inherit;
     background-color: rgba(255, 255, 255, 0.95);
+
+    /* ✅ 小程序兼容: 使用 padding 替代 gap */
+    padding: 16rpx 0;
 }
 
 .loading-text {
     font-size: 28rpx;
     color: #8e8e93;
+    margin-top: 16rpx;
 }
 
 
@@ -289,12 +292,26 @@ function handleCTA() {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16rpx;
     padding: 80rpx 32rpx;
     background-color: white;
     border-radius: 30rpx;
     min-height: 400rpx;
     /* 确保空态有足够高度 */
+
+    /* ✅ 小程序兼容: 使用通用标签选择器替代 > * (小程序不支持) */
+    view,
+    text,
+    button,
+    image {
+        margin-bottom: 16rpx;
+    }
+
+    view:last-child,
+    text:last-child,
+    button:last-child,
+    image:last-child {
+        margin-bottom: 0;
+    }
 }
 
 .empty-title {
@@ -323,11 +340,25 @@ function handleCTA() {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16rpx;
     padding: 80rpx 32rpx;
     background-color: white;
     border-radius: 30rpx;
     min-height: 400rpx;
+
+    /* ✅ 小程序兼容: 使用通用标签选择器替代 > * (小程序不支持) */
+    view,
+    text,
+    button,
+    image {
+        margin-bottom: 16rpx;
+    }
+
+    view:last-child,
+    text:last-child,
+    button:last-child,
+    image:last-child {
+        margin-bottom: 0;
+    }
 }
 
 .error-title {

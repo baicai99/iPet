@@ -1,5 +1,8 @@
 <template>
     <FormPageLayout>
+        <template #header>
+            <AppNavbar title="编辑资料" />
+        </template>
         <!-- Component Form -->
         <UserProfileForm ref="formRef" v-model="localUser" />
 
@@ -14,6 +17,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import { useUserStore } from '@/stores/userStore'
 import { updateUserProfile } from '@/services/userService'
 import { storeToRefs } from 'pinia'

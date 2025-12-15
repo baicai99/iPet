@@ -212,7 +212,7 @@ const navigateAfterLogin = () => {
 }
 
 .forgot-text {
-  font-size: 22rpx;
+  @include text-subhead;
   font-weight: bold;
   color: #6366f1;
   /* text-indigo-500 */
@@ -249,7 +249,7 @@ const navigateAfterLogin = () => {
 }
 
 .btn-text {
-  font-size: 28rpx;
+  @include text-body;
 }
 
 .spinner {
@@ -277,15 +277,12 @@ const navigateAfterLogin = () => {
 .divider-line {
   flex: 1;
   height: 1px;
-  background-color: #e2e8f0;
-  /* bg-slate-200 */
+  background-color: var(--app-border-color);
 }
 
 .divider-text {
-  font-size: 18rpx;
-  font-weight: bold;
-  color: #94a3b8;
-  /* text-slate-400 */
+  @include text-caption-2;
+  color: var(--app-text-muted);
   text-transform: uppercase;
   letter-spacing: 2px;
   /* tracking-widest */
@@ -293,7 +290,11 @@ const navigateAfterLogin = () => {
 
 .social-row {
   display: flex;
-  gap: 24rpx;
+  width: 100%;
+  /* 必须显式声明宽度,子元素的 flex:1 才会生效 */
+  /* ✅ 小程序兼容: 使用 margin 替代 gap (gap 需要基础库 2.10.0+) */
+  margin: 0 -12rpx;
+  /* 负边距抵消子元素的 margin */
 }
 
 .footer {
@@ -302,19 +303,16 @@ const navigateAfterLogin = () => {
 }
 
 .footer-text {
-  font-size: 22rpx;
+  @include text-subhead;
   font-weight: 500;
-  color: #94a3b8;
-  /* text-slate-400 */
+  color: var(--app-text-muted);
 }
 
 .link-text {
-  font-size: 22rpx;
+  @include text-subhead;
   font-weight: bold;
   color: #6366f1;
   /* text-indigo-500 */
   margin-left: 8rpx;
 }
-
-
 </style>

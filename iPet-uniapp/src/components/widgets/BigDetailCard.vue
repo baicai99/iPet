@@ -27,7 +27,21 @@
         </view>
 
         <view class="chart-area">
-            <component :is="detailChartComponent" :data="config.data" :color="themeColor" v-bind="detailChartProps" />
+            <!-- 条件渲染替代动态组件 -->
+            <TrendLineChart v-if="detailChartComponentName === 'TrendLineChart'" :data="config.data" :color="themeColor"
+                v-bind="detailChartProps" />
+            <DailyBarChart v-else-if="detailChartComponentName === 'DailyBarChart'" :data="config.data"
+                :color="themeColor" v-bind="detailChartProps" />
+            <StatusGridChart v-else-if="detailChartComponentName === 'StatusGridChart'" :data="config.data"
+                :color="themeColor" v-bind="detailChartProps" />
+            <RiskGridTrendChart v-else-if="detailChartComponentName === 'RiskGridTrendChart'" :data="config.data"
+                :color="themeColor" v-bind="detailChartProps" />
+            <RangeSliderChart v-else-if="detailChartComponentName === 'RangeSliderChart'" :data="config.data"
+                :color="themeColor" v-bind="detailChartProps" />
+            <StatusIconChart v-else-if="detailChartComponentName === 'StatusIconChart'" :data="config.data"
+                :color="themeColor" v-bind="detailChartProps" />
+            <EventTimelineChart v-else-if="detailChartComponentName === 'EventTimelineChart'" :data="config.data"
+                :color="themeColor" v-bind="detailChartProps" />
         </view>
 
         <view class="card-footer">
@@ -49,8 +63,15 @@
 
 <script setup lang="ts">
 import { ref, computed, toRefs } from 'vue'
-import { BASE_COLORS, COLORS } from '@/config/theme'
+import { GRAY_SCALE, COLORS } from '@/config/theme'
 import { useChartAdapter } from '@/composables/useChartAdapter'
+import TrendLineChart from '@/components/widgets/charts/TrendLineChart.vue'
+import DailyBarChart from '@/components/widgets/charts/DailyBarChart.vue'
+import StatusGridChart from '@/components/widgets/charts/StatusGridChart.vue'
+import RiskGridTrendChart from '@/components/widgets/charts/RiskGridTrendChart.vue'
+import RangeSliderChart from '@/components/widgets/charts/RangeSliderChart.vue'
+import StatusIconChart from '@/components/widgets/charts/StatusIconChart.vue'
+import EventTimelineChart from '@/components/widgets/charts/EventTimelineChart.vue'
 
 const props = defineProps({
     config: {
@@ -77,20 +98,20 @@ const tabs = ['日', '周', '月', '6个月', '年']
 
 const themeColor = computed(() => props.config.theme.hex)
 const cardColors = computed(() => ({
-    background: BASE_COLORS.white,
-    border: BASE_COLORS.slate100,
-    title: BASE_COLORS.slate800,
-    subtitle: BASE_COLORS.slate400,
-    value: BASE_COLORS.slate800,
-    unit: BASE_COLORS.slate400,
-    tabsBg: BASE_COLORS.slate50,
-    tabActiveBg: BASE_COLORS.white,
-    tabText: BASE_COLORS.slate400,
-    footerBorder: BASE_COLORS.slate100,
-    footerText: BASE_COLORS.slate400,
-    switchTrack: BASE_COLORS.slate200,
-    switchKnob: BASE_COLORS.white,
-    iconMuted: BASE_COLORS.slate400
+    background: '#ffffff',
+    border: '#f1f5f9',        // slate-100
+    title: '#1e293b',         // slate-800
+    subtitle: '#94a3b8',      // slate-400
+    value: '#1e293b',         // slate-800
+    unit: '#94a3b8',          // slate-400
+    tabsBg: '#f8fafc',        // slate-50
+    tabActiveBg: '#ffffff',
+    tabText: '#94a3b8',       // slate-400
+    footerBorder: '#f1f5f9',  // slate-100
+    footerText: '#94a3b8',    // slate-400
+    switchTrack: '#e2e8f0',   // slate-200
+    switchKnob: '#ffffff',
+    iconMuted: '#94a3b8'      // slate-400
 }))
 
 const chartType = computed(() => props.config.chartType as string || 'line')
@@ -100,6 +121,12 @@ const { component: detailChartComponent, props: detailChartProps } = useChartAda
     chartOptions.value,
     'detail'
 )
+
+// Extract component name for conditional rendering
+const detailChartComponentName = computed(() => {
+    if (!detailChartComponent.value) return ''
+    return detailChartComponent.value.__name || detailChartComponent.value.name || ''
+})
 </script>
 
 <style lang="scss" scoped>

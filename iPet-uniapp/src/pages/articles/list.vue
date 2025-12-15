@@ -1,28 +1,32 @@
 <template>
-    <view class="articles-list-page">
-        <!-- Tabs -->
-        <view class="tabs-container">
-            <u-tabs :list="tabList" :current="currentTab" @click="handleTabClick" :activeStyle="{ color: '#3c9cff' }"
-                lineColor="#3c9cff"></u-tabs>
-        </view>
-
-        <!-- Content -->
-        <scroll-view scroll-y class="content-scroll">
-            <view class="content">
-                <!-- Actual Content -->
-                <view class="articles-list">
-                    <ArticleCard v-for="article in filteredArticles" :key="article.id" :id="article.id"
-                        :title="article.title" :summary="article.summary" :cover="article.cover"
-                        :category="article.category" />
-                </view>
-                <u-empty v-if="!loading && filteredArticles.length === 0" mode="data" text="暂无相关文章"></u-empty>
+    <view class="page-container">
+        <AppNavbar title="精选文章" />
+        <view class="articles-list-page">
+            <!-- Tabs -->
+            <view class="tabs-container">
+                <u-tabs :list="tabList" :current="currentTab" @click="handleTabClick" :activeStyle="{ color: '#3c9cff' }"
+                    lineColor="#3c9cff"></u-tabs>
             </view>
-        </scroll-view>
+
+            <!-- Content -->
+            <scroll-view scroll-y class="content-scroll">
+                <view class="content">
+                    <!-- Actual Content -->
+                    <view class="articles-list">
+                        <ArticleCard v-for="article in filteredArticles" :key="article.id" :id="article.id"
+                            :title="article.title" :summary="article.summary" :cover="article.cover"
+                            :category="article.category" />
+                    </view>
+                    <u-empty v-if="!loading && filteredArticles.length === 0" mode="data" text="暂无相关文章"></u-empty>
+                </view>
+            </scroll-view>
+        </view>
     </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
 import { useArticleStore } from '@/modules/articles/store/articleStore'
 import { storeToRefs } from 'pinia'

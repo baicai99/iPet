@@ -1,14 +1,14 @@
 <template>
-    <view class="my-page" :style="pageThemeStyles">
+    <view class="my-page">
 
         <!-- Header Section -->
         <view class="section">
-            <UserProfileCard :user="realUserData" :theme="theme" @click="handleProfileClick" />
+            <UserProfileCard :user="realUserData" @click="handleProfileClick" />
         </view>
 
         <!-- Pet Management -->
         <view class="pet-section-wrapper">
-            <PetSelectorBar :pets="activePets" :loading="petListLoading" mode="edit" :theme="theme" @add="goManagePets"
+            <PetSelectorBar :pets="activePets" :loading="petListLoading" mode="edit" @add="goManagePets"
                 @click="goEditPet" />
         </view>
 
@@ -111,8 +111,6 @@ const PERSISTED_PINIA_KEYS = ['user', 'pet', 'preferences', 'health'] as const
 const { accountInfo, userStats } = storeToRefs(userStore)
 
 const { activePets } = storeToRefs(petStore)
-const { theme } = storeToRefs(preferenceStore)
-const isDarkTheme = computed(() => theme.value === 'dark')
 
 // Map store data to UserProfileCard props
 const realUserData = computed(() => {
@@ -129,14 +127,7 @@ const realUserData = computed(() => {
     }
 })
 
-const pageThemeStyles = computed(() => ({
-    '--app-background': isDarkTheme.value ? '#0f172a' : '#f5f5f5',
-    '--app-card-bg': isDarkTheme.value ? '#1f2937' : '#ffffff',
-    '--app-border-color': isDarkTheme.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6',
-    '--app-text-primary': isDarkTheme.value ? '#f8fafc' : '#1f2937',
-    '--app-text-secondary': isDarkTheme.value ? '#e5e7eb' : '#4b5563',
-    '--app-text-muted': isDarkTheme.value ? '#94a3b8' : '#9ca3af'
-}))
+
 
 const petListLoading = computed(() => !appStore.isAppReady)
 
@@ -171,21 +162,13 @@ const appSettings = ref<MenuItem[]>([])
 const helpFeedback = ref<MenuItem[]>(helpFeedbackConfig)
 
 const syncAppSettings = () => {
-    appSettings.value = appSettingsConfig.map((item) => {
-
-        if (item.label === '深色模式') {
-            return {
-                ...item,
-                isSwitch: true,
-                switchValue: theme.value === 'dark'
-            }
-        }
-        return { ...item }
-    })
+    // Filter out dark mode setting
+    appSettings.value = appSettingsConfig
+        .filter(item => item.label !== '深色模式')
+        .map((item) => ({ ...item }))
 }
 
 syncAppSettings()
-watch([theme], syncAppSettings)
 
 // Methods
 const handleProfileClick = () => {
@@ -263,18 +246,10 @@ const handleSettingClick = (item: any) => {
 }
 
 const handleSwitchChange = (item: any) => {
-    if (item.label === '深色模式') {
-        preferenceStore.setTheme(item.switchValue ? 'dark' : 'light')
-        uni.showToast({
-            title: `已切换为${item.switchValue ? '深色' : '浅色'}模式`,
-            icon: 'none'
-        })
-    } else {
-        uni.showToast({
-            title: `${item.label}: ${item.switchValue ? '开启' : '关闭'}`,
-            icon: 'none'
-        })
-    }
+    uni.showToast({
+        title: `${item.label}: ${item.switchValue ? '开启' : '关闭'}`,
+        icon: 'none'
+    })
 }
 
 
@@ -385,7 +360,7 @@ onMounted(() => {
 .section-title {
     font-size: 22rpx;
     font-weight: 600;
-    color: #666;
+    color: var(--app-text-secondary);
     margin-bottom: 24rpx;
     padding-left: 8rpx;
 }
@@ -399,26 +374,26 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     padding: 28rpx;
-    background: white;
+    background: #ffffff; /* 固定值替代 var(--app-card-bg) */
     border-radius: 24rpx;
-    border: 1px solid #fecaca;
+    border: 1px solid #fecaca; /* 固定值替代 var(--app-danger-border) */
     transition: all 0.2s ease;
 }
 
 .logout-button:active {
     transform: scale(0.98);
-    background: #fef2f2;
+    background: #fef2f2; /* 固定值替代 var(--app-danger-bg-active) */
 }
 
 .logout-text {
     font-size: 24rpx;
     font-weight: 600;
-    color: #dc2626;
+    color: #dc2626; /* 固定值替代 var(--app-danger-color) */
 }
 
 /* Menu Group Styles */
 .menu-group {
-    background: white;
+    background: var(--app-card-bg);
     border-radius: 24rpx;
     overflow: hidden;
 }
@@ -428,13 +403,13 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
     padding: 32rpx;
-    background: white;
-    border-bottom: 1px solid #f3f4f6;
+    background: var(--app-card-bg);
+    border-bottom: 1px solid var(--app-border-color);
     transition: background-color 0.2s;
 }
 
 .menu-item:active {
-    background-color: #f9fafb;
+    background-color: var(--app-active-bg);
 }
 
 .menu-item.no-border {
@@ -451,7 +426,7 @@ onMounted(() => {
 
 .menu-label {
     font-size: 24rpx;
-    color: #1f2937;
+    color: var(--app-text-primary);
     font-weight: 500;
 }
 
@@ -463,6 +438,6 @@ onMounted(() => {
 
 .menu-value {
     font-size: 22rpx;
-    color: #9ca3af;
+    color: var(--app-text-muted);
 }
 </style>

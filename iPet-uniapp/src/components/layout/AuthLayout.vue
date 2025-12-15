@@ -54,9 +54,10 @@ const { title, subtitle, icon, iconColor, iconBgColor, sparklineColor } = props
 
 <style lang="scss" scoped>
 .auth-container {
+    // ✅ 小程序兼容：保持 100vh 用于居中布局
+    // 注：小程序环境下 100vh 表现稳定，不会被 tabbar 遮挡
     height: 100vh;
-    height: 100dvh;
-    background-color: #f8fafc;
+    background-color: var(--app-background);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -105,11 +106,11 @@ const { title, subtitle, icon, iconColor, iconBgColor, sparklineColor } = props
 }
 
 .header-card {
-    background-color: #ffffff;
+    background-color: var(--app-card-bg);
     border-radius: 40rpx;
     padding: 40rpx;
     box-shadow: 0 16rpx 60rpx rgba(0, 0, 0, 0.04);
-    border: 1px solid #f1f5f9;
+    border: 1px solid var(--app-border-color);
     position: relative;
     overflow: hidden;
 }
@@ -140,18 +141,16 @@ const { title, subtitle, icon, iconColor, iconBgColor, sparklineColor } = props
 }
 
 .title {
-    font-size: 48rpx;
-    font-weight: 900;
-    color: #1e293b;
+    @include text-large-title;
+    color: var(--app-text-primary);
     margin-bottom: 8rpx;
     display: block;
     letter-spacing: -1px;
 }
 
 .subtitle {
-    color: #94a3b8;
-    font-size: 24rpx;
-    font-weight: 500;
+    @include text-subhead;
+    color: var(--app-text-muted);
     display: block;
 }
 </style>

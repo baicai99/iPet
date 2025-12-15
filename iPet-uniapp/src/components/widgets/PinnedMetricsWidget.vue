@@ -2,7 +2,7 @@
     <view class="pinned-metrics-widget">
         <template v-for="item in processedMetrics" :key="item.key">
             <slot name="item" :item="item">
-                <MetricItemCard class="mb" :config="item" @click="emit('metric-click', item.key)" />
+                <MetricItemCard :config="item" @click="emit('metric-click', item.key)" />
             </slot>
         </template>
     </view>
@@ -47,7 +47,9 @@ const emit = defineEmits(['metric-click'])
 </script>
 
 <style scoped>
-.mb {
-    margin-bottom: 16rpx;
+.pinned-metrics-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx; /* 使用 gap 代替 margin-bottom */
 }
 </style>

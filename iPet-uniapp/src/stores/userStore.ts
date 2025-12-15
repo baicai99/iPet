@@ -10,6 +10,8 @@ import { usePetStore } from './petStore'
 import { useHealthStore } from './healthStore'
 import { ensureStringId } from '@/utils/common/idUtils'
 import { calculateDaysWithPets, calculateRecordCount, calculateWalkDistance } from '@/utils/business/userStatsHelper'
+import { getUserProfile } from '@/services/userService'
+import { logoutUser } from '@/services/authService'
 
 const DEFAULT_STATS: UserStats = {
     daysWithPet: 0,
@@ -128,7 +130,6 @@ export const useUserStore = defineStore('user', () => {
     async function logout() {
         try {
             // Try to call backend logout, but don't block local cleanup if it fails
-            const { logoutUser } = await import('@/services/authService')
             await logoutUser()
         } catch (error) {
             console.warn('Backend logout failed:', error)
@@ -139,8 +140,6 @@ export const useUserStore = defineStore('user', () => {
 
     async function fetchUserProfile() {
         try {
-            // Dynamic import to avoid circular dependencies if any
-            const { getUserProfile } = await import('@/services/userService')
             const profile = await getUserProfile()
             updateUserInfo(profile)
 

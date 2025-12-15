@@ -1,25 +1,29 @@
 <template>
-    <view class="content">
-        <view class="search-bar-container">
-            <u-search v-model="searchQuery" placeholder="搜索健康指标" :show-action="false" shape="round"
-                bg-color="#ffffff"></u-search>
-        </view>
-        <template v-if="filteredSections.length > 0">
-            <view v-for="section in filteredSections" :key="section.title" class="section-container">
-                <text class="section-title">{{ section.title }}</text>
-                <view class="cards-grid">
-                    <MetricItemCard v-for="item in section.items" :key="item.key" :config="item"
-                        @select="handleSelect(item.key)" />
-                </view>
+    <view class="page-container">
+        <AppNavbar title="健康数据" />
+        <view class="content">
+            <view class="search-bar-container">
+                <u-search v-model="searchQuery" placeholder="搜索健康指标" :show-action="false" shape="round"
+                    bg-color="#ffffff"></u-search>
             </view>
-        </template>
-        <u-empty v-else mode="search" text="未找到相关指标" marginTop="100"></u-empty>
+            <template v-if="filteredSections.length > 0">
+                <view v-for="section in filteredSections" :key="section.title" class="section-container">
+                    <text class="section-title">{{ section.title }}</text>
+                    <view class="cards-grid">
+                        <MetricItemCard v-for="item in section.items" :key="item.key" :config="item"
+                            @select="handleSelect(item.key)" />
+                    </view>
+                </view>
+            </template>
+            <u-empty v-else mode="search" text="未找到相关指标" marginTop="100"></u-empty>
+        </view>
     </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import MetricItemCard from '@/components/business/health/MetricItemCard.vue'
 import { useMetricList } from '@/composables/useMetricList'
 import PinyinMatch from 'pinyin-match'

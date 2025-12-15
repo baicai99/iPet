@@ -95,7 +95,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { BASE_COLORS } from '@/config/theme'
+import { GRAY_SCALE } from '@/config/theme'
 
 // 计算平均值的辅助函数
 const calcAverage = (values: number[]): number => {
@@ -229,8 +229,8 @@ const hasData = computed(() => {
 // 颜色配置
 const colors = computed(() => ({
     primary: props.primaryColor,
-    textGray: BASE_COLORS.gray400,
-    bar: BASE_COLORS.gray200
+    textGray: GRAY_SCALE.light.gray,
+    bar: GRAY_SCALE.light.gray5
 }))
 
 // 趋势方向文本

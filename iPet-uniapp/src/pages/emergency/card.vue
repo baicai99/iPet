@@ -1,5 +1,7 @@
 <template>
-    <view class="emergency-card-page">
+    <view class="page-container">
+        <AppNavbar title="急救档案" />
+        <view class="emergency-card-page">
         <view class="hero">
             <text class="hero-title">急救档案</text>
             <text class="hero-subtitle">一键出示血型、过敏史与主治医生联系方式，守护关键时刻。</text>
@@ -67,11 +69,13 @@
                 </view>
             </view>
         </view>
+        </view>
     </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import { storeToRefs } from 'pinia'
 import { usePetStore } from '@/stores/petStore'
 import { formatPetAge } from '@/utils/common/formatHelper'

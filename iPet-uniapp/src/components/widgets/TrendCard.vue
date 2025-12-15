@@ -1,6 +1,6 @@
 <template>
     <!-- Only render when has enough data -->
-    <view v-if="hasEnoughData" class="trend-card" :class="{ 'trend-card--dark': isDark }" @click="handleCardClick">
+    <view v-if="hasEnoughData" class="trend-card" @click="handleCardClick">
         <!-- Header -->
         <view class="header">
             <view class="header-left">
@@ -99,10 +99,10 @@
 
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import { useTrendCard, type TrendCardConfig } from '@/composables/useTrendCard'
 import { getMetricSentiment, getDirectionText } from '@/config/trendCopywriting'
-import { BASE_COLORS, TOKENS, TOKENS_DARK } from '@/config/theme'
+import { GRAY_SCALE, TOKENS } from '@/config/theme'
 
 // ============================================================================
 // Props
@@ -169,12 +169,6 @@ const props = defineProps({
 const emit = defineEmits(['click'])
 
 // ============================================================================
-// Dark Mode Detection
-// ============================================================================
-
-const isDark = inject('isDarkMode', false)
-
-// ============================================================================
 // Use Composable
 // ============================================================================
 
@@ -210,13 +204,12 @@ const {
 // ============================================================================
 
 const colors = computed(() => {
-    const tokens = isDark ? TOKENS_DARK : TOKENS
     return {
         primary: props.primaryColor,
-        textMuted: tokens.textMuted,
-        textSecondary: tokens.textSecondary,
-        bar: isDark ? TOKENS_DARK.barColor : BASE_COLORS.gray200,
-        barHighlight: isDark ? TOKENS_DARK.barHighlight : BASE_COLORS.gray200
+        textMuted: TOKENS.textMuted,
+        textSecondary: TOKENS.textSecondary,
+        bar: GRAY_SCALE.gray5,
+        barHighlight: GRAY_SCALE.gray5
     }
 })
 
@@ -345,34 +338,6 @@ const handleCardClick = () => {
         opacity: 0.95;
     }
 
-    // Dark mode
-    &--dark {
-        background-color: #2c2c2e;
-
-        .main-title {
-            color: #ffffff;
-        }
-
-        .bar {
-            background-color: #48484a;
-        }
-
-        .avg-line-left {
-            border-color: #8e8e93;
-        }
-
-        .avg-label-left {
-            color: #8e8e93;
-        }
-
-        .footer-label {
-            color: #8e8e93;
-        }
-
-        .collecting-title {
-            color: #ffffff;
-        }
-    }
 }
 
 // Header

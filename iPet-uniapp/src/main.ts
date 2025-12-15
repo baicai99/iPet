@@ -1,6 +1,7 @@
 import App from './App.vue'
 import { i18n } from '@/locale'
 import { initPermission } from './permission'
+import { initAuthHandlers } from '@/services/authSetup'
 
 
 
@@ -24,16 +25,12 @@ export function createApp() {
   app.use(uviewPlus)
 
   // Initialize permission interceptors
-  // Initialize permission interceptors
   initPermission()
   console.log('Current VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
   console.log('Mock mode enabled:', import.meta.env.VITE_USE_MOCK === 'true' ? '✅ YES - Network calls are blocked' : '❌ NO')
 
-
-  // Initialize auth handlers (break circular dependency)
-  import('@/services/authSetup').then(({ initAuthHandlers }) => {
-    initAuthHandlers()
-  })
+  // Initialize auth handlers
+  initAuthHandlers()
 
   return {
     app,

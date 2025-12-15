@@ -1,5 +1,7 @@
 <template>
   <view class="page-container">
+    <AppNavbar title="隐私设置" />
+    <view class="privacy-page">
     <!-- Account Management Section -->
     <view class="settings-group">
       <view class="group-title">{{ STRINGS.PRIVACY.ACCOUNT_MANAGEMENT }}</view>
@@ -11,11 +13,13 @@
         </u-cell>
       </u-cell-group>
     </view>
+    </view>
   </view>
 </template>
 
 <script setup>
 import { reactive, ref, computed } from 'vue';
+import AppNavbar from '@/components/common/AppNavbar.vue';
 import { userService } from '@/services/userService';
 import { STRINGS } from '@/locale/zh-Hans';
 import { useUserStore } from '@/stores/userStore';

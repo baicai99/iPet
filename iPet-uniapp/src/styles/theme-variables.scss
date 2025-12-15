@@ -1,0 +1,27 @@
+// ============================================================================
+// Global Theme Variables
+// ============================================================================
+// 全局主题变量
+// 使用方式：在任何组件中直接使用 var(--app-text-primary) 等
+
+// Light Mode (Default)
+:root {
+    // Background Colors
+    --app-background: #f2f1f5; // 主背景色
+    --app-card-bg: #ffffff; // 卡片背景
+    --app-navbar-bg: #fbfbfd; // 导航栏/标签栏背景
+    --app-border-color: #f3f4f6;
+
+    // Text Colors
+    --app-text-primary: #1f2937;
+    --app-text-secondary: #4b5563;
+    --app-text-muted: #9ca3af;
+
+    // Danger Colors (Logout, Delete, Error)
+    --app-danger-color: #dc2626;
+    --app-danger-border: #fecaca;
+    --app-danger-bg-active: #fef2f2;
+
+    // Active State
+    --app-active-bg: #f9fafb;
+}

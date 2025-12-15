@@ -1,5 +1,7 @@
 <template>
-    <view class="security-page">
+    <view class="page-container">
+        <AppNavbar title="账号安全" />
+        <view class="security-page">
         <!-- 手机号 -->
         <view class="section">
             <view class="card">
@@ -70,11 +72,13 @@
                 <text class="modal-desc">此操作无法撤销,您的所有个人数据、权益将被永久删除。</text>
             </view>
         </u-modal>
+        </view>
     </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 
 const phone = ref('13800138000')
 const wechatBound = ref(true)

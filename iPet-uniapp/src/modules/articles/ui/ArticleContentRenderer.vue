@@ -1,6 +1,6 @@
 <template>
     <view class="article-content-renderer">
-        <up-markdown :content="markdownText" :theme="theme" :show-line-number="showLineNumber"
+        <up-markdown :content="markdownText" :show-line-number="showLineNumber"
             :preview-img="previewImg"></up-markdown>
     </view>
 </template>
@@ -8,14 +8,12 @@
 <script setup lang="ts">
 interface Props {
     markdownText?: string
-    theme?: 'light' | 'dark'
     showLineNumber?: boolean
     previewImg?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
     markdownText: '',
-    theme: 'light',
     showLineNumber: false,
     previewImg: true
 })

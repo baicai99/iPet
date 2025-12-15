@@ -4,7 +4,7 @@
             :show-scrollbar="false" scroll-with-animation>
             <view class="scroll-content-wrapper">
                 <template v-if="pets.length === 0">
-                    <view :class="['scroll-item', scrollItemClass, 'empty-card', themeStyles.class]">
+                    <view :class="['scroll-item', scrollItemClass, 'empty-card']">
                         <view class="icon-wrapper" :class="themeStyles.iconWrapperClass">
                             <svg class="icon" aria-hidden="true"
                                 :style="{ fontSize: '24px', color: themeStyles.iconColor }">
@@ -23,7 +23,7 @@
                 </template>
                 <template v-else>
                     <view v-for="pet in pets" :key="pet.id" :id="`pet-${pet.id}`"
-                        :class="['scroll-item', scrollItemClass, 'pet-card', themeStyles.class, { 'pet-card-selected': isSelected(pet.id) }]"
+                        :class="['scroll-item', scrollItemClass, 'pet-card', { 'pet-card-selected': isSelected(pet.id) }]"
                         @click="handlePetClick(pet.id)">
 
                         <view class="avatar-wrapper">
@@ -70,17 +70,14 @@ import { formatPetAge } from '@/utils/common/formatHelper'
 import { useImageCacheStore } from '@/stores/imageCacheStore'
 import type { Pet } from '@shared/types/pet'
 
-type ThemeMode = 'light' | 'dark'
 type SelectorMode = 'edit' | 'select'
 
 const props = withDefaults(defineProps<{
     pets: Pet[];
     mode?: SelectorMode;
-    theme?: ThemeMode;
 }>(), {
     pets: () => [],
-    mode: 'edit',
-    theme: 'light'
+    mode: 'edit'
 })
 
 const emit = defineEmits<{
@@ -98,28 +95,21 @@ const getAvatar = (remoteUrl?: string | null): string => {
     return imageCache.resolve(remoteUrl)
 }
 
-// Simplified theme detection
-const isDark = computed(() => props.theme === 'dark')
-
-// Theme classes - consolidated for better maintainability
-const themeStyles = computed(() => {
-    const dark = isDark.value
-    return {
-        class: dark ? 'theme-dark' : 'theme-light',
-        textClass: dark ? 'text-white' : 'text-gray-900',
-        subTextClass: 'text-gray-400',
-        iconWrapperClass: dark ? 'bg-orange-900-20' : 'bg-orange-50',
-        iconColor: '#fdba74',
-        btnClass: dark ? 'btn-dark' : 'btn-light',
-        btnTextClass: dark ? 'text-gray-900' : 'text-white',
-        btnIconColor: dark ? '#111827' : '#ffffff',
-        avatarRingClass: dark ? 'ring-dark' : 'ring-light',
-        breedTagClass: dark ? 'tag-breed-dark' : 'tag-breed-light',
-        ageTagClass: dark ? 'tag-age-dark' : 'tag-age-light',
-        addButtonClass: dark ? 'add-btn-dark' : 'add-btn-light',
-        addButtonIconColor: dark ? '#6b7280' : '#9ca3af'
-    }
-})
+// Theme classes
+const themeStyles = {
+    iconWrapperClass: 'bg-orange-50',
+    iconColor: '#fdba74',
+    btnClass: 'btn-light',
+    btnTextClass: 'text-white',
+    btnIconColor: '#ffffff',
+    avatarRingClass: 'ring-light',
+    breedTagClass: 'tag-breed-light',
+    ageTagClass: 'tag-age-light',
+    addButtonClass: 'add-btn-light', 
+    addButtonIconColor: '#9ca3af',
+    textClass: 'text-gray-900',
+    subTextClass: 'text-gray-400'
+}
 
 // Helper: check if pet is selected
 const isSelected = (petId: string): boolean => {
@@ -212,15 +202,7 @@ const showSelector = computed(() => true)
     align-items: center;
     gap: 24rpx;
     flex-shrink: 0;
-
-    &.theme-light {
-        background: white;
-    }
-
-    &.theme-dark {
-        background: #1C1C1E;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+    background: white;
 }
 
 .pet-card:active {
@@ -262,14 +244,7 @@ const showSelector = computed(() => true)
     display: flex;
     justify-content: center;
     align-items: center;
-
-    &.ring-light {
-        background: #f3f4f6;
-    }
-
-    &.ring-dark {
-        background: #2C2C2E;
-    }
+    background: #f3f4f6;
 }
 
 
@@ -344,20 +319,9 @@ const showSelector = computed(() => true)
     color: #ea580c;
 }
 
-.tag-breed-dark {
-    background: rgba(234, 88, 12, 0.2);
-    color: #fdba74;
-}
-
-
 .tag-age-light {
     background: #f3f4f6;
     color: #6b7280;
-}
-
-.tag-age-dark {
-    background: rgba(255, 255, 255, 0.1);
-    color: #9ca3af;
 }
 
 
@@ -368,28 +332,15 @@ const showSelector = computed(() => true)
     width: 128rpx;
     height: 130rpx;
     border-radius: 32rpx;
-    border: 4rpx dashed;
+    border: 4rpx dashed #d1d5db;
     gap: 8rpx;
     transition: all 0.2s ease;
     background: transparent;
     flex-shrink: 0;
 
-    &.add-btn-light {
-        border-color: #d1d5db;
-
-        &:active {
-            border-color: #fdba74;
-            background: #fff7ed;
-        }
-    }
-
-    &.add-btn-dark {
-        border-color: #4b5563;
-
-        &:active {
-            border-color: #fdba74;
-            background: rgba(253, 186, 116, 0.1);
-        }
+    &:active {
+        border-color: #fdba74;
+        background: #fff7ed;
     }
 }
 
@@ -407,15 +358,7 @@ const showSelector = computed(() => true)
     gap: 32rpx;
     box-sizing: border-box;
     flex-shrink: 0;
-
-    &.theme-light {
-        background: white;
-    }
-
-    &.theme-dark {
-        background: #1C1C1E;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+    background: white;
 }
 
 .icon-wrapper {
@@ -463,16 +406,8 @@ const showSelector = computed(() => true)
     font-size: 20rpx;
     box-shadow: 0 8rpx 12rpx -2rpx rgba(249, 115, 22, 0.1);
     transition: all 0.2s ease;
-
-    &.btn-light {
-        background-color: #111827;
-        color: white;
-    }
-
-    &.btn-dark {
-        background-color: #fdba74;
-        color: #111827;
-    }
+    background-color: #111827;
+    color: white;
 }
 
 .add-btn:active {

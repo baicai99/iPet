@@ -557,7 +557,7 @@ const goViewArticles = () => {
 
 <style lang="scss" scoped>
 .empty {
-    background-color: white;
+    background-color: var(--app-card-bg);
     border-radius: 30rpx;
     padding: 30rpx;
 }
@@ -598,9 +598,8 @@ const goViewArticles = () => {
 }
 
 .section-title {
-    font-size: 34rpx;
-    font-weight: bold;
-    color: $uni-text-color;
+    @include text-title-2;
+    color: var(--app-text-primary);
 }
 
 .empty-trend {
@@ -610,13 +609,13 @@ const goViewArticles = () => {
     justify-content: center;
     padding: 64rpx 32rpx;
     gap: 16rpx;
-    background-color: white;
+    background-color: var(--app-card-bg);
     border-radius: 48rpx;
 }
 
 .empty-trend-text {
-    font-size: 28rpx;
-    color: #8e8e93;
+    @include text-body;
+    color: var(--app-text-muted);
 }
 
 /* ✅ Lightweight Refresh Indicator */
@@ -638,12 +637,12 @@ const goViewArticles = () => {
 .error-state {
     padding: 48rpx 32rpx;
     text-align: center;
-    background-color: white;
+    background-color: var(--app-card-bg);
     border-radius: 30rpx;
 }
 
 .error-text {
-    font-size: 28rpx;
-    color: #ef4444;
+    @include text-body;
+    color: var(--app-danger-color);
 }
 </style>

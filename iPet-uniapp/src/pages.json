@@ -28,101 +28,102 @@
 			"path": "pages/summary/summary",
 			"style": {
 				"navigationBarTitleText": "摘要",
-				"backgroundColor": "#f2f2f6"
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/my/my",
 			"style": {
 				"navigationBarTitleText": "我的",
-				"backgroundColor": "#f2f2f6"
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/my/pet/add",
 			"style": {
 				"navigationBarTitleText": "宠物信息",
-				"backgroundColor": "#f2f2f6"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/my/profile/edit",
 			"style": {
 				"navigationBarTitleText": "编辑资料",
-				"backgroundColor": "#f5f5f5"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/my/profile/auth",
 			"style": {
 				"navigationBarTitleText": "实名认证",
-				"backgroundColor": "#f5f5f5"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/my/profile/security",
 			"style": {
 				"navigationBarTitleText": "账号安全",
-				"backgroundColor": "#f5f5f5"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/metrics/list",
 			"style": {
 				"navigationBarTitleText": "健康数据",
-				"backgroundColor": "#f2f2f6"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/metrics/detail",
 			"style": {
 				"navigationBarTitleText": "数据详情",
-				"backgroundColor": "#f2f2f6",
-				"titleNView": {
-					"buttons": [
-						{
-							"type": "text",
-							"text": "添加",
-							"fontSize": "16px",
-							"color": "#2563eb"
-						}
-					]
-				}
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/metrics/add",
 			"style": {
 				"navigationBarTitleText": "记录数据",
-				"backgroundColor": "#f2f2f6"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/metrics/history",
 			"style": {
 				"navigationBarTitleText": "历史记录",
-				"backgroundColor": "#f2f2f6"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/trends/trends",
 			"style": {
 				"navigationBarTitleText": "趋势分析",
-				"backgroundColor": "#f2f2f6"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/emergency/card",
 			"style": {
 				"navigationBarTitleText": "急救档案",
-				"backgroundColor": "#f2f2f6"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
 			"path": "pages/about/about",
 			"style": {
 				"navigationBarTitleText": "关于我们",
-				"backgroundColor": "#f2f2f6"
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
 			}
 		},
 		{
@@ -135,9 +136,13 @@
 		}
 	],
 	"globalStyle": {
-		"navigationBarBackgroundColor": "#f2f2f6",
 		"navigationBarTextStyle": "black",
-		"disableScroll": false
+		"navigationBarTitleText": "iPet",
+		"navigationBarBackgroundColor": "#fbfbfd",
+		"backgroundColor": "#f2f1f5",
+		"backgroundColorTop": "#f2f1f5",
+		"backgroundColorBottom": "#f2f1f5",
+		"enablePullDownRefresh": false
 	},
 	"subPackages": [
 		{
@@ -147,13 +152,15 @@
 					"path": "list",
 					"style": {
 						"navigationBarTitleText": "精选文章",
-						"backgroundColor": "#f8f8f8"
+						"navigationBarTextStyle": "black",
+						"backgroundColor": "#f2f1f5"
 					}
 				},
 				{
 					"path": "detail",
 					"style": {
 						"navigationBarTitleText": "文章详情",
+						"navigationBarTextStyle": "black",
 						"backgroundColor": "#ffffff"
 					}
 				},
@@ -161,6 +168,7 @@
 					"path": "recipe-detail",
 					"style": {
 						"navigationBarTitleText": "食谱详情",
+						"navigationBarTextStyle": "black",
 						"backgroundColor": "#ffffff"
 					}
 				}
@@ -173,7 +181,8 @@
 					"path": "privacy",
 					"style": {
 						"navigationBarTitleText": "隐私设置",
-						"backgroundColor": "#f2f2f6"
+						"navigationBarTextStyle": "black",
+						"backgroundColor": "#f2f1f5"
 					}
 				}
 			]
@@ -185,6 +194,7 @@
 					"path": "faq",
 					"style": {
 						"navigationBarTitleText": "常见问题",
+						"navigationBarTextStyle": "black",
 						"backgroundColor": "#ffffff"
 					}
 				}
@@ -195,30 +205,19 @@
 		"color": "#7A7E83",
 		"selectedColor": "#3cc51f",
 		"borderStyle": "black",
-		"backgroundColor": "#ffffff",
-		"iconfontSrc": "static/icon/iconfont.ttf",
+		"backgroundColor": "#fbfbfd",
 		"list": [
 			{
 				"pagePath": "pages/summary/summary",
 				"text": "摘要",
-				"iconfont": {
-					"text": "\ue669",
-					"selectedText": "\ue668",
-					"fontSize": "24px",
-					"color": "#7A7E83",
-					"selectedColor": "#3cc51f"
-				}
+				"iconPath": "static/tabbar/summary.png",
+				"selectedIconPath": "static/tabbar/summary-active.png"
 			},
 			{
 				"pagePath": "pages/my/my",
 				"text": "我的",
-				"iconfont": {
-					"text": "\ue78b",
-					"selectedText": "\ue78c",
-					"fontSize": "24px",
-					"color": "#7A7E83",
-					"selectedColor": "#3cc51f"
-				}
+				"iconPath": "static/tabbar/my.png",
+				"selectedIconPath": "static/tabbar/my-active.png"
 			}
 		]
 	},

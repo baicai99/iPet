@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { onLaunch } from '@dcloudio/uni-app'
-import { useAppTheme } from '@/composables/useAppTheme'
-import { initAuth } from '@/services/initAuth'
-import '@/static/icon/iconfont.js'
-
-useAppTheme()
+import { initAuth }from '@/services/initAuth'
 
 onLaunch(() => {
     initAuth()
@@ -13,15 +9,9 @@ onLaunch(() => {
 
 <style lang="scss">
 @import 'uview-plus/index.scss';
+@import '@/styles/theme-variables.scss';
 
 :root {
-    --app-background: #f5f5f5;
-    --app-card-bg: #ffffff;
-    --app-border-color: #f3f4f6;
-    --app-text-primary: #1f2937;
-    --app-text-secondary: #4b5563;
-    --app-text-muted: #9ca3af;
-
     /* Global Color Tokens */
     --uni-color-primary: #007aff;
     --uni-color-success: #4cd964;
@@ -39,13 +29,8 @@ onLaunch(() => {
     --uni-bg-color-mask: rgba(0, 0, 0, 0.4);
 }
 
+/* ⚠️ 保留兼容性：.dark-theme class 仍然有效，但优先使用 [data-theme="dark"] */
 .dark-theme {
-    --app-background: #0f172a;
-    --app-card-bg: #1f2937;
-    --app-border-color: rgba(255, 255, 255, 0.08);
-    --app-text-primary: #f8fafc;
-    --app-text-secondary: #e5e7eb;
-    --app-text-muted: #94a3b8;
     color: var(--app-text-primary);
     background-color: var(--app-background);
 }

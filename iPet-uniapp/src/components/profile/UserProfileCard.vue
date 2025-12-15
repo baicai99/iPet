@@ -78,14 +78,12 @@ interface UserData {
 
 const props = defineProps<{
     user?: UserData | null;
-    theme?: 'light' | 'dark';
 }>();
 
 const imageCache = useImageCacheStore();
 const isPressed = ref(false);
 
-const isDark = computed(() => props.theme === 'dark');
-const isEmpty = computed(() => !props.user);
+const isEmpty = computed(() => !props.user)
 const isVip = computed(() => props.user?.isVip);
 
 // 优化：解析后的头像路径，优先读取本地缓存
@@ -105,37 +103,35 @@ const handlePressEnd = () => {
 
 // Computed Classes
 const themeClass = computed(() => {
-    if (isDark.value) return 'theme-dark';
-    if (isVip.value) return 'theme-vip';
-    return 'theme-light';
-});
+    if (isVip.value) return 'theme-vip'
+    return 'theme-light'
+})
 
-const textClass = computed(() => isDark.value ? 'text-white' : 'text-gray-900');
-const subTextClass = computed(() => 'text-gray-400');
+const textClass = computed(() => 'text-gray-900')
+const subTextClass = computed(() => 'text-gray-400')
 
-const iconBgClass = computed(() => isDark.value ? 'bg-white-10' : 'bg-gray-100');
-const iconColor = computed(() => isDark.value ? '#ffffff' : '#9ca3af');
+const iconBgClass = computed(() => 'bg-gray-100')
+const iconColor = computed(() => '#9ca3af')
 
-const tagBgClass = computed(() => isDark.value ? 'tag-dark' : 'tag-light');
+const tagBgClass = computed(() => 'tag-light')
 
 // Use centralized gender configuration
 const genderConfig = computed(() => {
-    const style = getGenderStyle(props.user?.gender);
+    const style = getGenderStyle(props.user?.gender)
     return {
         icon: style.icon,
         color: style.color,
-        bgClass: getGenderBgClass(props.user?.gender, isDark.value)
-    };
-});
+        bgClass: getGenderBgClass(props.user?.gender, false)
+    }
+})
 
 const avatarBorderClass = computed(() => {
-    if (isVip.value) return 'border-vip';
-    if (isDark.value) return 'border-dark';
-    return 'border-light';
-});
+    if (isVip.value) return 'border-vip'
+    return 'border-light'
+})
 
-const arrowClass = computed(() => isDark.value ? 'text-gray-600' : 'text-gray-300');
-const arrowColor = computed(() => isDark.value ? '#4b5563' : '#d1d5db');
+const arrowClass = computed(() => 'text-gray-300')
+const arrowColor = computed(() => '#d1d5db');
 
 </script>
 
@@ -158,39 +154,6 @@ const arrowColor = computed(() => isDark.value ? '#4b5563' : '#d1d5db');
         transform: scale(0.98);
     }
 
-    // Theme Styles
-    &.theme-dark {
-        background-color: #1C1C1E;
-        border-color: rgba(255, 255, 255, 0.1);
-        color: white;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-
-        &.is-pressed {
-            background-color: #2C2C2E;
-        }
-    }
-
-    &.theme-vip {
-        background-color: white;
-        border-color: #fde68a; // amber-200
-        color: #111827; // gray-900
-        box-shadow: 0 4px 20px rgba(251, 191, 36, 0.15);
-
-        &.is-pressed {
-            background-color: #f9fafb; // gray-50
-        }
-    }
-
-    &.theme-light {
-        background-color: white;
-        border-color: rgba(255, 255, 255, 0.6);
-        color: #111827; // gray-900
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-
-        &.is-pressed {
-            background-color: #f9fafb; // gray-50
-        }
-    }
 }
 
 // Avatar
@@ -213,11 +176,6 @@ const arrowColor = computed(() => isDark.value ? '#4b5563' : '#d1d5db');
     &.border-vip {
         border-color: #fde68a; // amber-200
         box-shadow: 0 0 0 1px #fffbeb; // ring-amber-50
-    }
-
-    &.border-dark {
-        border-color: #2C2C2E;
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
 
     &.border-light {
@@ -320,19 +278,9 @@ const arrowColor = computed(() => isDark.value ? '#4b5563' : '#d1d5db');
         color: #3b82f6; // blue-500
     }
 
-    &.gender-male-dark {
-        background-color: rgba(59, 130, 246, 0.2);
-        color: #93c5fd; // blue-300
-    }
-
     &.gender-female-light {
         background-color: #fdf2f8; // pink-50
         color: #ec4899; // pink-500
-    }
-
-    &.gender-female-dark {
-        background-color: rgba(236, 72, 153, 0.2);
-        color: #f9a8d4; // pink-300
     }
 
     &.gender-bag-light {
@@ -340,18 +288,8 @@ const arrowColor = computed(() => isDark.value ? '#4b5563' : '#d1d5db');
         color: #f59e0b; // amber-500
     }
 
-    &.gender-bag-dark {
-        background-color: rgba(245, 158, 11, 0.2);
-        color: #fbbf24; // amber-400
-    }
-
     &.gender-unknown-light {
         background-color: #f3f4f6; // gray-100
-        color: #9ca3af; // gray-400
-    }
-
-    &.gender-unknown-dark {
-        background-color: rgba(156, 163, 175, 0.2);
         color: #9ca3af; // gray-400
     }
 }
@@ -368,12 +306,6 @@ const arrowColor = computed(() => isDark.value ? '#4b5563' : '#d1d5db');
         background-color: #eef2ff; // indigo-50
         color: #4f46e5; // indigo-600
         border-color: rgba(224, 231, 255, 0.5);
-    }
-
-    &.tag-dark {
-        background-color: rgba(99, 102, 241, 0.2);
-        color: #a5b4fc; // indigo-300
-        border-color: rgba(99, 102, 241, 0.3);
     }
 }
 

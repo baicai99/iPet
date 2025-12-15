@@ -1,5 +1,7 @@
 <template>
-    <view class="auth-page">
+    <view class="page-container">
+        <AppNavbar title="实名认证" />
+        <view class="auth-page">
         <!-- 已认证状态 -->
         <view v-if="isVerified" class="verified-container">
             <view class="verified-icon">
@@ -66,11 +68,13 @@
                 </button>
             </view>
         </view>
+        </view>
     </view>
 </template>
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import { userService } from '@/services/userService'
 
 const isVerified = ref(false)

@@ -1,31 +1,36 @@
 <template>
-    <view class="article-detail-page">
-        <u-loading-page :loading="loading"></u-loading-page>
+    <view class="page-container">
+        <AppNavbar title="文章详情" />
+        <view class="article-detail-page">
+            <!-- 显式使用 v-if 控制加载蒙层 -->
+            <u-loading-page v-if="loading" :loading="loading"></u-loading-page>
 
-        <view v-if="article" class="content-wrapper">
-            <image v-if="article.cover" :src="article.cover" class="cover-image" mode="aspectFill"></image>
-            <view class="article-header">
-                <text class="category-tag">{{ resolveCategoryLabel(article.category) }}</text>
-                <text class="title">{{ article.title }}</text>
-                <view class="meta">
-                    <text class="author">{{ article.author || 'iPet' }}</text>
-                    <text class="date">{{ formatDate(article.updateTime, 'YYYY年MM月DD日') }}</text>
+            <view v-else-if="article" class="content-wrapper">
+                <image v-if="article.cover" :src="article.cover" class="cover-image" mode="aspectFill"></image>
+                <view class="article-header">
+                    <text class="category-tag">{{ resolveCategoryLabel(article.category) }}</text>
+                    <text class="title">{{ article.title }}</text>
+                    <view class="meta">
+                        <text class="author">{{ article.author || 'iPet' }}</text>
+                        <text class="date">{{ formatDate(article.updateTime, 'YYYY年MM月DD日') }}</text>
+                    </view>
+                    <text v-if="article.summary" class="summary">{{ article.summary }}</text>
                 </view>
-                <text v-if="article.summary" class="summary">{{ article.summary }}</text>
+                <view class="article-body">
+                    <ArticleContentRenderer v-if="article.content" :markdown-text="article.content" />
+                    <view v-else class="content-loading">加载内容中...</view>
+                </view>
             </view>
-            <view class="article-body">
-                <ArticleContentRenderer v-if="article.content" :markdown-text="article.content" />
-                <view v-else class="content-loading">加载内容中...</view>
-            </view>
-        </view>
 
-        <u-empty v-else-if="!loading" mode="news" text="没有找到对应文章"></u-empty>
+            <u-empty v-else mode="news" text="没有找到对应文章"></u-empty>
+        </view>
     </view>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import { getArticleDetail } from '@/services/articleService'
 import { formatDate } from '@/utils/common/formatHelper'
 import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'

@@ -1,5 +1,11 @@
 <template>
-    <view class="header-container">
+    <view class="page-container">
+        <AppNavbar :title="metricMetadata.title || '数据详情'" @rightClick="handleAddClick">
+            <template #right>
+                <u-icon name="plus" size="20" color="#2563eb"></u-icon>
+            </template>
+        </AppNavbar>
+        <view class="header-container">
         <!-- 非任务模式：图表区域 -->
         <template v-if="!isTaskMode">
             <MetricChartArea :active-tab="activeTab" :tabs="tabs" :latest-metric-display="latestMetricDisplay"
@@ -64,13 +70,15 @@
     <!-- Completion Confirmation Picker -->
     <u-datetime-picker :show="showCompletePicker" v-model="completeTimeValue" mode="datetime" title="确认完成时间"
         @confirm="confirmCompletion" @cancel="showCompletePicker = false"></u-datetime-picker>
+    </view>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { onLoad, onShow, onNavigationBarButtonTap, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 
 // UI Components
+import AppNavbar from '@/components/common/AppNavbar.vue'
 import HistoryButton from '@/components/widgets/HistoryButton.vue'
 import PinSwitchRow from '@/components/widgets/PinSwitchRow.vue'
 import MetricInsight from '@/components/business/health/MetricInsight.vue'
@@ -267,9 +275,9 @@ onShow(() => {
     }
 })
 
-onNavigationBarButtonTap(() => {
+function handleAddClick() {
     uni.navigateTo({ url: `/pages/metrics/add?key=${metricKey.value || ''}` })
-})
+}
 
 onUnload(() => {
     uni.$off(HISTORY_UPDATE_EVENT, handleHistoryUpdate)

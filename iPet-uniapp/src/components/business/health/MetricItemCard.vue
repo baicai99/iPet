@@ -22,14 +22,20 @@
                 <view class="value-row">
                     <text :class="isValueText ? 'value-text' : 'value'">{{ valueStr }}</text>
                     <text v-if="unitStr && valueStr !== '暂无数据' && valueStr !== '暂无待办计划'" class="unit">{{ unitStr
-                    }}</text>
+                        }}</text>
                 </view>
             </view>
 
             <!-- Right: Chart -->
             <view class="chart-section" :class="{ 'wide-chart': isWide }" :style="{ height: chartHeight }"
                 v-if="hasChartData">
-                <component :is="resolvedChartComponent" v-bind="resolvedChartProps" />
+                <!-- 条件渲染替代动态组件 -->
+                <MiniLineChart v-if="chartComponentName === 'MiniLineChart'" v-bind="resolvedChartProps" />
+                <MiniBarChart v-else-if="chartComponentName === 'MiniBarChart'" v-bind="resolvedChartProps" />
+                <MiniRangeSlider v-else-if="chartComponentName === 'MiniRangeSlider'" v-bind="resolvedChartProps" />
+                <MiniStatus v-else-if="chartComponentName === 'MiniStatus'" v-bind="resolvedChartProps" />
+                <MiniTimeline v-else-if="chartComponentName === 'MiniTimeline'" v-bind="resolvedChartProps" />
+                <MiniStatusGrid v-else-if="chartComponentName === 'MiniStatusGrid'" v-bind="resolvedChartProps" />
             </view>
         </view>
     </view>
@@ -40,6 +46,12 @@ import { computed } from 'vue'
 import type { PropType } from 'vue'
 import type { MetricCardConfig } from '@/types/ui'
 import { resolveChartAdapter } from '@/composables/useChartAdapter'
+import MiniLineChart from '@/components/widgets/charts/MiniLineChart.vue'
+import MiniBarChart from '@/components/widgets/charts/MiniBarChart.vue'
+import MiniRangeSlider from '@/components/widgets/charts/MiniRangeSlider.vue'
+import MiniStatus from '@/components/widgets/charts/MiniStatus.vue'
+import MiniTimeline from '@/components/widgets/charts/MiniTimeline.vue'
+import MiniStatusGrid from '@/components/widgets/charts/MiniStatusGrid.vue'
 
 const props = defineProps({
     config: {
@@ -88,6 +100,12 @@ const resolvedChartComponent = computed(() => {
         return component
     }
     return props.chartComponent
+})
+
+// Extract component name for conditional rendering
+const chartComponentName = computed(() => {
+    if (!resolvedChartComponent.value) return ''
+    return resolvedChartComponent.value.__name || resolvedChartComponent.value.name || ''
 })
 
 const resolvedChartProps = computed(() => {
