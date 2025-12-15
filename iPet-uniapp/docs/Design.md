@@ -184,6 +184,118 @@
 
 ---
 
+### 维度I：小程序页面背景色配置 ⭐
+
+**常见问题**：H5 的 `body { background: #f2f1f5; }` 在小程序端不生效，页面显示为默认白色 `#ffffff`。
+
+**原因分析**：
+- 微信小程序运行时不会渲染 `body` 元素
+- 使用的是自己的 `page` 容器，默认背景是纯白色
+- H5 中设置的 body 样式只对 Web 生效，打包成小程序后不会被应用
+
+**解决方案**（推荐使用双重保障）：
+
+#### 方案 1：pages.json 全局配置（优先推荐）
+
+在 `pages.json` 的 `globalStyle` 中设置全局背景色：
+
+```json
+{
+  "globalStyle": {
+    "backgroundColor": "#f2f1f5",
+    "backgroundColorTop": "#f2f1f5",
+    "backgroundColorBottom": "#f2f1f5"
+  }
+}
+```
+
+**优点**：
+- ✅ 所有页面默认生效
+- ✅ 编译时直接注入，性能最优
+- ✅ 单独页面可通过 `style.backgroundColor` 覆盖
+
+#### 方案 2：App.vue 设置 page 选择器
+
+在 `App.vue` 中添加非 scoped 样式：
+
+```scss
+<style lang="scss">
+page {
+    background-color: var(--app-background); // 使用设计系统变量
+}
+</style>
+```
+
+**优点**：
+- ✅ 使用设计系统变量，便于主题切换
+- ✅ 与 H5 端样式统一管理
+
+#### 方案 3：页面级 page 选择器（兜底方案）⭐
+
+如果全局配置不生效，在**具体页面**的 `.vue` 文件中添加**非 scoped** 样式块：
+
+```vue
+<script setup>
+// ... 页面逻辑
+</script>
+
+<!-- MiniProgram specific styles (non-scoped) -->
+<style lang="scss">
+/* 微信小程序页面背景色 */
+page {
+    background-color: #f2f1f5;
+}
+</style>
+
+<style lang="scss" scoped>
+/* 页面组件样式 */
+</style>
+```
+
+**关键点**：
+- ⚠️ 必须是**非 scoped** 的 style 块
+- ⚠️ `scoped` 样式不会作用于 `page` 这种全局选择器
+- ✅ 页面级设置优先级最高，可覆盖全局配置
+
+**实战案例**：summary 页面背景色修复
+
+```vue
+<!-- pages/summary/summary.vue -->
+
+<!-- MiniProgram specific styles (non-scoped) -->
+<style lang="scss">
+page {
+    background-color: #f2f1f5;
+}
+</style>
+
+<style lang="scss" scoped>
+.content {
+    padding: 24rpx 0;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+}
+</style>
+```
+
+**推荐策略**：
+1. **全局配置 (pages.json)**: 作为基础保障
+2. **App.vue page 选择器**: 统一管理，使用设计系统变量
+3. **页面级 page 选择器**: 针对特殊页面或全局配置不生效时使用
+
+**验收指标**：
+* ✅ 微信开发者工具中打开页面，背景色为 `#f2f1f5`（而非白色）
+* ✅ 真机预览时背景色与 H5 版本一致
+* ✅ 不同页面切换时背景色保持稳定，无闪烁
+
+**调试技巧**：
+1. 清除微信开发者工具缓存
+2. 重新运行 `npm run dev:mp-weixin`
+3. 使用调试器查看生成的 `.wxss` 文件，确认 `page` 样式已生成
+
+---
+
 ## 3. 推荐迁移流程（步骤性 + 指标性）
 
 ### Step 0：建立对照与基线

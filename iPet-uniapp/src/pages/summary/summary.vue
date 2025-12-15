@@ -555,6 +555,14 @@ const goViewArticles = () => {
 }
 </script>
 
+<!-- MiniProgram specific styles (non-scoped) -->
+<style lang="scss">
+/* 微信小程序页面背景色 */
+page {
+    background-color: #f2f1f5;
+}
+</style>
+
 <style lang="scss" scoped>
 .empty {
     background-color: var(--app-card-bg);
@@ -599,7 +607,7 @@ const goViewArticles = () => {
 
 .section-title {
     @include text-title-2;
-    color: var(--app-text-primary);
+    color: $uni-text-color; // 改回 SCSS 变量，确保小程序兼容性
 }
 
 .empty-trend {
