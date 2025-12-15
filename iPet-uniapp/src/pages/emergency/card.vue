@@ -1,81 +1,79 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="急救档案" />
         <view class="emergency-card-page">
-        <view class="hero">
-            <text class="hero-title">急救档案</text>
-            <text class="hero-subtitle">一键出示血型、过敏史与主治医生联系方式，守护关键时刻。</text>
-        </view>
-        <view class="medical-card">
-            <view class="medical-card__header">
-                <view class="pet-meta">
-                    <text class="pet-name">{{ petName }}</text>
-                    <text class="pet-detail">{{ petBreedInfo }}</text>
-                </view>
-                <image :src="petAvatar" class="pet-avatar" mode="aspectFill" />
+            <view class="hero">
+                <text class="hero-title">急救档案</text>
+                <text class="hero-subtitle">一键出示血型、过敏史与主治医生联系方式，守护关键时刻。</text>
             </view>
-            <view class="medical-card__body">
-                <view class="info-row" v-for="item in summaryRows" :key="item.label">
-                    <text class="info-label">{{ item.label }}</text>
-                    <text class="info-value">{{ item.value }}</text>
-                </view>
-                <view class="divider"></view>
-                <view class="info-row">
-                    <text class="info-label">过敏史</text>
-                    <text class="info-value multi-line">{{ medicalProfile.allergies }}</text>
-                </view>
-                <view class="info-row">
-                    <text class="info-label">慢性病史</text>
-                    <text class="info-value multi-line">{{ medicalProfile.chronicConditions }}</text>
-                </view>
-            </view>
-        </view>
-
-        <view class="section">
-            <view class="section-title">急救联系人</view>
-            <view class="contact-card">
-                <view class="contact-main">
-                    <view class="contact-name">
-                        <text class="contact-role">主治医生</text>
-                        <text class="contact-value">{{ vetContact.doctor }}</text>
+            <view class="medical-card">
+                <view class="medical-card__header">
+                    <view class="pet-meta">
+                        <text class="pet-name">{{ petName }}</text>
+                        <text class="pet-detail">{{ petBreedInfo }}</text>
                     </view>
-                    <view class="contact-clinic">{{ vetContact.clinic }}</view>
-                    <view class="contact-phone">{{ vetContact.phone }}</view>
+                    <image :src="petAvatar" class="pet-avatar" mode="aspectFill" />
                 </view>
-                <view class="contact-actions">
-                    <view class="contact-btn" @click="handleCopyContact">复制电话</view>
-                    <view class="contact-btn ghost" @click="handleCall">拨打</view>
+                <view class="medical-card__body">
+                    <view class="info-row" v-for="item in summaryRows" :key="item.label">
+                        <text class="info-label">{{ item.label }}</text>
+                        <text class="info-value">{{ item.value }}</text>
+                    </view>
+                    <view class="divider"></view>
+                    <view class="info-row">
+                        <text class="info-label">过敏史</text>
+                        <text class="info-value multi-line">{{ medicalProfile.allergies }}</text>
+                    </view>
+                    <view class="info-row">
+                        <text class="info-label">慢性病史</text>
+                        <text class="info-value multi-line">{{ medicalProfile.chronicConditions }}</text>
+                    </view>
                 </view>
             </view>
-        </view>
 
-        <view class="section">
-            <view class="section-title">快速操作</view>
-            <view class="action-grid">
-                <view class="action-card" @click="handleShareCard">
-                    <u-icon name="share" color="#2563eb" size="34"></u-icon>
-                    <text class="action-title">分享医疗卡</text>
-                    <text class="action-desc">发送给家人或医生</text>
-                </view>
-                <view class="action-card" @click="handleExportCard('pdf')">
-                    <u-icon name="file-text" color="#dc2626" size="34"></u-icon>
-                    <text class="action-title">导出 PDF</text>
-                    <text class="action-desc">支持打印与归档</text>
-                </view>
-                <view class="action-card" @click="handleExportCard('image')">
-                    <u-icon name="photo" color="#0ea5e9" size="34"></u-icon>
-                    <text class="action-title">保存图片</text>
-                    <text class="action-desc">相册快速查找</text>
+            <view class="section">
+                <view class="section-title">急救联系人</view>
+                <view class="contact-card">
+                    <view class="contact-main">
+                        <view class="contact-name">
+                            <text class="contact-role">主治医生</text>
+                            <text class="contact-value">{{ vetContact.doctor }}</text>
+                        </view>
+                        <view class="contact-clinic">{{ vetContact.clinic }}</view>
+                        <view class="contact-phone">{{ vetContact.phone }}</view>
+                    </view>
+                    <view class="contact-actions">
+                        <view class="contact-btn" @click="handleCopyContact">复制电话</view>
+                        <view class="contact-btn ghost" @click="handleCall">拨打</view>
+                    </view>
                 </view>
             </view>
-        </view>
+
+            <view class="section">
+                <view class="section-title">快速操作</view>
+                <view class="action-grid">
+                    <view class="action-card" @click="handleShareCard">
+                        <u-icon name="share" color="#2563eb" size="34"></u-icon>
+                        <text class="action-title">分享医疗卡</text>
+                        <text class="action-desc">发送给家人或医生</text>
+                    </view>
+                    <view class="action-card" @click="handleExportCard('pdf')">
+                        <u-icon name="file-text" color="#dc2626" size="34"></u-icon>
+                        <text class="action-title">导出 PDF</text>
+                        <text class="action-desc">支持打印与归档</text>
+                    </view>
+                    <view class="action-card" @click="handleExportCard('image')">
+                        <u-icon name="photo" color="#0ea5e9" size="34"></u-icon>
+                        <text class="action-title">保存图片</text>
+                        <text class="action-desc">相册快速查找</text>
+                    </view>
+                </view>
+            </view>
         </view>
     </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import { storeToRefs } from 'pinia'
 import { usePetStore } from '@/stores/petStore'
 import { formatPetAge } from '@/utils/common/formatHelper'

@@ -1,80 +1,78 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="实名认证" />
         <view class="auth-page">
-        <!-- 已认证状态 -->
-        <view v-if="isVerified" class="verified-container">
-            <view class="verified-icon">
-                <u-icon name="checkmark-circle" size="80" color="#10b981"></u-icon>
-            </view>
-            <text class="verified-title">已通过认证</text>
-            <text class="verified-desc">您的身份信息已核验通过,享有社区完整权益。</text>
-
-            <view class="info-card">
-                <view class="info-item">
-                    <text class="info-label">真实姓名</text>
-                    <text class="info-value">*{{ maskedName }}</text>
+            <!-- 已认证状态 -->
+            <view v-if="isVerified" class="verified-container">
+                <view class="verified-icon">
+                    <u-icon name="checkmark-circle" size="80" color="#10b981"></u-icon>
                 </view>
-                <view class="divider"></view>
-                <view class="info-item">
-                    <text class="info-label">身份证号</text>
-                    <text class="info-value">440*************88</text>
-                </view>
-            </view>
-        </view>
+                <text class="verified-title">已通过认证</text>
+                <text class="verified-desc">您的身份信息已核验通过,享有社区完整权益。</text>
 
-        <!-- 未认证状态 -->
-        <view v-else class="unverified-container">
-            <!-- 提示信息 -->
-            <view class="notice-box">
-                <u-icon name="info-circle" size="18" color="#3b82f6"></u-icon>
-                <text class="notice-text">
-                    依据相关法律法规,发布内容前需完成实名认证。我们严格保障您的信息安全,仅用于身份核验。
-                </text>
-            </view>
-
-            <!-- 认证表单 -->
-            <view class="form-card">
-                <view class="form-item">
-                    <text class="form-label">真实姓名</text>
-                    <input v-model="formData.name" class="form-input" placeholder="请输入真实姓名" />
-                </view>
-                <view class="form-item">
-                    <text class="form-label">身份证号</text>
-                    <input v-model="formData.idCard" class="form-input" placeholder="请输入18位身份证号" maxlength="18" />
-                </view>
-            </view>
-
-            <!-- 身份证照片上传 -->
-            <view class="upload-card">
-                <text class="form-label">上传身份证照片 (模拟)</text>
-                <view class="upload-grid">
-                    <view class="upload-item" @click="handleUpload('front')">
-                        <u-icon name="camera" size="24" color="#9ca3af"></u-icon>
-                        <text class="upload-text">人像面</text>
+                <view class="info-card">
+                    <view class="info-item">
+                        <text class="info-label">真实姓名</text>
+                        <text class="info-value">*{{ maskedName }}</text>
                     </view>
-                    <view class="upload-item" @click="handleUpload('back')">
-                        <u-icon name="camera" size="24" color="#9ca3af"></u-icon>
-                        <text class="upload-text">国徽面</text>
+                    <view class="divider"></view>
+                    <view class="info-item">
+                        <text class="info-label">身份证号</text>
+                        <text class="info-value">440*************88</text>
                     </view>
                 </view>
             </view>
 
-            <!-- 提交按钮 -->
-            <view class="submit-section">
-                <button class="submit-button" :class="{ 'button-loading': loading }" :disabled="loading"
-                    @click="handleSubmit">
-                    {{ loading ? '提交审核中...' : '提交认证' }}
-                </button>
+            <!-- 未认证状态 -->
+            <view v-else class="unverified-container">
+                <!-- 提示信息 -->
+                <view class="notice-box">
+                    <u-icon name="info-circle" size="18" color="#3b82f6"></u-icon>
+                    <text class="notice-text">
+                        依据相关法律法规,发布内容前需完成实名认证。我们严格保障您的信息安全,仅用于身份核验。
+                    </text>
+                </view>
+
+                <!-- 认证表单 -->
+                <view class="form-card">
+                    <view class="form-item">
+                        <text class="form-label">真实姓名</text>
+                        <input v-model="formData.name" class="form-input" placeholder="请输入真实姓名" />
+                    </view>
+                    <view class="form-item">
+                        <text class="form-label">身份证号</text>
+                        <input v-model="formData.idCard" class="form-input" placeholder="请输入18位身份证号" maxlength="18" />
+                    </view>
+                </view>
+
+                <!-- 身份证照片上传 -->
+                <view class="upload-card">
+                    <text class="form-label">上传身份证照片 (模拟)</text>
+                    <view class="upload-grid">
+                        <view class="upload-item" @click="handleUpload('front')">
+                            <u-icon name="camera" size="24" color="#9ca3af"></u-icon>
+                            <text class="upload-text">人像面</text>
+                        </view>
+                        <view class="upload-item" @click="handleUpload('back')">
+                            <u-icon name="camera" size="24" color="#9ca3af"></u-icon>
+                            <text class="upload-text">国徽面</text>
+                        </view>
+                    </view>
+                </view>
+
+                <!-- 提交按钮 -->
+                <view class="submit-section">
+                    <button class="submit-button" :class="{ 'button-loading': loading }" :disabled="loading"
+                        @click="handleSubmit">
+                        {{ loading ? '提交审核中...' : '提交认证' }}
+                    </button>
+                </view>
             </view>
-        </view>
         </view>
     </view>
 </template>
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import { userService } from '@/services/userService'
 
 const isVerified = ref(false)

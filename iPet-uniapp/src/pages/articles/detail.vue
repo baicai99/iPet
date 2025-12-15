@@ -1,6 +1,5 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="文章详情" />
         <view class="article-detail-page">
             <!-- 显式使用 v-if 控制加载蒙层 -->
             <u-loading-page v-if="loading" :loading="loading"></u-loading-page>
@@ -30,7 +29,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import { getArticleDetail } from '@/services/articleService'
 import { formatDate } from '@/utils/common/formatHelper'
 import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'

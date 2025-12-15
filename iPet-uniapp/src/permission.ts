@@ -25,7 +25,8 @@ const evaluateTokenState = (userStore: ReturnType<typeof useUserStore>) => {
 
     const expiresAt = userStore.tokenExpiresAt
     if (!expiresAt) {
-        return { valid: false, reason: 'missing-expiry' }
+        // 兼容：历史版本可能没有写入 expiresAt，此时不要强制登出，交给后续接口 401 决定
+        return { valid: true, warning: 'missing-expiry' as const }
     }
 
     const now = Date.now()

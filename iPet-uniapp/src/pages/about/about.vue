@@ -1,6 +1,5 @@
 <template>
   <view class="page-container">
-    <AppNavbar title="关于我们" />
     <view class="about-page">
       <view class="logo-section">
         <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
@@ -24,7 +23,6 @@
 </template>
 
 <script setup>
-import AppNavbar from '@/components/common/AppNavbar.vue'
 const handleRate = () => {
   // In a real app, this would open the app store
   uni.showToast({
@@ -83,7 +81,7 @@ const handleRate = () => {
 .copyright {
   margin-top: 40rpx;
   margin-bottom: 20rpx;
-  
+
   text {
     font-size: 20rpx;
     color: $uni-text-color-grey;

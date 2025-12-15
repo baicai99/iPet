@@ -1,24 +1,23 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="食谱详情" />
         <view class="recipe-detail-page">
-        <u-loading-page :loading="loading"></u-loading-page>
+            <u-loading-page :loading="loading"></u-loading-page>
 
-        <view v-if="article" class="content-wrapper">
-            <image v-if="article.cover" :src="article.cover" class="cover-image" mode="aspectFill"></image>
-            <view class="article-header">
-                <text class="title">{{ article.title }}</text>
-                <view class="meta">
-                    <text class="author">{{ article.author || 'iPet' }}</text>
-                    <text class="date">{{ formatDate(article.updateTime, 'YYYY年MM月DD日') }}</text>
+            <view v-if="article" class="content-wrapper">
+                <image v-if="article.cover" :src="article.cover" class="cover-image" mode="aspectFill"></image>
+                <view class="article-header">
+                    <text class="title">{{ article.title }}</text>
+                    <view class="meta">
+                        <text class="author">{{ article.author || 'iPet' }}</text>
+                        <text class="date">{{ formatDate(article.updateTime, 'YYYY年MM月DD日') }}</text>
+                    </view>
+                </view>
+
+                <view class="article-body">
+                    <ArticleContentRenderer v-if="article.content" :markdown-text="article.content" />
+                    <view v-else class="content-loading">内容加载中...</view>
                 </view>
             </view>
-
-            <view class="article-body">
-                <ArticleContentRenderer v-if="article.content" :markdown-text="article.content" />
-                <view v-else class="content-loading">内容加载中...</view>
-            </view>
-        </view>
         </view>
     </view>
 </template>
@@ -26,7 +25,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import { getArticleDetail } from '@/services/articleService'
 import { formatDate } from '@/utils/common/formatHelper'
 import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'

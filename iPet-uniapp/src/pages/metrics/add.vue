@@ -1,6 +1,5 @@
 <template>
     <view class="page-container">
-        <AppNavbar :title="pageTitle" />
         <view class="container">
             <!-- Notification -->
             <view v-if="notification" class="notification" :class="[notification.type]">
@@ -9,246 +8,246 @@
                 <text class="notification-text">{{ notification.message }}</text>
             </view>
 
-        <view class="main-content">
-            <!-- Section 1: Header -->
-            <view class="header-section">
-                <view class="icon-box">
-                    <u-icon :name="pageIcon" color="#ffffff" size="28"></u-icon>
+            <view class="main-content">
+                <!-- Section 1: Header -->
+                <view class="header-section">
+                    <view class="icon-box">
+                        <u-icon :name="pageIcon" color="#ffffff" size="28"></u-icon>
+                    </view>
+                    <view>
+                        <text class="page-title">{{ pageTitle }}</text>
+                    </view>
                 </view>
-                <view>
-                    <text class="page-title">{{ pageTitle }}</text>
+
+                <!-- Mode Switcher (Optional, if we want in-page toggle) -->
+                <!-- For now, controlled by entry point, but UI could reflect it -->
+
+                <!-- Section 2: Core Data (Value or Method) -->
+                <view class="section-card">
+                    <!-- Method Selection for Task-mode metrics -->
+                    <view class="card-content">
+                        <view v-if="isTaskMode" class="status-toggle-row">
+                            <text class="label">状态</text>
+                            <view class="toggle-group">
+                                <view class="toggle-item" :class="{ active: !isDirectCompletion }"
+                                    @click="isDirectCompletion = false">
+                                    <u-icon name="clock" size="14"
+                                        :color="!isDirectCompletion ? '#fff' : '#64748b'"></u-icon>
+                                    <text>加入待办</text>
+                                </view>
+                                <view class="toggle-item" :class="{ active: isDirectCompletion }"
+                                    @click="isDirectCompletion = true">
+                                    <u-icon name="checkmark" size="14"
+                                        :color="isDirectCompletion ? '#fff' : '#64748b'"></u-icon>
+                                    <text>直接完成</text>
+                                </view>
+                            </view>
+                        </view>
+
+                        <view v-if="isTaskMode && formConfig && formConfig.options?.length > 0" class="form-group">
+                            <text class="label">{{ formConfig.multiSelect ? '选择方式（可多选）' : '选择类型' }}</text>
+                            <!-- Tips for Deworming Schedule -->
+                            <view v-if="isScheduleMode && metricKey === 'deworming'" class="tips-box">
+                                <u-icon name="info-circle" size="14" color="#f59e0b"></u-icon>
+                                <text class="tips-text">体内和体外驱虫周期不同，请分别创建计划。</text>
+                            </view>
+                            <view class="tag-group">
+                                <view v-for="method in formConfig.options" :key="method.value" class="tag-item"
+                                    :class="{ active: selectedMethods.includes(method.value) }"
+                                    @click="toggleMethod(method.value)">
+                                    <text>{{ method.label }}</text>
+                                    <u-icon v-if="selectedMethods.includes(method.value)" name="checkmark"
+                                        color="#ffffff" size="12"></u-icon>
+                                </view>
+                            </view>
+                        </view>
+
+                        <!-- Stool Status Tag Selection (PRD: 7-tag single select) -->
+                        <view v-if="isStatusTagMode && formConfig && formConfig.options?.length > 0" class="form-group">
+                            <text class="label">排泄状态</text>
+                            <view class="stool-tag-grid">
+                                <view v-for="option in formConfig.options" :key="option.value" class="stool-tag-item"
+                                    :class="{ active: selectedStoolStatus === option.value }"
+                                    @click="selectStoolStatus(option.value)">
+                                    <text>{{ option.label }}</text>
+                                </view>
+                            </view>
+                        </view>
+
+                        <!-- Numeric Input for Stats -->
+                        <view v-if="!isEventMetric" class="form-group">
+                            <text class="label">{{ valueLabel }}</text>
+                            <view class="input-container group">
+                                <view class="input-icon-left">
+                                    <u-icon name="rmb-circle" color="#94a3b8" size="20"></u-icon>
+                                </view>
+                                <input type="digit" v-model="formData.value" class="input-field amount-input"
+                                    placeholder="0.00" />
+                                <view class="input-suffix">
+                                    <text class="suffix-text">{{ unitLabel || 'Unit' }}</text>
+                                </view>
+                            </view>
+                        </view>
+
+                        <!-- Fallback/Placeholder for task-mode events without options -->
+                        <view v-if="isTaskMode && (!formConfig || !formConfig.options?.length)" class="form-group">
+                            <text class="label">记录一次</text>
+                            <view class="tag-group">
+                                <view class="tag-item active">
+                                    <text>{{ isScheduleMode ? '计划执行' : '完成打卡' }}</text>
+                                    <u-icon name="checkmark" color="#ffffff" size="12"></u-icon>
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+
+                <!-- Section 3: Timing & Reminders -->
+                <view class="section-card">
+                    <view class="card-content" style="padding: 0;">
+                        <!-- Date -->
+                        <view class="form-row-item" @click="showCalendar = true">
+                            <view class="row-label">
+                                <u-icon name="calendar" color="#64748b" size="20"></u-icon>
+                                <text>日期</text>
+                            </view>
+                            <view class="row-value highlight">
+                                <text>{{ formData.date }}</text>
+                                <u-icon name="arrow-right" color="#cbd5e1" size="14"></u-icon>
+                            </view>
+                        </view>
+
+                        <!-- Time -->
+                        <view class="form-row-item" @click="showTimePicker = true">
+                            <view class="row-label">
+                                <u-icon name="clock" color="#64748b" size="20"></u-icon>
+                                <text>时间</text>
+                            </view>
+                            <view class="row-value highlight">
+                                <text>{{ formData.time }}</text>
+                                <u-icon name="arrow-right" color="#cbd5e1" size="14"></u-icon>
+                            </view>
+                        </view>
+
+                        <!-- Schedule Mode: Repeat Options -->
+                        <view v-if="isScheduleMode" class="form-row-item" @click="showRepeatSheet = true">
+                            <view class="row-label">
+                                <u-icon name="reload" color="#64748b" size="20"></u-icon>
+                                <text>重复</text>
+                            </view>
+                            <view class="row-value highlight">
+                                <text>{{ currentRepeatLabel }}</text>
+                                <u-icon name="arrow-right" color="#cbd5e1" size="14"></u-icon>
+                            </view>
+                        </view>
+
+                        <!-- Record Mode: Reminder Toggle -->
+                        <view v-else class="form-row-item">
+                            <view class="row-label">
+                                <u-icon name="bell" color="#64748b" size="20"></u-icon>
+                                <text>提醒</text>
+                            </view>
+                            <view class="reminder-btn" @click="showReminderSheet = true">
+                                {{ reminderButtonText }}
+                            </view>
+                        </view>
+                    </view>
+                </view>
+
+                <!-- Section 4: Notes -->
+                <view class="section-card">
+                    <view class="card-content">
+                        <text class="label">备注</text>
+                        <textarea v-model="formData.note" class="textarea-field" placeholder="添加备注信息..." />
+                    </view>
+                </view>
+
+                <!-- Scheduled List (Only in Schedule Mode) -->
+                <view v-if="isScheduleMode && scheduledList.length > 0" class="reminder-list-section">
+                    <view class="section-header">
+                        <text class="section-title">已预约</text>
+                        <view class="badge">{{ scheduledList.length }}</view>
+                    </view>
+
+                    <view class="reminder-list">
+                        <view v-for="item in scheduledList" :key="item.id" class="reminder-item"
+                            @click="loadRecordForEdit(item)">
+                            <view class="reminder-content">
+                                <view class="reminder-main">
+                                    <u-icon name="calendar" color="#64748b" size="18"></u-icon>
+                                    <text class="reminder-time">{{ formatReminderTime(item) }}</text>
+                                </view>
+                                <text v-if="item.notes" class="reminder-note">{{ item.notes }}</text>
+                                <!-- Show Repeat Label -->
+                                <view v-if="item.metadata?.repeat && item.metadata.repeat !== 'none'"
+                                    class="repeat-tag-small">
+                                    <u-icon name="reload" size="12" color="#6366f1"></u-icon>
+                                    <text>{{ getRepeatLabel(item.metadata.repeat) }}</text>
+                                </view>
+                            </view>
+                            <view class="delete-btn" @click.stop="handleDelete(item.id)">
+                                <u-icon name="trash" color="#ef4444" size="20"></u-icon>
+                            </view>
+                        </view>
+                    </view>
                 </view>
             </view>
 
-            <!-- Mode Switcher (Optional, if we want in-page toggle) -->
-            <!-- For now, controlled by entry point, but UI could reflect it -->
-
-            <!-- Section 2: Core Data (Value or Method) -->
-            <view class="section-card">
-                <!-- Method Selection for Task-mode metrics -->
-                <view class="card-content">
-                    <view v-if="isTaskMode" class="status-toggle-row">
-                        <text class="label">状态</text>
-                        <view class="toggle-group">
-                            <view class="toggle-item" :class="{ active: !isDirectCompletion }"
-                                @click="isDirectCompletion = false">
-                                <u-icon name="clock" size="14"
-                                    :color="!isDirectCompletion ? '#fff' : '#64748b'"></u-icon>
-                                <text>加入待办</text>
-                            </view>
-                            <view class="toggle-item" :class="{ active: isDirectCompletion }"
-                                @click="isDirectCompletion = true">
-                                <u-icon name="checkmark" size="14"
-                                    :color="isDirectCompletion ? '#fff' : '#64748b'"></u-icon>
-                                <text>直接完成</text>
-                            </view>
-                        </view>
+            <!-- Footer Actions -->
+            <view class="footer-actions">
+                <button class="save-btn" @click="handleSubmit" :disabled="isSubmitting"
+                    :class="{ 'opacity-50': isSubmitting }">
+                    <u-loading-icon v-if="isSubmitting" color="#ffffff" size="20"></u-loading-icon>
+                    <view v-else class="btn-content">
+                        <u-icon :name="isScheduleMode ? 'bell' : 'checkmark-circle'" color="#ffffff" size="20"></u-icon>
+                        <text class="btn-text">{{ submitButtonText }}</text>
                     </view>
-
-                    <view v-if="isTaskMode && formConfig && formConfig.options?.length > 0" class="form-group">
-                        <text class="label">{{ formConfig.multiSelect ? '选择方式（可多选）' : '选择类型' }}</text>
-                        <!-- Tips for Deworming Schedule -->
-                        <view v-if="isScheduleMode && metricKey === 'deworming'" class="tips-box">
-                            <u-icon name="info-circle" size="14" color="#f59e0b"></u-icon>
-                            <text class="tips-text">体内和体外驱虫周期不同，请分别创建计划。</text>
-                        </view>
-                        <view class="tag-group">
-                            <view v-for="method in formConfig.options" :key="method.value" class="tag-item"
-                                :class="{ active: selectedMethods.includes(method.value) }"
-                                @click="toggleMethod(method.value)">
-                                <text>{{ method.label }}</text>
-                                <u-icon v-if="selectedMethods.includes(method.value)" name="checkmark" color="#ffffff"
-                                    size="12"></u-icon>
-                            </view>
-                        </view>
-                    </view>
-
-                    <!-- Stool Status Tag Selection (PRD: 7-tag single select) -->
-                    <view v-if="isStatusTagMode && formConfig && formConfig.options?.length > 0" class="form-group">
-                        <text class="label">排泄状态</text>
-                        <view class="stool-tag-grid">
-                            <view v-for="option in formConfig.options" :key="option.value" class="stool-tag-item"
-                                :class="{ active: selectedStoolStatus === option.value }"
-                                @click="selectStoolStatus(option.value)">
-                                <text>{{ option.label }}</text>
-                            </view>
-                        </view>
-                    </view>
-
-                    <!-- Numeric Input for Stats -->
-                    <view v-if="!isEventMetric" class="form-group">
-                        <text class="label">{{ valueLabel }}</text>
-                        <view class="input-container group">
-                            <view class="input-icon-left">
-                                <u-icon name="rmb-circle" color="#94a3b8" size="20"></u-icon>
-                            </view>
-                            <input type="digit" v-model="formData.value" class="input-field amount-input"
-                                placeholder="0.00" />
-                            <view class="input-suffix">
-                                <text class="suffix-text">{{ unitLabel || 'Unit' }}</text>
-                            </view>
-                        </view>
-                    </view>
-
-                    <!-- Fallback/Placeholder for task-mode events without options -->
-                    <view v-if="isTaskMode && (!formConfig || !formConfig.options?.length)" class="form-group">
-                        <text class="label">记录一次</text>
-                        <view class="tag-group">
-                            <view class="tag-item active">
-                                <text>{{ isScheduleMode ? '计划执行' : '完成打卡' }}</text>
-                                <u-icon name="checkmark" color="#ffffff" size="12"></u-icon>
-                            </view>
-                        </view>
-                    </view>
-                </view>
-            </view>
-
-            <!-- Section 3: Timing & Reminders -->
-            <view class="section-card">
-                <view class="card-content" style="padding: 0;">
-                    <!-- Date -->
-                    <view class="form-row-item" @click="showCalendar = true">
-                        <view class="row-label">
-                            <u-icon name="calendar" color="#64748b" size="20"></u-icon>
-                            <text>日期</text>
-                        </view>
-                        <view class="row-value highlight">
-                            <text>{{ formData.date }}</text>
-                            <u-icon name="arrow-right" color="#cbd5e1" size="14"></u-icon>
-                        </view>
-                    </view>
-
-                    <!-- Time -->
-                    <view class="form-row-item" @click="showTimePicker = true">
-                        <view class="row-label">
-                            <u-icon name="clock" color="#64748b" size="20"></u-icon>
-                            <text>时间</text>
-                        </view>
-                        <view class="row-value highlight">
-                            <text>{{ formData.time }}</text>
-                            <u-icon name="arrow-right" color="#cbd5e1" size="14"></u-icon>
-                        </view>
-                    </view>
-
-                    <!-- Schedule Mode: Repeat Options -->
-                    <view v-if="isScheduleMode" class="form-row-item" @click="showRepeatSheet = true">
-                        <view class="row-label">
-                            <u-icon name="reload" color="#64748b" size="20"></u-icon>
-                            <text>重复</text>
-                        </view>
-                        <view class="row-value highlight">
-                            <text>{{ currentRepeatLabel }}</text>
-                            <u-icon name="arrow-right" color="#cbd5e1" size="14"></u-icon>
-                        </view>
-                    </view>
-
-                    <!-- Record Mode: Reminder Toggle -->
-                    <view v-else class="form-row-item">
-                        <view class="row-label">
-                            <u-icon name="bell" color="#64748b" size="20"></u-icon>
-                            <text>提醒</text>
-                        </view>
-                        <view class="reminder-btn" @click="showReminderSheet = true">
-                            {{ reminderButtonText }}
-                        </view>
-                    </view>
-                </view>
-            </view>
-
-            <!-- Section 4: Notes -->
-            <view class="section-card">
-                <view class="card-content">
-                    <text class="label">备注</text>
-                    <textarea v-model="formData.note" class="textarea-field" placeholder="添加备注信息..." />
-                </view>
-            </view>
-
-            <!-- Scheduled List (Only in Schedule Mode) -->
-            <view v-if="isScheduleMode && scheduledList.length > 0" class="reminder-list-section">
-                <view class="section-header">
-                    <text class="section-title">已预约</text>
-                    <view class="badge">{{ scheduledList.length }}</view>
-                </view>
-
-                <view class="reminder-list">
-                    <view v-for="item in scheduledList" :key="item.id" class="reminder-item"
-                        @click="loadRecordForEdit(item)">
-                        <view class="reminder-content">
-                            <view class="reminder-main">
-                                <u-icon name="calendar" color="#64748b" size="18"></u-icon>
-                                <text class="reminder-time">{{ formatReminderTime(item) }}</text>
-                            </view>
-                            <text v-if="item.notes" class="reminder-note">{{ item.notes }}</text>
-                            <!-- Show Repeat Label -->
-                            <view v-if="item.metadata?.repeat && item.metadata.repeat !== 'none'"
-                                class="repeat-tag-small">
-                                <u-icon name="reload" size="12" color="#6366f1"></u-icon>
-                                <text>{{ getRepeatLabel(item.metadata.repeat) }}</text>
-                            </view>
-                        </view>
-                        <view class="delete-btn" @click.stop="handleDelete(item.id)">
-                            <u-icon name="trash" color="#ef4444" size="20"></u-icon>
-                        </view>
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <!-- Footer Actions -->
-        <view class="footer-actions">
-            <button class="save-btn" @click="handleSubmit" :disabled="isSubmitting"
-                :class="{ 'opacity-50': isSubmitting }">
-                <u-loading-icon v-if="isSubmitting" color="#ffffff" size="20"></u-loading-icon>
-                <view v-else class="btn-content">
-                    <u-icon :name="isScheduleMode ? 'bell' : 'checkmark-circle'" color="#ffffff" size="20"></u-icon>
-                    <text class="btn-text">{{ submitButtonText }}</text>
-                </view>
-            </button>
-        </view>
-
-        <!-- Pickers -->
-        <u-datetime-picker :show="showCalendar" v-model="pickerDateValue" mode="date" @confirm="onDateConfirm"
-            @cancel="showCalendar = false"></u-datetime-picker>
-
-        <u-datetime-picker :show="showTimePicker" v-model="pickerTimeValue" mode="time" @confirm="onTimeConfirm"
-            @cancel="showTimePicker = false"></u-datetime-picker>
-
-        <!-- Reminder Sheet (Record Mode) -->
-        <u-popup :show="showReminderSheet" @close="showReminderSheet = false" mode="bottom" :round="24">
-            <view class="popup-content">
-                <view class="popup-header">提醒设置</view>
-
-                <view class="frequency-grid">
-                    <view v-for="freq in FREQUENCY_OPTIONS" :key="freq.value" class="freq-item"
-                        :class="{ active: reminderFrequency === freq.value }" @click="selectFrequency(freq.value)">
-                        <text>{{ freq.label }}</text>
-                    </view>
-                </view>
-
-                <!-- Custom Frequency Input -->
-                <view v-if="reminderFrequency === 'custom'" class="custom-freq-input">
-                    <view class="input-row">
-                        <text class="prefix">每</text>
-                        <input type="number" v-model="customFrequency" class="freq-num-input" />
-                    </view>
-                    <view class="unit-options">
-                        <view v-for="unit in CUSTOM_UNIT_OPTIONS" :key="unit.value" class="unit-item"
-                            :class="{ active: customFrequencyUnit === unit.value }"
-                            @click="customFrequencyUnit = unit.value">
-                            <text>{{ unit.label }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <button class="save-btn" @click="showReminderSheet = false">
-                    <text class="btn-text" style="font-size: 30rpx;">确认</text>
                 </button>
             </view>
-        </u-popup>
 
-        <!-- Repeat Sheet (Schedule Mode) -->
-        <u-action-sheet :show="showRepeatSheet" :actions="repeatOptions" title="选择重复频率" @select="onRepeatSelect"
-            @close="showRepeatSheet = false"></u-action-sheet>
+            <!-- Pickers -->
+            <u-datetime-picker :show="showCalendar" v-model="pickerDateValue" mode="date" @confirm="onDateConfirm"
+                @cancel="showCalendar = false"></u-datetime-picker>
+
+            <u-datetime-picker :show="showTimePicker" v-model="pickerTimeValue" mode="time" @confirm="onTimeConfirm"
+                @cancel="showTimePicker = false"></u-datetime-picker>
+
+            <!-- Reminder Sheet (Record Mode) -->
+            <u-popup :show="showReminderSheet" @close="showReminderSheet = false" mode="bottom" :round="24">
+                <view class="popup-content">
+                    <view class="popup-header">提醒设置</view>
+
+                    <view class="frequency-grid">
+                        <view v-for="freq in FREQUENCY_OPTIONS" :key="freq.value" class="freq-item"
+                            :class="{ active: reminderFrequency === freq.value }" @click="selectFrequency(freq.value)">
+                            <text>{{ freq.label }}</text>
+                        </view>
+                    </view>
+
+                    <!-- Custom Frequency Input -->
+                    <view v-if="reminderFrequency === 'custom'" class="custom-freq-input">
+                        <view class="input-row">
+                            <text class="prefix">每</text>
+                            <input type="number" v-model="customFrequency" class="freq-num-input" />
+                        </view>
+                        <view class="unit-options">
+                            <view v-for="unit in CUSTOM_UNIT_OPTIONS" :key="unit.value" class="unit-item"
+                                :class="{ active: customFrequencyUnit === unit.value }"
+                                @click="customFrequencyUnit = unit.value">
+                                <text>{{ unit.label }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <button class="save-btn" @click="showReminderSheet = false">
+                        <text class="btn-text" style="font-size: 30rpx;">确认</text>
+                    </button>
+                </view>
+            </u-popup>
+
+            <!-- Repeat Sheet (Schedule Mode) -->
+            <u-action-sheet :show="showRepeatSheet" :actions="repeatOptions" title="选择重复频率" @select="onRepeatSelect"
+                @close="showRepeatSheet = false"></u-action-sheet>
 
         </view>
     </view>
@@ -257,7 +256,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import dayjs from 'dayjs'
 import { useHealthStore } from '@/stores/healthStore'
 import { usePetStore } from '@/stores/petStore'

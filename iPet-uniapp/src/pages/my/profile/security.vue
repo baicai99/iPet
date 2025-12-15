@@ -1,84 +1,82 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="账号安全" />
         <view class="security-page">
-        <!-- 手机号 -->
-        <view class="section">
-            <view class="card">
-                <view class="card-item">
-                    <view class="item-left">
-                        <u-icon name="phone" size="20" color="#9ca3af"></u-icon>
-                        <view class="item-info">
-                            <text class="item-title">手机号</text>
-                            <text class="item-desc">已绑定: {{ maskedPhone }}</text>
+            <!-- 手机号 -->
+            <view class="section">
+                <view class="card">
+                    <view class="card-item">
+                        <view class="item-left">
+                            <u-icon name="phone" size="20" color="#9ca3af"></u-icon>
+                            <view class="item-info">
+                                <text class="item-title">手机号</text>
+                                <text class="item-desc">已绑定: {{ maskedPhone }}</text>
+                            </view>
                         </view>
+                        <button class="action-button primary" @click="handleChangePhone">更换</button>
                     </view>
-                    <button class="action-button primary" @click="handleChangePhone">更换</button>
                 </view>
             </view>
-        </view>
 
-        <!-- 第三方绑定 -->
-        <view class="section">
-            <text class="section-label">第三方账号绑定</text>
-            <view class="card">
-                <!-- 微信 -->
-                <view class="card-item">
-                    <view class="item-left">
-                        <view class="platform-icon wechat">
-                            <u-icon name="weixin" size="18" color="#10b981"></u-icon>
+            <!-- 第三方绑定 -->
+            <view class="section">
+                <text class="section-label">第三方账号绑定</text>
+                <view class="card">
+                    <!-- 微信 -->
+                    <view class="card-item">
+                        <view class="item-left">
+                            <view class="platform-icon wechat">
+                                <u-icon name="weixin" size="18" color="#10b981"></u-icon>
+                            </view>
+                            <text class="item-title">微信</text>
                         </view>
-                        <text class="item-title">微信</text>
+                        <button class="action-button" :class="wechatBound ? 'bound' : 'primary'"
+                            @click="handleToggleBind('wechat')">
+                            {{ wechatBound ? '已绑定' : '去绑定' }}
+                        </button>
                     </view>
-                    <button class="action-button" :class="wechatBound ? 'bound' : 'primary'"
-                        @click="handleToggleBind('wechat')">
-                        {{ wechatBound ? '已绑定' : '去绑定' }}
-                    </button>
-                </view>
 
-                <!-- Apple ID -->
-                <view class="card-item no-border">
-                    <view class="item-left">
-                        <view class="platform-icon apple">
-                            <u-icon name="apple" size="18" color="#1f2937"></u-icon>
+                    <!-- Apple ID -->
+                    <view class="card-item no-border">
+                        <view class="item-left">
+                            <view class="platform-icon apple">
+                                <u-icon name="apple" size="18" color="#1f2937"></u-icon>
+                            </view>
+                            <text class="item-title">Apple ID</text>
                         </view>
-                        <text class="item-title">Apple ID</text>
+                        <button class="action-button" :class="appleBound ? 'bound' : 'primary'"
+                            @click="handleToggleBind('apple')">
+                            {{ appleBound ? '已绑定' : '去绑定' }}
+                        </button>
                     </view>
-                    <button class="action-button" :class="appleBound ? 'bound' : 'primary'"
-                        @click="handleToggleBind('apple')">
-                        {{ appleBound ? '已绑定' : '去绑定' }}
-                    </button>
                 </view>
             </view>
-        </view>
 
-        <!-- 注销账号 -->
-        <view class="section danger-section">
-            <view class="danger-button" @click="showDeleteModal = true">
-                <u-icon name="logout" size="18" color="#ef4444"></u-icon>
-                <text class="danger-text">注销账号</text>
-            </view>
-            <text class="danger-hint">注销后账号数据将不可恢复,请谨慎操作</text>
-        </view>
-
-        <!-- 注销确认弹窗 -->
-        <u-modal v-model="showDeleteModal" :show-cancel-button="true" :show-confirm-button="true" confirm-text="确认注销"
-            cancel-text="我再想想" @confirm="handleDeleteAccount" @cancel="showDeleteModal = false">
-            <view class="modal-content">
-                <view class="modal-icon">
-                    <u-icon name="trash" size="24" color="#ef4444"></u-icon>
+            <!-- 注销账号 -->
+            <view class="section danger-section">
+                <view class="danger-button" @click="showDeleteModal = true">
+                    <u-icon name="logout" size="18" color="#ef4444"></u-icon>
+                    <text class="danger-text">注销账号</text>
                 </view>
-                <text class="modal-title">确定要注销账号吗?</text>
-                <text class="modal-desc">此操作无法撤销,您的所有个人数据、权益将被永久删除。</text>
+                <text class="danger-hint">注销后账号数据将不可恢复,请谨慎操作</text>
             </view>
-        </u-modal>
+
+            <!-- 注销确认弹窗 -->
+            <u-modal v-model="showDeleteModal" :show-cancel-button="true" :show-confirm-button="true"
+                confirm-text="确认注销" cancel-text="我再想想" @confirm="handleDeleteAccount" @cancel="showDeleteModal = false">
+                <view class="modal-content">
+                    <view class="modal-icon">
+                        <u-icon name="trash" size="24" color="#ef4444"></u-icon>
+                    </view>
+                    <text class="modal-title">确定要注销账号吗?</text>
+                    <text class="modal-desc">此操作无法撤销,您的所有个人数据、权益将被永久删除。</text>
+                </view>
+            </u-modal>
         </view>
     </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 
 const phone = ref('13800138000')
 const wechatBound = ref(true)

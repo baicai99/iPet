@@ -1,4 +1,4 @@
-import { getAccessToken, getTokenExpiresAt, isTokenExpired } from '@/utils/business/authStorage'
+import { getAccessToken, getRefreshToken, getTokenExpiresAt, isTokenExpired } from '@/utils/business/authStorage'
 import { useUserStore } from '@/stores/userStore'
 import { usePetStore } from '@/stores/petStore'
 import { useHealthStore } from '@/stores/healthStore'
@@ -90,24 +90,28 @@ const performInit = async () => {
         }
 
         // 2. Token 本地过期（超过30天没用），清理，标记 Ready，结束
-        if (!hydrated.expiresAt || isTokenExpired(TOKEN_VALIDATION_BUFFER)) {
+        // 兼容：如果历史版本没写入 expiresAt，则先放行，交给后续接口 401/404 决定是否需要清理会话
+        if (hydrated.expiresAt && isTokenExpired(TOKEN_VALIDATION_BUFFER)) {
             userStore.clearLocalSession()
             appStore.setAppReady(true)
             return
         }
 
         // 3. 尝试续期 (实现你的“活跃自动续期”需求)
-        try {
-            const result = await refreshAuthToken()
-            userStore.setToken(result.accessToken, result.expiresAt)
-        } catch (error) {
-            // 续期失败如果是鉴权问题，登出；如果是网络问题，忍受（继续用旧 Token）
-            if (isSessionInvalidError(error)) {
-                userStore.clearLocalSession()
-                appStore.setAppReady(true)
-                return
+        // 关键优化：没有 refreshToken 时，不要发 refresh 请求；否则会导致每次重启/编译都触发 401 进而清空登录态
+        if (getRefreshToken()) {
+            try {
+                const result = await refreshAuthToken()
+                userStore.setToken(result.accessToken, result.expiresAt)
+            } catch (error) {
+                // 续期失败如果是鉴权问题，登出；如果是网络问题，忍受（继续用旧 Token）
+                if (isSessionInvalidError(error)) {
+                    userStore.clearLocalSession()
+                    appStore.setAppReady(true)
+                    return
+                }
+                console.warn('[initAuth] Token refresh failed, continuing with cached token', error)
             }
-            console.warn('[initAuth] Token refresh failed, continuing with cached token', error)
         }
 
         // 4. 同步用户信息 (关键步骤：检测是否是幽灵账号)

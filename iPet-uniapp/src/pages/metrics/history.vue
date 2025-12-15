@@ -1,38 +1,37 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="历史记录" />
         <view class="history-page">
-        <view v-if="historyData.length" class="history-list">
-            <up-swipe-action>
-                <up-swipe-action-item v-for="item in historyData" :key="item.id" :options="swipeOptions"
-                    @click="(e) => handleSwipeClick(e, item)">
-                    <view class="history-row up-border-bottom" :class="{ 'scheduled-item': item.isScheduled }">
-                        <view class="value-wrapper">
-                            <text class="value-text">{{ item.value }}</text>
-                            <text class="value-unit" v-if="item.unit">{{ item.unit }}</text>
-                            <view v-if="item.tags && item.tags.length" class="history-tags">
-                                <text v-for="tag in item.tags" :key="tag" class="history-tag">
-                                    {{ getTagName(tag) }}
-                                </text>
+            <view v-if="historyData.length" class="history-list">
+                <up-swipe-action>
+                    <up-swipe-action-item v-for="item in historyData" :key="item.id" :options="swipeOptions"
+                        @click="(e) => handleSwipeClick(e, item)">
+                        <view class="history-row up-border-bottom" :class="{ 'scheduled-item': item.isScheduled }">
+                            <view class="value-wrapper">
+                                <text class="value-text">{{ item.value }}</text>
+                                <text class="value-unit" v-if="item.unit">{{ item.unit }}</text>
+                                <view v-if="item.tags && item.tags.length" class="history-tags">
+                                    <text v-for="tag in item.tags" :key="tag" class="history-tag">
+                                        {{ getTagName(tag) }}
+                                    </text>
+                                </view>
+                                <view class="tag-scheduled" v-if="item.isScheduled">待办</view>
                             </view>
-                            <view class="tag-scheduled" v-if="item.isScheduled">待办</view>
+                            <text class="history-time">{{ formatDate(item.timestamp) }}</text>
                         </view>
-                        <text class="history-time">{{ formatDate(item.timestamp) }}</text>
-                    </view>
-                </up-swipe-action-item>
-            </up-swipe-action>
-        </view>
+                    </up-swipe-action-item>
+                </up-swipe-action>
+            </view>
 
-        <view v-if="!loading && historyData.length === 0" class="empty-wrap">
-            <u-empty mode="history" text="暂无记录"></u-empty>
-        </view>
+            <view v-if="!loading && historyData.length === 0" class="empty-wrap">
+                <u-empty mode="history" text="暂无记录"></u-empty>
+            </view>
 
-        <view class="loading-more" v-if="loading">
-            <u-loading-icon mode="circle"></u-loading-icon>
-        </view>
-        <view class="no-more" v-if="!loading && !hasMore && historyData.length > 0">
-            <text>没有更多了</text>
-        </view>
+            <view class="loading-more" v-if="loading">
+                <u-loading-icon mode="circle"></u-loading-icon>
+            </view>
+            <view class="no-more" v-if="!loading && !hasMore && historyData.length > 0">
+                <text>没有更多了</text>
+            </view>
         </view>
     </view>
 </template>
@@ -40,7 +39,6 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { onLoad, onReachBottom } from '@dcloudio/uni-app'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import { useHealthStore } from '@/stores/healthStore'
 import { getMetricMetadata } from '@/data/metricMetadata'
 import { usePetViewModel } from '@/composables/usePetViewModel'

@@ -1,11 +1,10 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="精选文章" />
         <view class="articles-list-page">
             <!-- Tabs -->
             <view class="tabs-container">
-                <u-tabs :list="tabList" :current="currentTab" @click="handleTabClick" :activeStyle="{ color: '#3c9cff' }"
-                    lineColor="#3c9cff"></u-tabs>
+                <u-tabs :list="tabList" :current="currentTab" @click="handleTabClick"
+                    :activeStyle="{ color: '#3c9cff' }" lineColor="#3c9cff"></u-tabs>
             </view>
 
             <!-- Content -->
@@ -26,7 +25,6 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
 import { useArticleStore } from '@/modules/articles/store/articleStore'
 import { storeToRefs } from 'pinia'

@@ -1,6 +1,5 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="健康数据" />
         <view class="content">
             <view class="search-bar-container">
                 <u-search v-model="searchQuery" placeholder="搜索健康指标" :show-action="false" shape="round"
@@ -23,7 +22,6 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import MetricItemCard from '@/components/business/health/MetricItemCard.vue'
 import { useMetricList } from '@/composables/useMetricList'
 import PinyinMatch from 'pinyin-match'

@@ -1,6 +1,5 @@
 <template>
     <view class="page-container">
-        <AppNavbar title="趋势分析" />
         <view class="trends-page">
             <view class="content">
                 <!-- ============================================ -->
@@ -44,7 +43,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
 import TrendHintCard from '@/components/widgets/TrendHintCard.vue'
 import { useHealthStore } from '@/stores/healthStore'

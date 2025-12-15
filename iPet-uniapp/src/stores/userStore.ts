@@ -44,8 +44,9 @@ export const useUserStore = defineStore('user', () => {
         if (!token.value) {
             return false
         }
+        // 兼容：历史版本可能没有写入 expiresAt；此时视为“已登录但未知过期时间”
         if (!tokenExpiresAt.value) {
-            return false
+            return true
         }
         return tokenExpiresAt.value > Date.now()
     })
@@ -189,5 +190,4 @@ export const useUserStore = defineStore('user', () => {
         paths: ['token', 'tokenExpiresAt', 'accountInfo']
     } as any
 })
-
 

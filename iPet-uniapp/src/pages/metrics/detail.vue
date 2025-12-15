@@ -1,75 +1,75 @@
 <template>
     <view class="page-container">
-        <AppNavbar :title="metricMetadata.title || '数据详情'" @rightClick="handleAddClick">
-            <template #right>
-                <u-icon name="plus" size="20" color="#2563eb"></u-icon>
-            </template>
-        </AppNavbar>
         <view class="header-container">
-        <!-- 非任务模式：图表区域 -->
-        <template v-if="!isTaskMode">
-            <MetricChartArea :active-tab="activeTab" :tabs="tabs" :latest-metric-display="latestMetricDisplay"
-                :current-data="currentData" :is-chart-type="isChartType" :echarts-options="echartsOptions"
-                :current-chart-component="currentChartComponent" :chart-options="chartOptions" :theme="theme"
-                :x-axis-labels="xAxisLabels" @update:activeTab="setActiveTab" @point-click="onChartPointClick" />
-        </template>
+            <!-- 非任务模式：图表区域 -->
+            <template v-if="!isTaskMode">
+                <MetricChartArea :active-tab="activeTab" :tabs="tabs" :latest-metric-display="latestMetricDisplay"
+                    :current-data="currentData" :is-chart-type="isChartType" :echarts-options="echartsOptions"
+                    :current-chart-component="currentChartComponent" :chart-options="chartOptions" :theme="theme"
+                    :x-axis-labels="xAxisLabels" @update:activeTab="setActiveTab" @point-click="onChartPointClick" />
+            </template>
 
-        <!-- 任务模式：使用新组件 -->
-        <TaskModeSection v-else />
-    </view>
+            <!-- 任务模式：使用新组件 -->
+            <TaskModeSection v-else />
+        </view>
 
-    <view class="detail-container">
-        <!-- 数值统计网格：使用 v-show 避免销毁/重建 -->
-        <NumericStatsSection v-show="isNumericMetric && !isTaskMode" />
+        <view class="detail-container">
+            <!-- 数值统计网格：使用 v-show 避免销毁/重建 -->
+            <NumericStatsSection v-show="isNumericMetric && !isTaskMode" />
 
 
 
-        <!-- 智能分析气泡 -->
-        <MetricInsight :metric-key="metricKey" :metric-metadata="metricMetadata" :current-data="currentData"
-            :metric-unit-label="metricUnitLabel" />
+            <!-- 智能分析气泡 -->
+            <MetricInsight :metric-key="metricKey" :metric-metadata="metricMetadata" :current-data="currentData"
+                :metric-unit-label="metricUnitLabel" />
 
-        <!-- 指标百科卡片 -->
-        <MetricWiki :metric-metadata="metricMetadata" />
+            <!-- 指标百科卡片 -->
+            <MetricWiki :metric-metadata="metricMetadata" />
 
-        <!-- 相关科普文章：使用隔离组件 -->
-        <ArticleRecommendations :metric-key="metricKey" :related-metrics="metricMetadata.relatedMetrics" />
+            <!-- 相关科普文章：使用隔离组件 -->
+            <ArticleRecommendations :metric-key="metricKey" :related-metrics="metricMetadata.relatedMetrics" />
 
-        <!-- 关联指标卡片 -->
-        <view class="secondary-cards" v-if="formattedRelatedMetrics.length > 0">
-            <view class="info-card" v-for="metric in formattedRelatedMetrics" :key="metric.key"
-                @click="navigateToMetric(metric.key)">
-                <view class="card-icon" :style="{ backgroundColor: metric.color.bg }">
-                    <u-icon :name="metric.icon" :color="metric.color.hex" size="20"></u-icon>
+            <!-- 关联指标卡片 -->
+            <view class="secondary-cards" v-if="formattedRelatedMetrics.length > 0">
+                <view class="info-card" v-for="metric in formattedRelatedMetrics" :key="metric.key"
+                    @click="navigateToMetric(metric.key)">
+                    <view class="card-icon" :style="{ backgroundColor: metric.color.bg }">
+                        <u-icon :name="metric.icon" :color="metric.color.hex" size="20"></u-icon>
+                    </view>
+                    <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
+                    }}</text>
+                    </view>
+                    <text class="card-label">{{ metric.title }}</text>
                 </view>
-                <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
-                }}</text>
-                </view>
-                <text class="card-label">{{ metric.title }}</text>
+            </view>
+
+            <!-- 置顶开关 -->
+            <view class="section-card">
+                <PinSwitchRow v-model="isPinned" :label="metricStrings.PIN_LABEL" />
+            </view>
+
+            <!-- 预约管理：使用 v-show 避免销毁/重建 -->
+            <ScheduleSection v-show="isSchedulable && !isTaskMode" />
+
+            <!-- 历史记录按钮 -->
+            <view class="section-card" @click="viewHistory">
+                <HistoryButton :text="metricStrings.HISTORY_CTA" />
             </view>
         </view>
 
-        <!-- 置顶开关 -->
-        <view class="section-card">
-            <PinSwitchRow v-model="isPinned" :label="metricStrings.PIN_LABEL" />
+        <!-- Floating Action Button -->
+        <view class="fab-button" @click="handleAddClick">
+            <u-icon name="plus" size="28" color="#ffffff"></u-icon>
         </view>
 
-        <!-- 预约管理：使用 v-show 避免销毁/重建 -->
-        <ScheduleSection v-show="isSchedulable && !isTaskMode" />
+        <!-- Task Completion Modal -->
+        <TaskCompletionModal v-model:show="showCompletionModal" :title="metricMetadata.title"
+            :form-config="metricMetadata.formConfig" :initial-selections="initialSelections" @confirm="onModalConfirm"
+            @cancel="showCompletionModal = false" />
 
-        <!-- 历史记录按钮 -->
-        <view class="section-card" @click="viewHistory">
-            <HistoryButton :text="metricStrings.HISTORY_CTA" />
-        </view>
-    </view>
-
-    <!-- Task Completion Modal -->
-    <TaskCompletionModal v-model:show="showCompletionModal" :title="metricMetadata.title"
-        :form-config="metricMetadata.formConfig" :initial-selections="initialSelections" @confirm="onModalConfirm"
-        @cancel="showCompletionModal = false" />
-
-    <!-- Completion Confirmation Picker -->
-    <u-datetime-picker :show="showCompletePicker" v-model="completeTimeValue" mode="datetime" title="确认完成时间"
-        @confirm="confirmCompletion" @cancel="showCompletePicker = false"></u-datetime-picker>
+        <!-- Completion Confirmation Picker -->
+        <u-datetime-picker :show="showCompletePicker" v-model="completeTimeValue" mode="datetime" title="确认完成时间"
+            @confirm="confirmCompletion" @cancel="showCompletePicker = false"></u-datetime-picker>
     </view>
 </template>
 
@@ -78,7 +78,6 @@ import { ref, computed, watch } from 'vue'
 import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 
 // UI Components
-import AppNavbar from '@/components/common/AppNavbar.vue'
 import HistoryButton from '@/components/widgets/HistoryButton.vue'
 import PinSwitchRow from '@/components/widgets/PinSwitchRow.vue'
 import MetricInsight from '@/components/business/health/MetricInsight.vue'
@@ -665,6 +664,27 @@ async function confirmCompletion(e) {
         display: flex;
         flex-direction: column;
         gap: 24rpx;
+    }
+}
+
+/* Floating Action Button */
+.fab-button {
+    position: fixed;
+    right: 32rpx;
+    bottom: 96rpx;
+    width: 112rpx;
+    height: 112rpx;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-radius: 56rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.4);
+    z-index: 999;
+
+    &:active {
+        transform: scale(0.95);
+        opacity: 0.9;
     }
 }
 </style>

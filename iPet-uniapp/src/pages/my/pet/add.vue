@@ -1,8 +1,5 @@
 <template>
     <FormPageLayout>
-        <template #header>
-            <AppNavbar :title="isEditMode ? '编辑宠物' : '添加爱宠'" />
-        </template>
         <!-- Component Form -->
         <PetProfileForm ref="petProfileFormRef" v-model="formData" />
 
@@ -29,7 +26,6 @@
 <script setup>
 import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import AppNavbar from '@/components/common/AppNavbar.vue';
 import { usePetForm } from '@/composables/usePetForm';
 import PetProfileForm from '@/components/forms/PetProfileForm.vue';
 import FormPageLayout from '@/components/layout/FormPageLayout.vue';
