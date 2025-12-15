@@ -59,7 +59,7 @@
         <!-- Articles -->
         <view class="section section-group">
             <view class="section-header">
-                <text class="section-title">{{ t('SUMMARY.ARTICLES_TITLE') }}</text>
+                <text class="section-title">{{ articlesSectionTitle }}</text>
             </view>
 
             <!-- ✅ 使用统一 AppSectionState 组件 -->
@@ -180,6 +180,14 @@ const trendsMinHeight = computed(() => {
 })
 
 const articles = computed<ArticleManifestItem[]>(() => articleStore.getLatestArticles(3))
+
+/**
+ * 文章区块标题兜底，避免 i18n 异常时出现空白
+ */
+const articlesSectionTitle = computed(() => {
+    const title = t('SUMMARY.ARTICLES_TITLE')
+    return title && title !== 'SUMMARY.ARTICLES_TITLE' ? title : '文章'
+})
 
 /**
  * 判断文章是否为"最新"（updateTime 在7天内，或是第一篇）
@@ -565,7 +573,8 @@ page {
 
 <style lang="scss" scoped>
 .empty {
-    background-color: var(--app-card-bg);
+    background-color: #ffffff;          // 兜底值
+    background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 30rpx;
     padding: 30rpx;
 }
@@ -607,7 +616,8 @@ page {
 
 .section-title {
     @include text-title-2;
-    color: $uni-text-color; // 改回 SCSS 变量，确保小程序兼容性
+    color: #1f2937;                 // 兜底值，确保小程序显示
+    color: var(--app-text-primary); // H5 / 支持 CSS var 的平台走这一条
 }
 
 .empty-trend {
@@ -617,13 +627,15 @@ page {
     justify-content: center;
     padding: 64rpx 32rpx;
     gap: 16rpx;
-    background-color: var(--app-card-bg);
+    background-color: #ffffff;          // 兜底值
+    background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 48rpx;
 }
 
 .empty-trend-text {
     @include text-body;
-    color: var(--app-text-muted);
+    color: #9ca3af;                 // 兜底值
+    color: var(--app-text-muted);   // H5 支持 CSS var
 }
 
 /* ✅ Lightweight Refresh Indicator */
@@ -645,12 +657,14 @@ page {
 .error-state {
     padding: 48rpx 32rpx;
     text-align: center;
-    background-color: var(--app-card-bg);
+    background-color: #ffffff;          // 兜底值
+    background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 30rpx;
 }
 
 .error-text {
     @include text-body;
-    color: var(--app-danger-color);
+    color: #dc2626;                   // 兜底值
+    color: var(--app-danger-color);   // H5 支持 CSS var
 }
 </style>

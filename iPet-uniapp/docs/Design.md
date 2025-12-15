@@ -296,6 +296,123 @@ page {
 
 ---
 
+### 维度J：CSS 变量兜底值（小程序必备）⭐⭐⭐
+
+**核心问题**：微信小程序的 WXSS 编译器**不支持 CSS 自定义属性**（`var(--variable-name)`），导致使用 CSS 变量的样式在小程序中被直接丢弃，元素显示异常。
+
+**典型症状**：
+- 文字"消失"（实际是颜色为透明或继承失败）
+- 背景色显示为白色（CSS 变量未生效，回退到默认值）
+- H5 端显示正常，小程序端样式丢失
+
+**问题示例**：
+
+```scss
+// ❌ 小程序会丢弃这条样式
+.section-title {
+    color: var(--app-text-primary); // WXSS 不支持，直接忽略
+}
+// 结果：文字颜色为默认值或透明，看不见标题
+```
+
+**解决方案**：使用 CSS 层叠（Cascade）提供兜底值
+
+#### 方案 1：双重声明（推荐）⭐
+
+先写兜底值，再写 CSS 变量，利用 CSS 层叠特性：
+
+```scss
+// ✅ 小程序和 H5 都兼容
+.section-title {
+    color: #1f2937;                 // 兜底值：小程序使用这个
+    color: var(--app-text-primary); // H5 / 支持 CSS var 的平台覆盖上一行
+}
+```
+
+**原理**：
+- 小程序：不识别 `var()`，第二条被丢弃，使用第一条兜底值 `#1f2937`
+- H5：两条都识别，第二条覆盖第一条，使用 CSS 变量 `var(--app-text-primary)`
+
+#### 方案 2：var() 内置默认值
+
+```scss
+// ✅ 使用 var() 的第二参数作为兜底
+.section-title {
+    color: var(--app-text-primary, #1f2937);
+}
+```
+
+**注意**：这种方式在小程序中**整条规则仍会被丢弃**，因为小程序不认识 `var()` 语法，即使有默认值也无效。**推荐使用方案 1**。
+
+#### 实战案例：summary 页面完整修复
+
+```scss
+.section-title {
+    @include text-title-2;
+    color: #1f2937;                 // 兜底值，确保小程序显示
+    color: var(--app-text-primary); // H5 支持 CSS var
+}
+
+.empty-trend-text {
+    @include text-body;
+    color: #9ca3af;                 // 兜底值
+    color: var(--app-text-muted);   // H5 支持 CSS var
+}
+
+.error-text {
+    @include text-body;
+    color: #dc2626;                   // 兜底值
+    color: var(--app-danger-color);   // H5 支持 CSS var
+}
+
+.empty {
+    background-color: #ffffff;          // 兜底值
+    background-color: var(--app-card-bg); // H5 支持 CSS var
+    border-radius: 30rpx;
+}
+```
+
+#### 兜底值映射表
+
+建立 CSS 变量 → 兜底值映射，确保一致性：
+
+| CSS 变量 | 兜底值 | 用途 |
+|----------|--------|------|
+| `var(--app-background)` | `#f2f1f5` | 页面背景色 |
+| `var(--app-card-bg)` | `#ffffff` | 卡片背景色 |
+| `var(--app-navbar-bg)` | `#fbfbfd` | 导航栏背景色 |
+| `var(--app-border-color)` | `#f3f4f6` | 边框颜色 |
+| `var(--app-text-primary)` | `#1f2937` | 主要文本 |
+| `var(--app-text-secondary)` | `#4b5563` | 次要文本 |
+| `var(--app-text-muted)` | `#9ca3af` | 弱化文本 |
+| `var(--app-danger-color)` | `#dc2626` | 错误/删除颜色 |
+| `var(--app-active-bg)` | `#f9fafb` | 激活态背景 |
+
+**自动化验证规则**：
+
+在项目中建立 Lint 规则，确保所有 CSS 变量都有兜底值：
+
+```javascript
+// stylelint 规则示例
+{
+  "custom-property-pattern": "^app-",
+  "declaration-block-no-duplicate-properties": [
+    true,
+    {
+      "ignore": ["consecutive-duplicates-with-different-values"]
+    }
+  ]
+}
+```
+
+**验收指标**：
+* ✅ 小程序端所有文字颜色正常显示（无"消失"现象）
+* ✅ 小程序端背景色与 H5 一致
+* ✅ 搜索 `color: var(` 和 `background-color: var(` 等，确保前一行都有兜底值
+* ✅ 使用微信开发者工具调试，查看编译后的 `.wxss` 文件，确认兜底值存在
+
+---
+
 ## 3. 推荐迁移流程（步骤性 + 指标性）
 
 ### Step 0：建立对照与基线
