@@ -361,9 +361,9 @@ onMounted(() => {
                     // trends 数据已经在 Wave 1 的 ensureDataLoaded 中加载了
                     // await nextTick()  // 不再需要,因为没有异步加载
 
-                    const hasTrendsData = trends.value.length > 0
-                    console.log('[DEBUG] hasTrendsData:', hasTrendsData, 'trends:', trends.value.length)
-                    trendsState.loadSuccess({ hasData: hasTrendsData })
+                    // 趋势区块的「无数据」由内部 HintCard 负责展示，这里不进入 empty（避免出现“暂无数据/立即添加”空态）
+                    console.log('[DEBUG] trends:', trends.value.length)
+                    trendsState.loadSuccess({ hasData: true })
                     console.log('[DEBUG] trendsState after loadSuccess:', trendsState.state.value)
                     console.log('[Summary] ✅ Wave 2 complete: Trends ready')
                 } catch (error) {
@@ -495,16 +495,16 @@ watch(selectedPetId, async (newPetId, oldPetId) => {
 
             // Update section states based on loaded data
             const hasPinnedData = rawPinnedMetrics.value.length > 0
-            const hasTrendsData = trends.value.length > 0
+            // 趋势区块不使用 empty 状态，避免显示“暂无数据/立即添加”
             const hasArticlesData = articles.value.length > 0
 
             pinnedState.loadSuccess({ hasData: hasPinnedData })
-            trendsState.loadSuccess({ hasData: hasTrendsData })
+            trendsState.loadSuccess({ hasData: true })
             articlesState.loadSuccess({ hasData: hasArticlesData })
 
             console.log('[Summary] ✅ Pet data loaded:', {
                 pinned: hasPinnedData,
-                trends: hasTrendsData,
+                trends: trends.value.length,
                 articles: hasArticlesData
             })
 
