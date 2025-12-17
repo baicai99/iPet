@@ -1,15 +1,17 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { compare } from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 import { sign, verify } from 'jsonwebtoken';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeEmail } from '../utils/sanitizers';
 import { LoginDto } from './dto/login.dto';
+import { UpgradeDto } from './dto/upgrade.dto';
 
 @Injectable()
 export class AuthService {
   private readonly jwtSecret: string;
   private readonly tokenTtlSeconds = 30 * 24 * 60 * 60; // 30天有效期
+  private readonly saltRounds = 12;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -22,6 +24,29 @@ export class AuthService {
     this.jwtSecret = secret;
   }
 
+  async createGuestSession(options: { ip?: string; deviceId?: string; origin?: string }) {
+    const now = new Date();
+    const guest = await this.prisma.user.create({
+      data: {
+        isGuest: true,
+        lastActiveAt: now,
+        guestCreatedAt: now,
+        guestDeviceId: options.deviceId,
+        guestOrigin: options.origin || options.ip,
+      },
+    });
+
+    const tokenResult = this.generateToken(guest);
+    return {
+      ...tokenResult,
+      expiresAt: Date.now() + tokenResult.expiresIn * 1000,
+      profile: {
+        id: guest.id,
+        isGuest: true,
+      },
+    };
+  }
+
   async login(dto: LoginDto, ip: string) {
     const normalizedEmail = normalizeEmail(dto.email);
     const user = await this.prisma.user.findUnique({
@@ -32,8 +57,8 @@ export class AuthService {
       throw new NotFoundException('该账号未注册');
     }
 
-    if (!(await compare(dto.password, user.passwordHash))) {
-      throw new UnauthorizedException('密码错误');
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('该账号未设置密码');
     }
 
     if (!(await compare(dto.password, user.passwordHash))) {
@@ -43,8 +68,57 @@ export class AuthService {
     return this.generateToken(user);
   }
 
+  async upgradeGuestToUser(userId: string, dto: UpgradeDto) {
+    const guest = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!guest) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!guest.isGuest) {
+      throw new BadRequestException('Only guest accounts can be upgraded');
+    }
+
+    const normalizedEmail = normalizeEmail(dto.email);
+    const passwordHash = await hash(dto.password, this.saltRounds);
+
+    let upgraded;
+    try {
+      upgraded = await this.prisma.user.update({
+        where: { id: guest.id },
+        data: {
+          email: normalizedEmail,
+          passwordHash,
+          isGuest: false,
+          lastActiveAt: new Date(),
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        throw new ConflictException('Email is already registered');
+      }
+      throw error;
+    }
+
+    const tokenResult = this.generateToken(upgraded);
+    return {
+      ...tokenResult,
+      expiresAt: Date.now() + tokenResult.expiresIn * 1000,
+      profile: {
+        id: upgraded.id,
+        isGuest: false,
+      },
+    };
+  }
+
   generateToken(user: any) {
-    const payload = { uid: String(user.id), email: user.email };
+    const payload = {
+      uid: String(user.id),
+      email: user.email ?? undefined,
+      isGuest: Boolean(user.isGuest),
+    };
     const accessToken = sign(payload, this.jwtSecret, { expiresIn: this.tokenTtlSeconds });
 
     return {
@@ -53,7 +127,7 @@ export class AuthService {
       refreshToken: accessToken, // 返回刷新凭证
       user: {
         id: user.id,
-        email: user.email,
+        email: user.email ?? null,
         createdAt: user.createdAt,
       },
     };
@@ -63,11 +137,16 @@ export class AuthService {
   async refreshToken(token: string) {
     try {
       // Allow expired tokens to be verified for refresh purposes
-      const payload = verify(token, this.jwtSecret, { ignoreExpiration: true }) as { uid: string; email: string };
+      const payload = verify(token, this.jwtSecret, { ignoreExpiration: true }) as {
+        uid: string;
+        email?: string | null;
+        isGuest?: boolean;
+      };
 
       const newPayload = {
         uid: payload.uid,
-        email: payload.email
+        email: payload.email ?? undefined,
+        isGuest: Boolean(payload.isGuest),
       };
 
       // 签发新的30天 Token

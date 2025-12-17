@@ -24,7 +24,10 @@ import { useUserStore } from '@/stores/userStore';
 import { usePetStore } from '@/stores/petStore';
 import { usePreferenceStore } from '@/stores/preferenceStore';
 import { useHealthStore } from '@/stores/healthStore';
+import { useImageCacheStore } from '@/stores/imageCacheStore';
 
+import { CacheManager } from '@/utils/cache/CacheManager';
+import { healthCacheService } from '@/services/healthCacheService';
 
 import { clearAuthToken } from '@/utils/business/authStorage';
 
@@ -32,6 +35,7 @@ const userStore = useUserStore();
 const petStore = usePetStore();
 const preferenceStore = usePreferenceStore();
 const healthStore = useHealthStore();
+const imageCacheStore = useImageCacheStore();
 
 
 
@@ -81,6 +85,22 @@ const removeStorageItem = (key) => {
 
 const resetPersistedAppState = () => {
   STORES_REQUIRING_RESET.forEach(resetStoreSafely)
+
+  try {
+    CacheManager.clear()
+  } catch (error) {
+    console.warn('[PRIVACY] Failed to clear CacheManager', error)
+  }
+  try {
+    healthCacheService.clear()
+  } catch (error) {
+    console.warn('[PRIVACY] Failed to clear health cache', error)
+  }
+  try {
+    imageCacheStore.clear()
+  } catch (error) {
+    console.warn('[PRIVACY] Failed to clear image cache', error)
+  }
 
   clearAuthToken()
   removeStorageItem('refreshToken')

@@ -19,7 +19,7 @@ import {
     getHealthSeriesMock  // ✅ NEW: Backend aggregation API
 } from '../../../mock/handlers/metricHandlers'
 import { getPetsMock, createPetMock, updatePetMock, deletePetMock } from '../../../mock/handlers/petHandlers'
-import { sendCodeMock, registerMock, loginMock, refreshTokenMock } from '../../../mock/handlers/authHandlers'
+import { sendCodeMock, registerMock, loginMock, refreshTokenMock, guestMock, upgradeMock } from '../../../mock/handlers/authHandlers'
 import { updateProfileMock, getProfileMock, getVipStatusMock, deleteAccountMock } from '../../../mock/handlers/userHandlers'
 import { generateReportMock } from '../../../mock/handlers/healthReportHandlers'
 import { getTrendInsightMock, getInsightMock } from '../../../mock/handlers/insightHandlers'
@@ -84,6 +84,8 @@ const mockRoutes: MockRoute[] = [
     { pattern: createRouteRegex('/verification/code'), method: 'POST', handler: adaptHandler(sendCodeMock) },
     { pattern: createRouteRegex('/users/register'), method: 'POST', handler: adaptHandler(registerMock) },
     { pattern: createRouteRegex('/auth/login'), method: 'POST', handler: adaptHandler(loginMock) },
+    { pattern: createRouteRegex('/auth/guest'), method: 'POST', handler: adaptHandler(guestMock) },
+    { pattern: createRouteRegex('/auth/upgrade'), method: 'POST', handler: adaptHandler(upgradeMock) },
     { pattern: createRouteRegex('/auth/refresh'), method: 'POST', handler: adaptHandler(refreshTokenMock) },
 
     // User profile

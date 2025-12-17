@@ -468,6 +468,9 @@ page {
 
 **项目颜色变量体系**（位于 `src/styles/theme-variables.scss`）：
 
+> `src/styles/theme-variables.scss` 为自动生成文件，真相来源在 `src/design/tokens.json`，修改 token 后运行 `npm run tokens:build`。
+> 小程序等不支持 CSS Variables 的平台，建议用 `src/styles/generated/tokens.scss` 提供的 `$app-*` 变量作为兜底值。
+
 | 变量名 | 语义 | 示例值 | 使用场景 |
 |--------|------|--------|---------|
 | `--app-background` | 主背景色 | `#f2f1f5` | 页面背景 |
@@ -517,6 +520,8 @@ page {
 **目标**：消除硬编码字号，使用 Typography Mixins，确保文本层级清晰、全局一致。
 
 **项目 Typography 体系**（位于 `src/uni.scss`）：
+
+> Typography mixins 从 `src/design/tokens.json` 生成（见 `src/styles/generated/typography.mixins.scss`），避免 TS / SCSS 数值漂移。
 
 | Mixin | 字号 | 字重 | 行高 | 使用场景 |
 |-------|------|------|------|---------|

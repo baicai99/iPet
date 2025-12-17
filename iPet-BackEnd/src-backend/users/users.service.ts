@@ -48,6 +48,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        isGuest: true,
         createdAt: true,
         updatedAt: true,
         realName: true,
@@ -68,15 +69,18 @@ export class UsersService {
     }
 
     // Transform to match frontend AccountInfo type
+    const fallbackName = user.email ? user.email.split('@')[0] : `游客${user.id.slice(0, 6)}`;
     return {
       id: user.id,
       uid: user.id,
-      displayName: user.realName || user.displayName || user.email.split('@')[0],
+      displayName: user.realName || user.displayName || fallbackName,
       avatar: user.avatar || '',
       updatedAt: user.updatedAt.getTime(),
       bio: user.bio || '',
       mbti: user.mbti || '',
       tags: user.tags ? (typeof user.tags === 'string' ? JSON.parse(user.tags) : user.tags) : [],
+      email: user.email || '',
+      isGuest: user.isGuest,
       membership: {
         level: user.membershipLevel || '普通会员',
         expireAt: user.membershipExpireAt ? user.membershipExpireAt.toISOString().split('T')[0] : '2099-12-31',

@@ -51,10 +51,9 @@ const syncProfile = async (userStore: ReturnType<typeof useUserStore>) => {
         if (isSessionInvalidError(error)) {
             console.warn('[initAuth] Session invalid (User deleted or Token expired), clearing session')
             userStore.clearLocalSession()
-            // ⚠️ TEMPORARILY DISABLED: Skip redirect to login for debugging
-            // uni.reLaunch({
-            //     url: '/pages/login/index'
-            // })
+            uni.reLaunch({
+                url: '/pages/login/index'
+            })
             return false // 会话已被清理
         } else {
             // 如果是 500 或 网络错误，说明是服务器抖动，保留登录状态，让用户能看缓存数据
@@ -84,9 +83,14 @@ const performInit = async () => {
 
         const hydrated = hydrateTokenFromStorage(userStore)
 
-        // 1. 没有 Token，标记 App Ready，结束
+        // 1. 没有 Token，重定向到登录页
         if (!hydrated) {
+            console.log('[initAuth] No token found, redirecting to login')
             appStore.setAppReady(true)
+            // ✅ 重定向到登录页面（首次启动或登出后）
+            uni.reLaunch({
+                url: '/pages/login/index'
+            })
             return
         }
 
@@ -94,6 +98,9 @@ const performInit = async () => {
         // 兼容：如果历史版本没写入 expiresAt，则先放行，交给后续接口 401/404 决定是否需要清理会话
         if (hydrated.expiresAt && isTokenExpired(TOKEN_VALIDATION_BUFFER)) {
             userStore.clearLocalSession()
+            uni.reLaunch({
+                url: '/pages/login/index'
+            })
             appStore.setAppReady(true)
             return
         }
@@ -108,6 +115,9 @@ const performInit = async () => {
                 // 续期失败如果是鉴权问题，登出；如果是网络问题，忍受（继续用旧 Token）
                 if (isSessionInvalidError(error)) {
                     userStore.clearLocalSession()
+                    uni.reLaunch({
+                        url: '/pages/login/index'
+                    })
                     appStore.setAppReady(true)
                     return
                 }

@@ -81,3 +81,49 @@ export const refreshTokenMock = (config: RequestConfig) => {
         refreshExpiresIn: 86400
     }
 }
+
+export const guestMock = (config: RequestConfig) => {
+    const guestUser = {
+        id: Math.floor(Math.random() * 10000) + 10000,
+        email: '',
+        password: '',
+        createdAt: new Date().toISOString(),
+        isGuest: true
+    }
+
+    userState.users.push(guestUser as any)
+    userState.currentUserId = guestUser.id as any
+
+    return {
+        accessToken: 'mock-guest-access-token-' + Date.now(),
+        expiresIn: 3600,
+        refreshToken: 'mock-guest-refresh-token-' + Date.now(),
+        profile: {
+            id: String(guestUser.id),
+            isGuest: true
+        }
+    }
+}
+
+export const upgradeMock = (config: RequestConfig) => {
+    const { email, password } = config.data as { email: string, password: string }
+
+    const currentId = userState.currentUserId as any
+    const user = userState.users.find(u => u.id === currentId)
+
+    if (user) {
+        ; (user as any).email = email
+        ; (user as any).password = password
+        ; (user as any).isGuest = false
+    }
+
+    return {
+        accessToken: 'mock-user-access-token-' + Date.now(),
+        expiresIn: 3600,
+        refreshToken: 'mock-user-refresh-token-' + Date.now(),
+        profile: {
+            id: String(currentId ?? ''),
+            isGuest: false
+        }
+    }
+}

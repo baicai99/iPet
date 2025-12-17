@@ -9,8 +9,8 @@ datasource db {
 
 model User {
   id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
+  email        String?  @unique
+  passwordHash String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -35,11 +35,19 @@ model User {
   idCard       String?
   points       Int      @default(0)
   settings     String?  // JSON string for settings
-  
+
+  // Guest account support
+  isGuest        Boolean  @default(false)
+  lastActiveAt   DateTime @default(now())
+  guestCreatedAt DateTime @default(now())
+  guestDeviceId  String?
+  guestOrigin    String?
 
   
   
+  
 
+  @@index([isGuest, lastActiveAt], name: "users_guest_last_active")
 }
 
 

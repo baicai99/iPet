@@ -37,6 +37,18 @@ export interface LoginResponse {
 
 export type LoginResult = LoginResponse & { expiresAt: number | null }
 
+export interface GuestAuthResponse {
+    accessToken: string
+    expiresIn: number
+    refreshToken?: string
+    profile?: {
+        id: string
+        isGuest: boolean
+    }
+}
+
+export type GuestAuthResult = GuestAuthResponse & { expiresAt: number | null }
+
 const resolveExpiresAt = (expiresIn?: number): number | null => {
     if (typeof expiresIn !== 'number' || Number.isNaN(expiresIn)) {
         return null
@@ -90,6 +102,50 @@ export const loginUser = async (payload: LoginPayload): Promise<LoginResult> => 
 
     const expiresAt = resolveExpiresAt(result.expiresIn)
     // 始终持久化 Token (30天)
+    setAuthToken(result.accessToken, true, expiresAt)
+    if (result.refreshToken) {
+        setRefreshToken(result.refreshToken)
+    }
+    return { ...result, expiresAt }
+}
+
+export const createGuestSession = async (): Promise<GuestAuthResult> => {
+    const result = await request<any>({
+        url: '/auth/guest',
+        method: 'POST',
+        skipAuthRefresh: true
+    })
+
+    if (result.code && result.code !== 200) {
+        const error: any = new Error(result.message || 'Guest login failed')
+        error.statusCode = result.code
+        error.data = result
+        throw error
+    }
+
+    const expiresAt = resolveExpiresAt(result.expiresIn)
+    setAuthToken(result.accessToken, true, expiresAt)
+    if (result.refreshToken) {
+        setRefreshToken(result.refreshToken)
+    }
+    return { ...result, expiresAt }
+}
+
+export const upgradeGuestAccount = async (payload: RegisterPayload): Promise<GuestAuthResult> => {
+    const result = await request<any>({
+        url: '/auth/upgrade',
+        method: 'POST',
+        data: payload
+    })
+
+    if (result.code && result.code !== 200) {
+        const error: any = new Error(result.message || 'Upgrade failed')
+        error.statusCode = result.code
+        error.data = result
+        throw error
+    }
+
+    const expiresAt = resolveExpiresAt(result.expiresIn)
     setAuthToken(result.accessToken, true, expiresAt)
     if (result.refreshToken) {
         setRefreshToken(result.refreshToken)

@@ -264,10 +264,6 @@ const applyRefreshedToken = (result: TokenRefreshResult) => {
 }
 
 const forceLogout = () => {
-    // ⚠️ TEMPORARILY DISABLED: Skip redirect to login for debugging
-    console.warn('[forceLogout] Would redirect to login, but disabled for debugging')
-    return
-
     if (forcingLogout) {
         return
     }

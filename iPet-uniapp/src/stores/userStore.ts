@@ -8,10 +8,13 @@ import type { HealthRecord } from '@shared/types/health'
 import type { WalletInfo, Transaction } from '@/types/dto/wallet'
 import { usePetStore } from './petStore'
 import { useHealthStore } from './healthStore'
+import { useImageCacheStore } from './imageCacheStore'
 import { ensureStringId } from '@/utils/common/idUtils'
 import { calculateDaysWithPets, calculateRecordCount, calculateWalkDistance } from '@/utils/business/userStatsHelper'
 import { getUserProfile } from '@/services/userService'
-import { logoutUser } from '@/services/authService'
+import { createGuestSession, logoutUser, upgradeGuestAccount } from '@/services/authService'
+import { CacheManager } from '@/utils/cache/CacheManager'
+import { healthCacheService } from '@/services/healthCacheService'
 
 const DEFAULT_STATS: UserStats = {
     daysWithPet: 0,
@@ -33,6 +36,7 @@ const defaultAccountInfo: AccountInfo = {
 
 export const useUserStore = defineStore('user', () => {
     // State
+    const authMode = ref<'none' | 'guest' | 'user'>('none')
     const token = ref<string>('')
     const tokenExpiresAt = ref<number | null>(null)
     const accountInfo = ref<AccountInfo>({ ...defaultAccountInfo })
@@ -76,6 +80,11 @@ export const useUserStore = defineStore('user', () => {
             return false
         }
 
+        // Guest mode: allow exploring without forced onboarding
+        if (authMode.value === 'guest') {
+            return false
+        }
+
         const petStore = usePetStore()
 
         // 检查核心资料是否完善 (Onboarding 页面会设置 tags 和 gender)
@@ -91,6 +100,9 @@ export const useUserStore = defineStore('user', () => {
     // Actions
     function setToken(newToken: string, expiresAt?: number | null) {
         token.value = newToken
+        if (!newToken) {
+            authMode.value = 'none'
+        }
         if (typeof expiresAt === 'number' || expiresAt === null) {
             tokenExpiresAt.value = expiresAt
         } else if (!newToken) {
@@ -103,16 +115,54 @@ export const useUserStore = defineStore('user', () => {
         if (normalizedInfo.id !== undefined) {
             normalizedInfo.id = ensureStringId(normalizedInfo.id)
         }
+        if (typeof (normalizedInfo as any).isGuest === 'boolean' && token.value) {
+            authMode.value = (normalizedInfo as any).isGuest ? 'guest' : 'user'
+        }
         accountInfo.value = { ...accountInfo.value, ...normalizedInfo }
     }
 
     async function login(newToken: string, expiresAt: number | null, userInfo: Partial<AccountInfo>) {
         setToken(newToken, expiresAt)
         updateUserInfo(userInfo)
+        if (newToken) {
+            authMode.value = (userInfo as any)?.isGuest ? 'guest' : 'user'
+        } else {
+            authMode.value = 'none'
+        }
+    }
+
+    function resetAppCaches() {
+        try {
+            CacheManager.clear()
+        } catch (error) {
+            console.warn('[userStore] Failed to clear CacheManager', error)
+        }
+
+        try {
+            healthCacheService.clear()
+        } catch (error) {
+            console.warn('[userStore] Failed to clear health cache', error)
+        }
+
+        try {
+            const imageCacheStore = useImageCacheStore()
+            imageCacheStore.clear()
+        } catch (error) {
+            console.warn('[userStore] Failed to clear image cache', error)
+        }
+    }
+
+    function resetBusinessStores() {
+        const petStore = usePetStore()
+        petStore.$reset()
+
+        const healthStore = useHealthStore()
+        healthStore.resetStore()
     }
 
     function clearLocalSession() {
         // Clear local session state without calling backend
+        authMode.value = 'none'
         token.value = ''
         tokenExpiresAt.value = null
         accountInfo.value = { ...defaultAccountInfo }
@@ -121,11 +171,8 @@ export const useUserStore = defineStore('user', () => {
         clearAuthToken()
 
         // Also clear other stores
-        const petStore = usePetStore()
-        petStore.$reset()
-
-        const healthStore = useHealthStore()
-        healthStore.resetStore()  // ✅ Use custom reset method for setup store
+        resetBusinessStores()
+        resetAppCaches()
     }
 
     async function logout() {
@@ -137,6 +184,46 @@ export const useUserStore = defineStore('user', () => {
         } finally {
             clearLocalSession()
         }
+    }
+
+    async function loginAsGuest() {
+        // Mode switch: ensure a clean slate to avoid cache contamination
+        clearLocalSession()
+
+        const result = await createGuestSession()
+
+        await login(result.accessToken, result.expiresAt ?? null, {
+            id: result.profile?.id || '',
+            uid: result.profile?.id || '',
+            displayName: '游客',
+            updatedAt: Date.now(),
+            isGuest: true
+        } as any)
+
+        const petStore = usePetStore()
+        await petStore.fetchPets()
+        return result
+    }
+
+    async function upgradeGuestToUser(email: string, password: string) {
+        const result = await upgradeGuestAccount({ email, password })
+
+        // Mode switch: clear caches/stores, but keep auth tokens we just received
+        resetBusinessStores()
+        resetAppCaches()
+
+        await login(result.accessToken, result.expiresAt ?? null, {
+            id: result.profile?.id || '',
+            uid: result.profile?.id || '',
+            displayName: email.split('@')[0],
+            email,
+            updatedAt: Date.now(),
+            isGuest: false
+        } as any)
+
+        const petStore = usePetStore()
+        await petStore.fetchPets()
+        return result
     }
 
     async function fetchUserProfile() {
@@ -161,6 +248,7 @@ export const useUserStore = defineStore('user', () => {
     // The standard Pinia Setup Store does NOT have $reset.
 
     function $reset() {
+        authMode.value = 'none'
         token.value = ''
         tokenExpiresAt.value = null
         accountInfo.value = { ...defaultAccountInfo }
@@ -169,6 +257,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     return {
+        authMode,
         token,
         tokenExpiresAt,
         accountInfo,
@@ -179,6 +268,8 @@ export const useUserStore = defineStore('user', () => {
         needsOnboarding,
         setToken,
         login,
+        loginAsGuest,
+        upgradeGuestToUser,
         logout,
         clearLocalSession,
         updateUserInfo,
@@ -187,7 +278,6 @@ export const useUserStore = defineStore('user', () => {
     }
 }, {
     persist: {
-        paths: ['token', 'tokenExpiresAt', 'accountInfo']
+        paths: ['authMode', 'token', 'tokenExpiresAt', 'accountInfo']
     } as any
 })
-

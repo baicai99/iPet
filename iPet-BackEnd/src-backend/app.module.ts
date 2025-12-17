@@ -16,6 +16,7 @@ import { InsightModule } from './insight/insight.module';
 import { ArticleModule } from './article/article.module';
 import { SystemConfigModule } from './system-config/system-config.module';
 import { HealthScheduleModule } from './health-schedule/health-schedule.module';
+import { GuestCleanupService } from './guest/guest-cleanup.service';
 
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { UploadsModule } from './uploads/uploads.module';
@@ -54,6 +55,7 @@ import { ensureDataSubdir } from './config/data-paths';
   controllers: [AppController],
   providers: [
     AppService,
+    GuestCleanupService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

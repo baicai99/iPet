@@ -1,3 +1,5 @@
+import designTokens from '@/design/tokens.json'
+
 /**
  * 颜色工具函数
  */
@@ -83,21 +85,14 @@ const createColorVariants = (hex: string): ColorVariants => ({
  * 每种颜色包含 4 个透明度级别：primary(100%), secondary(80%), tertiary(60%), quaternary(40%)
  */
 
+const ACCENT_BASE = designTokens.colors.palette.accent
+type AccentName = keyof typeof ACCENT_BASE
+
 // 定义 Light 模式（作为基准）
-const ACCENT_LIGHT = {
-    red: createColorVariants('#FF383C'),
-    orange: createColorVariants('#FF8D28'),
-    yellow: createColorVariants('#FFCC00'),
-    green: createColorVariants('#34C759'),
-    mint: createColorVariants('#00C8B3'),
-    teal: createColorVariants('#00C3D0'),
-    cyan: createColorVariants('#00C0E8'),
-    blue: createColorVariants('#0088FF'),
-    indigo: createColorVariants('#6155F5'),
-    purple: createColorVariants('#CB30E0'),
-    pink: createColorVariants('#FF2D55'),
-    brown: createColorVariants('#AC7F5E')
-} as const
+const ACCENT_LIGHT = (Object.keys(ACCENT_BASE) as AccentName[]).reduce((acc, key) => {
+    acc[key] = createColorVariants(ACCENT_BASE[key])
+    return acc
+}, {} as Record<AccentName, ColorVariants>)
 
 // 导出 ACCENT_COLORS (仅 light 模式)
 export const ACCENT_COLORS = ACCENT_LIGHT
@@ -108,17 +103,10 @@ export const ACCENT_COLORS = ACCENT_LIGHT
  */
 
 // 定义 Light 模式（作为基准）
-const GRAY_LIGHT = {
-    gray: '#8E8E93',
-    gray2: '#AEAEB2',
-    gray3: '#C7C7CC',
-    gray4: '#D1D1D6',
-    gray5: '#E5E5EA',
-    gray6: '#F2F2F7'
-} as const
+const GRAY_LIGHT = designTokens.colors.palette.gray
 
-// 导出 GRAY_SCALE (仅 light 模式)
-export const GRAY_SCALE = GRAY_LIGHT
+// 导出 GRAY_SCALE (兼容 light 访问方式)
+export const GRAY_SCALE = { light: GRAY_LIGHT, ...GRAY_LIGHT } as const
 
 /**
  * 字重系统 (Font Weights)
@@ -143,59 +131,39 @@ export const FONT_WEIGHTS = {
  */
 export const TYPOGRAPHY = {
     largeTitle: {
-        fontSize: 68,        // 68rpx (34pt × 2)
-        lineHeight: 82,      // 82rpx (41pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
-    },
-    title1: {
-        fontSize: 56,        // 56rpx (28pt × 2)
-        lineHeight: 68,      // 68rpx (34pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
+        fontSize: designTokens.typography.largeTitle.fontSizeRpx,
+        lineHeight: designTokens.typography.largeTitle.lineHeight,
+        fontWeight: String(designTokens.typography.largeTitle.fontWeight)
     },
     title2: {
-        fontSize: 44,        // 44rpx (22pt × 2)
-        lineHeight: 56,      // 56rpx (28pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
-    },
-    title3: {
-        fontSize: 40,        // 40rpx (20pt × 2)
-        lineHeight: 50,      // 50rpx (25pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
+        fontSize: designTokens.typography.title2.fontSizeRpx,
+        lineHeight: designTokens.typography.title2.lineHeight,
+        fontWeight: String(designTokens.typography.title2.fontWeight)
     },
     headline: {
-        fontSize: 34,        // 34rpx (17pt × 2)
-        lineHeight: 44,      // 44rpx (22pt × 2)
-        fontWeight: FONT_WEIGHTS.semibold
+        fontSize: designTokens.typography.headline.fontSizeRpx,
+        lineHeight: designTokens.typography.headline.lineHeight,
+        fontWeight: String(designTokens.typography.headline.fontWeight)
     },
     body: {
-        fontSize: 34,        // 34rpx (17pt × 2)
-        lineHeight: 44,      // 44rpx (22pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
-    },
-    callout: {
-        fontSize: 32,        // 32rpx (16pt × 2)
-        lineHeight: 42,      // 42rpx (21pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
+        fontSize: designTokens.typography.body.fontSizeRpx,
+        lineHeight: designTokens.typography.body.lineHeight,
+        fontWeight: String(designTokens.typography.body.fontWeight)
     },
     subhead: {
-        fontSize: 30,        // 30rpx (15pt × 2)
-        lineHeight: 40,      // 40rpx (20pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
-    },
-    footnote: {
-        fontSize: 26,        // 26rpx (13pt × 2)
-        lineHeight: 36,      // 36rpx (18pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
+        fontSize: designTokens.typography.subhead.fontSizeRpx,
+        lineHeight: designTokens.typography.subhead.lineHeight,
+        fontWeight: String(designTokens.typography.subhead.fontWeight)
     },
     caption1: {
-        fontSize: 24,        // 24rpx (12pt × 2)
-        lineHeight: 32,      // 32rpx (16pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
+        fontSize: designTokens.typography.caption1.fontSizeRpx,
+        lineHeight: designTokens.typography.caption1.lineHeight,
+        fontWeight: String(designTokens.typography.caption1.fontWeight)
     },
     caption2: {
-        fontSize: 22,        // 22rpx (11pt × 2)
-        lineHeight: 26,      // 26rpx (13pt × 2)
-        fontWeight: FONT_WEIGHTS.regular
+        fontSize: designTokens.typography.caption2.fontSizeRpx,
+        lineHeight: designTokens.typography.caption2.lineHeight,
+        fontWeight: String(designTokens.typography.caption2.fontWeight)
     }
 } as const
 
@@ -291,19 +259,19 @@ export const TOKENS = {
     info: ACCENT_COLORS.cyan.primary,
 
     // 文本色
-    textPrimary: '#1e293b',
-    textSecondary: GRAY_SCALE.gray2,
-    textMuted: GRAY_SCALE.gray,
-    textDisabled: GRAY_SCALE.gray3,
+    textPrimary: designTokens.colors.semantic.textPrimary,
+    textSecondary: designTokens.colors.semantic.textSecondary,
+    textMuted: designTokens.colors.semantic.textMuted,
+    textDisabled: designTokens.colors.semantic.textDisabled,
 
     // 背景色
-    bgPrimary: '#f2f1f5',        // 主背景色
-    bgSecondary: '#fbfbfd',      // 导航栏/二级背景
-    bgCard: '#ffffff',           // 卡片背景
+    bgPrimary: designTokens.colors.semantic.bgPrimary,        // 主背景色
+    bgSecondary: designTokens.colors.semantic.bgNavbar,       // 导航栏/二级背景
+    bgCard: designTokens.colors.semantic.bgCard,              // 卡片背景
 
     // 边框色
-    borderLight: GRAY_SCALE.gray4,
-    borderMedium: GRAY_SCALE.gray3,
+    borderLight: designTokens.colors.semantic.borderColor,
+    borderMedium: designTokens.colors.semantic.borderColor,
 
     // 阴影
     shadowSm: '0 1px 2px rgba(0,0,0,0.05)',

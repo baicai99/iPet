@@ -1,89 +1,143 @@
 <template>
-    <AuthLayout title="创建新账号" subtitle="免费注册，开启您的旅程" icon="account-fill" icon-color="#6366f1" icon-bg-color="#eef2ff">
-        <view class="form-container">
-            <view class="input-wrapper">
-                <StyledInput 
-                    icon="email" 
-                    label="电子邮箱"
-                    v-model="email" 
-                />
-                <text class="error-text" v-if="errors.email">{{ errors.email }}</text>
-            </view>
+    <view class="auth-page">
+        <!-- Gradient Background -->
+        <view class="bg-gradient">
+            <!-- Card Container -->
+            <view class="auth-card">
 
-            <view class="input-wrapper">
-                <StyledInput 
-                    icon="lock" 
-                    label="密码"
-                    v-model="password" 
-                    isPassword 
-                />
-                <text class="error-text" v-if="errors.password">{{ errors.password }}</text>
-            </view>
+                <!-- Logo and Title -->
+                <view class="header-section">
+                    <view class="logo-container">
+                        <u-icon name="account-fill" size="48" color="#ffffff"></u-icon>
+                    </view>
+                    <text class="title">创建新账号</text>
+                    <text class="subtitle">免费注册，开启您的旅程</text>
+                </view>
 
-            <view class="input-wrapper">
-                <StyledInput 
-                    icon="lock" 
-                    label="验证密码"
-                    v-model="confirmPassword" 
-                    isPassword 
-                />
-                <text class="error-text" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</text>
-            </view>
+                <!-- Form Section -->
+                <view class="form-section">
+                    <!-- Email Input -->
+                    <view class="input-group">
+                        <text class="input-label">电子邮箱</text>
+                        <view class="input-wrapper">
+                            <view class="input-icon">
+                                <u-icon name="email" size="20" :color="emailFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
+                            </view>
+                            <input type="text" v-model="email" class="input-field" placeholder="请输入邮箱"
+                                @focus="emailFocused = true" @blur="emailFocused = false" />
+                        </view>
+                    </view>
 
-            <button class="register-btn" :disabled="isLoading" @click="handleRegister" :hover-class="isLoading ? 'none' : 'btn-hover'">
-                <view v-if="isLoading" class="spinner"></view>
-                <template v-else>
-                    <text class="btn-text">创建账号</text>
-                    <u-icon name="arrow-right" size="18" color="#ffffff"></u-icon>
-                </template>
-            </button>
+                    <!-- Password Input -->
+                    <view class="input-group">
+                        <text class="input-label">密码</text>
+                        <view class="input-wrapper">
+                            <view class="input-icon">
+                                <u-icon name="lock" size="20" :color="passwordFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
+                            </view>
+                            <input :type="showPassword ? 'text' : 'password'" v-model="password" class="input-field"
+                                placeholder="至少8位，需包含字母和数字" @focus="passwordFocused = true"
+                                @blur="passwordFocused = false" />
+                            <view class="password-toggle" @click="showPassword = !showPassword">
+                                <u-icon :name="showPassword ? 'eye-off' : 'eye'" size="20" color="#94A3B8"></u-icon>
+                            </view>
+                        </view>
+                    </view>
+
+                    <!-- Confirm Password Input -->
+                    <view class="input-group">
+                        <text class="input-label">确认密码</text>
+                        <view class="input-wrapper">
+                            <view class="input-icon">
+                                <u-icon name="lock" size="20"
+                                    :color="confirmPasswordFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
+                            </view>
+                            <input :type="showConfirmPassword ? 'text' : 'password'" v-model="confirmPassword"
+                                class="input-field" placeholder="请再次输入密码" @focus="confirmPasswordFocused = true"
+                                @blur="confirmPasswordFocused = false" />
+                            <view class="password-toggle" @click="showConfirmPassword = !showConfirmPassword">
+                                <u-icon :name="showConfirmPassword ? 'eye-off' : 'eye'" size="20"
+                                    color="#94A3B8"></u-icon>
+                            </view>
+                        </view>
+                    </view>
+
+                    <!-- Primary Button -->
+                    <button class="primary-btn" :class="{ 'loading': isLoading }" :disabled="isLoading"
+                        @click="handleRegister" hover-class="primary-btn-hover">
+                        <u-loading-icon v-if="isLoading" mode="circle" size="18" color="#ffffff"></u-loading-icon>
+                        <text class="btn-text">{{ isLoading ? '注册中...' : '创建账号' }}</text>
+                        <u-icon v-if="!isLoading" name="arrow-right" size="18" color="#ffffff"></u-icon>
+                    </button>
+
+                    <!-- Divider -->
+                    <view class="divider">
+                        <view class="divider-line"></view>
+                        <text class="divider-text">其他登录方式</text>
+                        <view class="divider-line"></view>
+                    </view>
+
+                    <!-- Social Login Buttons -->
+                    <view class="social-buttons">
+                        <button class="social-btn" hover-class="social-btn-hover">
+                            <u-icon name="weixin-fill" size="20" color="#10B981"></u-icon>
+                            <text class="social-text">微信</text>
+                        </button>
+                        <button class="social-btn" hover-class="social-btn-hover">
+                            <u-icon name="github-circle-fill" size="20" color="#111827"></u-icon>
+                            <text class="social-text">Github</text>
+                        </button>
+                    </view>
+
+                    <!-- Guest Login -->
+                    <view class="guest-section">
+                        <button class="guest-btn" @click="handleGuestLogin" hover-class="guest-btn-hover">
+                            <u-icon name="account" size="20" color="#64748B"></u-icon>
+                            <text class="guest-text">游客登录 / 试用</text>
+                        </button>
+                        <text class="guest-hint">游客模式连续7天未使用将会清空数据。</text>
+                    </view>
+                </view>
+
+                <!-- Footer Navigation -->
+                <view class="footer-section">
+                    <view class="footer-links">
+                        <text class="link-btn" @click="goToLogin">直接登录</text>
+                    </view>
+                </view>
+            </view>
         </view>
-
-        <view class="footer">
-            <text class="footer-text">已经有账号了? </text>
-            <text class="link-text" @click="goToLogin">直接登录</text>
-        </view>
-    </AuthLayout>
+    </view>
 </template>
 
-<script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+<script setup>
+import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import StyledInput from '@/pages/login/components/StyledInput.vue';
-import AuthLayout from '@/components/layout/AuthLayout.vue';
 import { registerUser } from '@/services/authService';
 import { useUserStore } from '@/stores/userStore';
-import { usePetStore } from '@/stores/petStore';
-// Use shared validation rules
-import { EMAIL_REGEX, PASSWORD_REGEX } from '@shared/validation/rules';
+
+// Local validation constants
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/;
 
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const isLoading = ref(false);
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
+const emailFocused = ref(false);
+const passwordFocused = ref(false);
+const confirmPasswordFocused = ref(false);
+const redirectTarget = ref('');
 const userStore = useUserStore();
 
-const redirectTarget = ref('');
-const errors = reactive({
-    email: '',
-    password: '',
-    confirmPassword: ''
-});
-
-
-
-
 onLoad((options) => {
-    redirectTarget.value = options?.redirect ? decodeURIComponent(options.redirect) : '';
+    const redirectParam = options?.redirect ? decodeURIComponent(options.redirect) : '';
+    redirectTarget.value = redirectParam;
 });
 
-
-
-watch(email, () => (errors.email = ''));
-watch(password, () => (errors.password = ''));
-watch(confirmPassword, () => (errors.confirmPassword = ''));
-
-const showToast = (title: string) => {
+const showToast = (title) => {
     uni.showToast({
         title,
         icon: 'none',
@@ -91,49 +145,45 @@ const showToast = (title: string) => {
     });
 };
 
-type ErrorField = keyof typeof errors;
+const isRateLimitError = (error) => Number(error?.statusCode) === 429;
 
-const setFieldError = (field: ErrorField, message: string) => {
-    errors[field] = message;
+const getErrorMessage = (error, fallback) => {
+    const message = error?.data?.message || error?.errMsg;
+    if (message && typeof message === 'string') {
+        return message;
+    }
+    return fallback;
 };
-
-const resetErrors = () => {
-    (Object.keys(errors) as ErrorField[]).forEach((key) => {
-        errors[key] = '';
-    });
-};
-
-
 
 const handleRegister = async () => {
     if (isLoading.value) return;
 
-    resetErrors();
     const trimmedEmail = email.value.trim();
     const trimmedPassword = password.value.trim();
-    const trimmedConfirm = confirmPassword.value.trim();
+    const trimmedConfirmPassword = confirmPassword.value.trim();
 
-    if (!trimmedEmail || !trimmedPassword || !trimmedConfirm) {
-        if (!trimmedEmail) setFieldError('email', '请输入邮箱地址');
-        if (!trimmedPassword) setFieldError('password', '请输入密码');
-        if (!trimmedConfirm) setFieldError('confirmPassword', '请再次输入密码');
+    email.value = trimmedEmail;
+    password.value = trimmedPassword;
+    confirmPassword.value = trimmedConfirmPassword;
+
+    // Validation
+    if (!trimmedEmail || !trimmedPassword || !trimmedConfirmPassword) {
+        showToast('请填写所有字段');
         return;
     }
 
     if (!EMAIL_REGEX.test(trimmedEmail)) {
-        setFieldError('email', '请输入有效的邮箱地址');
+        showToast('请输入有效的邮箱地址');
         return;
     }
 
     if (!PASSWORD_REGEX.test(trimmedPassword)) {
-        setFieldError('password', '密码至少 8 位，需包含字母和数字');
+        showToast('密码至少 8 位，需包含字母和数字');
         return;
     }
 
-
-
-    if (trimmedPassword !== trimmedConfirm) {
-        setFieldError('confirmPassword', '两次输入的密码不一致');
+    if (trimmedPassword !== trimmedConfirmPassword) {
+        showToast('两次输入的密码不一致');
         return;
     }
 
@@ -141,13 +191,12 @@ const handleRegister = async () => {
         isLoading.value = true;
         const result = await registerUser({
             email: trimmedEmail,
-            password: trimmedPassword
+            password: trimmedPassword,
         });
 
-        // Auto login: Update Pinia state
         await userStore.login(
             result.accessToken,
-            result.expiresAt,
+            result.expiresAt ?? null,
             {
                 id: `user-${result.user.id}`,
                 uid: `user-${result.user.id}`,
@@ -159,133 +208,332 @@ const handleRegister = async () => {
 
         showToast('注册成功');
 
-        // Fetch pets to check if onboarding is needed
-        const petStore = usePetStore();
-        await petStore.fetchPets();
+        // Always redirect to onboarding for new users
+        uni.reLaunch({ url: '/pages/onboarding/index' });
+    } catch (error) {
+        if (isRateLimitError(error)) {
+            showToast(getErrorMessage(error, '注册尝试过于频繁，请稍后再试'));
+            return;
+        }
 
-        setTimeout(() => {
-            if (userStore.needsOnboarding) {
-                uni.reLaunch({ url: '/pages/onboarding/index' });
-            } else {
-                // Handle redirect target or default to home
-                const target = redirectTarget.value;
-                if (target) {
-                    if (['/pages/summary/summary', '/pages/my/my'].includes(target)) {
-                        uni.switchTab({ url: target });
-                    } else {
-                        uni.redirectTo({ url: target });
-                    }
-                } else {
-                    // Default to home or summary
-                    uni.switchTab({ url: '/pages/summary/summary' });
-                }
-            }
-        }, 1000);
-    } catch (error: any) {
-        showToast(error?.message || '注册失败，请稍后重试');
+        if (error?.errMsg?.includes('request:fail')) {
+            showToast('网络连接失败，请检查您的网络设置');
+            return;
+        }
+
+        const statusCode = Number(error?.statusCode || error?.code);
+        if (statusCode === 409) {
+            showToast('该邮箱已被注册，请直接登录');
+            return;
+        }
+
+        const message = getErrorMessage(error, '注册失败，请稍后重试');
+        showToast(message);
     } finally {
         isLoading.value = false;
     }
 };
 
-
-
 const goToLogin = () => {
-    redirectToLogin(false);
+    const redirectParam = redirectTarget.value ? `?redirect=${encodeURIComponent(redirectTarget.value)}` : '';
+    uni.redirectTo({ url: `/pages/login/index${redirectParam}` });
 };
 
-const redirectToLogin = (fromSuccess: boolean) => {
-    const redirectParam = redirectTarget.value
-        ? `?redirect=${encodeURIComponent(redirectTarget.value)}`
-        : '';
-    const pages = getCurrentPages();
-    if (!fromSuccess && pages.length > 1) {
-        uni.navigateBack();
-        return;
+const handleGuestLogin = async () => {
+    try {
+        await userStore.loginAsGuest();
+        showToast('已进入游客模式');
+        uni.switchTab({ url: '/pages/summary/summary' });
+    } catch (error) {
+        console.error('[register] guest login failed', error);
+        showToast('游客登录失败，请稍后重试');
     }
-    uni.redirectTo({ url: `/pages/login/index${redirectParam}` });
 };
 </script>
 
 <style lang="scss" scoped>
-.form-container {
+.auth-page {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32rpx;
+}
+
+.bg-gradient {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 50%, #ECFEFF 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32rpx;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 580rpx;
+    background: #FFFFFF;
+    border-radius: 32rpx;
+    box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.12);
+    border: 2rpx solid #F1F5F9;
+    overflow: hidden;
+}
+
+/* Header Section */
+.header-section {
+    padding: 64rpx 64rpx 48rpx;
+    text-align: center;
+}
+
+.logo-container {
+    width: 96rpx;
+    height: 96rpx;
+    margin: 0 auto 32rpx;
+    background: #4F46E5;
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 16rpx 32rpx rgba(79, 70, 229, 0.3);
+}
+
+.title {
+    font-size: 48rpx;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.5rpx;
+    display: block;
+    margin-bottom: 16rpx;
+}
+
+.subtitle {
+    font-size: 26rpx;
+    color: #64748B;
+    display: block;
+}
+
+/* Form Section */
+.form-section {
+    padding: 0 64rpx 64rpx;
     display: flex;
     flex-direction: column;
     gap: 32rpx;
 }
 
-.input-wrapper {
+.input-group {
     display: flex;
     flex-direction: column;
     gap: 8rpx;
 }
 
-.register-btn {
-    width: 100%;
-    background-color: #6366f1;
-    color: #ffffff;
-    border-radius: 16rpx;
-    padding: 20rpx 32rpx;
+.input-label {
+    font-size: 22rpx;
     font-weight: 600;
-    box-shadow: 0 4rpx 12rpx rgba(99, 102, 241, 0.3);
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 1rpx;
+    margin-left: 8rpx;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 24rpx;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+    transition: color 0.2s;
+}
+
+.input-field {
+    width: 100%;
+    height: 88rpx;
+    padding-left: 68rpx;
+    padding-right: 24rpx;
+    border: 2rpx solid #E2E8F0;
+    border-radius: 16rpx;
+    background: #F8FAFC;
+    font-size: 28rpx;
+    color: #0F172A;
+    transition: all 0.2s;
+
+    &:focus {
+        background: #FFFFFF;
+        border-color: #4F46E5;
+        box-shadow: 0 0 0 6rpx rgba(79, 70, 229, 0.1);
+    }
+}
+
+.password-toggle {
+    position: absolute;
+    right: 24rpx;
+    display: flex;
+    align-items: center;
+    padding: 8rpx;
+    cursor: pointer;
+}
+
+/* Buttons */
+.primary-btn {
+    width: 100%;
+    height: 88rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    background: #4F46E5;
+    border: none;
+    border-radius: 16rpx;
+    box-shadow: 0 8rpx 16rpx rgba(79, 70, 229, 0.2);
+    margin-top: 16rpx;
+    transition: all 0.2s;
+
+    &::after {
+        display: none;
+    }
+
+    &.loading {
+        opacity: 0.7;
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+}
+
+.primary-btn-hover {
+    background: #4338CA;
+    box-shadow: 0 12rpx 24rpx rgba(79, 70, 229, 0.3);
+}
+
+.btn-text {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+/* Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    margin: 16rpx 0;
+}
+
+.divider-line {
+    flex: 1;
+    height: 2rpx;
+    background: #E2E8F0;
+}
+
+.divider-text {
+    font-size: 24rpx;
+    color: #94A3B8;
+}
+
+/* Social Buttons */
+.social-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24rpx;
+}
+
+.social-btn {
+    height: 88rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    border: none;
-    transition: all 0.2s ease;
+    background: #FFFFFF;
+    border: 2rpx solid #E2E8F0;
+    border-radius: 16rpx;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    transition: all 0.2s;
 
     &::after {
         display: none;
     }
 }
 
-.btn-hover {
-    background-color: #4f46e5;
-    box-shadow: 0 6rpx 16rpx rgba(99, 102, 241, 0.4);
+.social-btn-hover {
+    background: #F8FAFC;
 }
 
-.btn-text {
+.social-text {
     font-size: 28rpx;
-    font-weight: 600;
+    font-weight: 500;
+    color: #64748B;
 }
 
-.spinner {
-    width: 32rpx;
-    height: 32rpx;
-    border: 4rpx solid rgba(255, 255, 255, 0.3);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+/* Guest Section */
+.guest-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    margin-top: 8rpx;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+.guest-btn {
+    width: 100%;
+    height: 88rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    background: #FFFFFF;
+    border: 2rpx dashed #CBD5E1;
+    border-radius: 16rpx;
+    transition: all 0.2s;
+
+    &::after {
+        display: none;
     }
 }
 
-.footer {
-    text-align: center;
-    margin-top: 32rpx;
+.guest-btn-hover {
+    background: #F8FAFC;
+    border-color: #94A3B8;
 }
 
-.footer-text {
+.guest-text {
     font-size: 28rpx;
-    color: #64748b;
+    font-weight: 500;
+    color: #64748B;
 }
 
-.link-text {
+.guest-hint {
+    font-size: 22rpx;
+    color: #94A3B8;
+    text-align: center;
+}
+
+/* Footer Section */
+.footer-section {
+    background: #F8FAFC;
+    padding: 32rpx 64rpx;
+    border-top: 2rpx solid #F1F5F9;
+}
+
+.footer-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.link-btn {
     font-size: 28rpx;
     font-weight: 600;
-    color: #6366f1;
-    margin-left: 8rpx;
-}
-
-.error-text {
-    color: #ef4444;
-    font-size: 24rpx;
-    margin-top: -4rpx;
-    margin-left: 8rpx;
+    color: #4F46E5;
 }
 </style>

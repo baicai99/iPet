@@ -6,6 +6,17 @@
             <UserProfileCard :user="realUserData" @click="handleProfileClick" />
         </view>
 
+        <!-- Guest Upgrade Banner -->
+        <view class="section" v-if="isGuestAccount">
+            <view class="guest-banner">
+                <view class="guest-banner-left">
+                    <text class="guest-banner-title">游客模式</text>
+                    <text class="guest-banner-desc">连续 7 天未使用将自动删除数据</text>
+                </view>
+                <button class="guest-upgrade-btn" @click="goUpgradeAccount">升级账号</button>
+            </view>
+        </view>
+
         <!-- Pet Management -->
         <view class="pet-section-wrapper">
             <PetSelectorBar :pets="activePets" :loading="petListLoading" mode="edit" @add="goManagePets"
@@ -81,6 +92,9 @@ import { useHealthStore } from '@/stores/healthStore'
 
 
 import { useAppStore } from '@/stores/appStore'
+import { useImageCacheStore } from '@/stores/imageCacheStore'
+import { CacheManager } from '@/utils/cache/CacheManager'
+import { healthCacheService } from '@/services/healthCacheService'
 import {
     appSettings as appSettingsConfig,
     helpFeedback as helpFeedbackConfig
@@ -96,6 +110,7 @@ const healthStore = useHealthStore()
 
 
 const appStore = useAppStore()
+const imageCacheStore = useImageCacheStore()
 
 const STORES_REQUIRING_RESET = [
     userStore,
@@ -126,6 +141,8 @@ const realUserData = computed(() => {
         vipLevel: accountInfo.value.vipLevel || undefined
     }
 })
+
+const isGuestAccount = computed(() => userStore.authMode === 'guest' || Boolean((accountInfo.value as any)?.isGuest))
 
 
 
@@ -174,6 +191,12 @@ syncAppSettings()
 const handleProfileClick = () => {
     uni.navigateTo({
         url: '/pages/my/profile/edit'
+    })
+}
+
+const goUpgradeAccount = () => {
+    uni.navigateTo({
+        url: '/pages/register/index'
     })
 }
 
@@ -280,6 +303,22 @@ const resetPersistedAppState = () => {
         }
     })
 
+    try {
+        CacheManager.clear()
+    } catch (error) {
+        console.warn('[MY] Failed to clear CacheManager', error)
+    }
+    try {
+        healthCacheService.clear()
+    } catch (error) {
+        console.warn('[MY] Failed to clear health cache', error)
+    }
+    try {
+        imageCacheStore.clear()
+    } catch (error) {
+        console.warn('[MY] Failed to clear image cache', error)
+    }
+
     clearAuthToken()
     removeStorageItem('refreshToken')
 
@@ -363,6 +402,48 @@ onMounted(() => {
     color: var(--app-text-secondary);
     margin-bottom: 24rpx;
     padding-left: 8rpx;
+}
+
+.guest-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28rpx;
+    background: #eef2ff;
+    border-radius: 24rpx;
+    border: 1px solid rgba(99, 102, 241, 0.18);
+}
+
+.guest-banner-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.guest-banner-title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #4f46e5;
+}
+
+.guest-banner-desc {
+    font-size: 22rpx;
+    color: #64748b;
+}
+
+.guest-upgrade-btn {
+    background-color: #6366f1;
+    color: #ffffff;
+    border-radius: 16rpx;
+    padding: 16rpx 24rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    border: none;
+    line-height: 1;
+
+    &::after {
+        display: none;
+    }
 }
 
 

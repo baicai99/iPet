@@ -568,13 +568,14 @@ const goViewArticles = () => {
 <style lang="scss">
 /* 微信小程序页面背景色 */
 page {
+    background-color: $app-bg-primary;
     background-color: #f2f1f5;
 }
 </style>
 
 <style lang="scss" scoped>
 .empty {
-    background-color: #ffffff; // 兜底值
+    background-color: $app-bg-card; // 兜底值
     background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 30rpx;
     padding: 30rpx;
@@ -617,7 +618,7 @@ page {
 
 .section-title {
     @include text-title-2;
-    color: #1f2937; // 兜底值，确保小程序显示
+    color: $app-text-primary; // 兜底值，确保小程序显示
     color: var(--app-text-primary); // H5 / 支持 CSS var 的平台走这一条
 }
 
@@ -628,14 +629,14 @@ page {
     justify-content: center;
     padding: 64rpx 32rpx;
     gap: 16rpx;
-    background-color: #ffffff; // 兜底值
+    background-color: $app-bg-card; // 兜底值
     background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 48rpx;
 }
 
 .empty-trend-text {
     @include text-body;
-    color: #9ca3af; // 兜底值
+    color: $app-text-muted; // 兜底值
     color: var(--app-text-muted); // H5 支持 CSS var
 }
 
@@ -658,14 +659,14 @@ page {
 .error-state {
     padding: 48rpx 32rpx;
     text-align: center;
-    background-color: #ffffff; // 兜底值
+    background-color: $app-bg-card; // 兜底值
     background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 30rpx;
 }
 
 .error-text {
     @include text-body;
-    color: #dc2626; // 兜底值
+    color: $app-danger-color; // 兜底值
     color: var(--app-danger-color); // H5 支持 CSS var
 }
 </style>

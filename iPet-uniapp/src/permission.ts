@@ -1,13 +1,23 @@
 import { useUserStore } from '@/stores/userStore'
 
-// Whitelist of pages that do not require login
-const whiteList = [
+type RouteAuthLevel = 'public' | 'guest' | 'user'
+
+// Pages that do not require login
+const publicExactRoutes = [
     '/pages/login/index',
     '/pages/register/index',
     '/pages/login/forgot-password',
-    '/pages/settings/privacy',
-    '/pages/onboarding/index'
+    '/pages/settings/privacy'
 ]
+
+const publicPrefixes = [
+    '/pages/articles/',
+    '/pages/help/',
+    '/pages/about/'
+]
+
+// Pages that require a formal (non-guest) account
+const userOnlyPrefixes: string[] = []
 
 const TOKEN_EXPIRY_BUFFER_MS = 30 * 1000
 
@@ -16,7 +26,24 @@ const normalizePath = (url = '') => {
     return path.startsWith('/') ? path : `/${path}`
 }
 
-const isWhiteListed = (url: string): boolean => whiteList.includes(normalizePath(url))
+const isPublicRoute = (url: string): boolean => {
+    const path = normalizePath(url)
+    if (publicExactRoutes.includes(path)) {
+        return true
+    }
+    return publicPrefixes.some(prefix => path.startsWith(prefix))
+}
+
+const isUserOnlyRoute = (url: string): boolean => {
+    const path = normalizePath(url)
+    return userOnlyPrefixes.some(prefix => path.startsWith(prefix))
+}
+
+const resolveAuthLevel = (url: string): RouteAuthLevel => {
+    if (isPublicRoute(url)) return 'public'
+    if (isUserOnlyRoute(url)) return 'user'
+    return 'guest'
+}
 
 const evaluateTokenState = (userStore: ReturnType<typeof useUserStore>) => {
     if (!userStore || !userStore.token) {
@@ -45,10 +72,6 @@ const buildLoginUrl = (redirectUrl = '') => {
 }
 
 const redirectToLogin = (redirectUrl = '', message = '') => {
-    // ⚠️ TEMPORARILY DISABLED: Skip redirect to login for debugging
-    console.warn('[redirectToLogin] Would redirect to login, but disabled for debugging')
-    return
-
     if (message) {
         uni.showToast({
             title: message,
@@ -75,21 +98,29 @@ const handleUnauthorized = (reason = 'missing-token', url: string) => {
     if (needsLogout) {
         userStore.logout()
     }
+    if (reason === 'requires-user') {
+        uni.showToast({
+            title: '该功能需要升级为永久账号',
+            icon: 'none'
+        })
+        uni.navigateTo({ url: '/pages/register/index' })
+        return
+    }
+
     const message = reason === 'expired' ? '登录状态已过期，请重新登录' : ''
     redirectToLogin(url, message)
 }
 
 const hasPermission = (url: string) => {
-    // ⚠️ TEMPORARILY DISABLED: Skip all auth checks for debugging
-    return { allowed: true }
-
     // Mock mode: skip all auth checks
     if (import.meta.env.VITE_USE_MOCK === 'true') {
         return { allowed: true }
     }
 
-    // 1. 白名单直接放行
-    if (isWhiteListed(url)) {
+    const level = resolveAuthLevel(url)
+
+    // 1. Public pages pass through
+    if (level === 'public') {
         return { allowed: true }
     }
 
@@ -105,9 +136,18 @@ const hasPermission = (url: string) => {
         }
     }
 
+    // 2. Guest pages allow guest/user; user pages require formal account
+    if (level === 'user' && userStore.authMode !== 'user') {
+        return {
+            allowed: false,
+            reason: 'requires-user',
+            url
+        }
+    }
+
     // 3. [新增] 新用户强制引导逻辑
     // 如果需要引导，且目标页面不是 onboarding，则拦截
-    if (userStore.needsOnboarding) {
+    if (userStore.needsOnboarding && userStore.authMode === 'user') {
         return {
             allowed: false,
             reason: 'needs-onboarding',

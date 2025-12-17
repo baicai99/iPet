@@ -1,17 +1,42 @@
-import { Body, Controller, Post, Req, HttpCode, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Post, Req, HttpCode, UnauthorizedException, UseGuards, NotFoundException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { UpgradeDto } from './dto/upgrade.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import type { AuthenticatedRequest } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
+
+  @Throttle({ default: { limit: 5, ttl: 60 * 60 } })
+  @Post('guest')
+  async guest(@Req() req: any, @Body() body?: { deviceId?: string; origin?: string }) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    return this.authService.createGuestSession({
+      ip,
+      deviceId: body?.deviceId,
+      origin: body?.origin,
+    });
+  }
 
   @Throttle({ default: { limit: 3, ttl: 60 } })
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: any) {
     const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
     return this.authService.login(dto, ip);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 3, ttl: 60 } })
+  @Post('upgrade')
+  async upgrade(@Req() req: AuthenticatedRequest, @Body() dto: UpgradeDto) {
+    const userId = req.user?.uid;
+    if (!userId) {
+      throw new NotFoundException('User ID not found in token');
+    }
+    return this.authService.upgradeGuestToUser(userId, dto);
   }
 
   @Post('logout')

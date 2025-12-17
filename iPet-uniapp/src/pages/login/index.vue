@@ -1,56 +1,115 @@
 <template>
-  <view class="login-page">
+  <view class="auth-page">
+    <!-- Gradient Background -->
+    <view class="bg-gradient">
+      <!-- Card Container -->
+      <view class="auth-card">
 
-
-    <AuthLayout title="欢迎回来" icon="account-fill" icon-color="#6366f1" icon-bg-color="#eef2ff">
-      <view class="form-container">
-        <StyledInput icon="email" label="电子邮箱" v-model="email" />
-        <StyledInput icon="lock" label="密码" v-model="password" isPassword />
-
-        <button class="login-btn" @click="handleLogin" hover-class="btn-hover">
-          <text class="btn-text">{{ isLoading ? '登录中...' : '立即登录' }}</text>
-          <u-icon v-if="!isLoading" name="arrow-right" size="18" color="#ffffff"></u-icon>
-        </button>
-      </view>
-
-      <view class="divider-row">
-        <view class="divider-line"></view>
-        <text class="divider-text">其他登录方式</text>
-        <view class="divider-line"></view>
-      </view>
-
-      <view class="social-row">
-        <SocialButton icon="chat-line" label="微信" color="#10b981" />
-        <SocialButton icon="github-circle-fill" label="Github" color="#1e293b" />
-      </view>
-
-      <view class="footer">
-        <view class="footer-left">
-          <text class="footer-text">还没有账号? </text>
-          <text class="link-text" @click="goToRegister">免费注册</text>
+        <!-- Logo and Title -->
+        <view class="header-section">
+          <view class="logo-container">
+            <u-icon name="account-fill" size="48" color="#ffffff"></u-icon>
+          </view>
+          <text class="title">欢迎回来</text>
         </view>
-        <text class="forgot-link" @click="handleForgotPassword">忘记密码?</text>
+
+        <!-- Form Section -->
+        <view class="form-section">
+          <!-- Email Input -->
+          <view class="input-group">
+            <text class="input-label">电子邮箱</text>
+            <view class="input-wrapper">
+              <view class="input-icon">
+                <u-icon name="email" size="20" :color="emailFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
+              </view>
+              <input type="text" v-model="email" class="input-field" placeholder="请输入邮箱" @focus="emailFocused = true"
+                @blur="emailFocused = false" />
+            </view>
+          </view>
+
+          <!-- Password Input -->
+          <view class="input-group">
+            <text class="input-label">密码</text>
+            <view class="input-wrapper">
+              <view class="input-icon">
+                <u-icon name="lock" size="20" :color="passwordFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
+              </view>
+              <input :type="showPassword ? 'text' : 'password'" v-model="password" class="input-field"
+                placeholder="请输入密码" @focus="passwordFocused = true" @blur="passwordFocused = false" />
+              <view class="password-toggle" @click="showPassword = !showPassword">
+                <u-icon :name="showPassword ? 'eye-off' : 'eye'" size="20" color="#94A3B8"></u-icon>
+              </view>
+            </view>
+          </view>
+
+          <!-- Primary Button -->
+          <button class="primary-btn" :class="{ 'loading': isLoading }" :disabled="isLoading" @click="handleLogin"
+            hover-class="primary-btn-hover">
+            <u-loading-icon v-if="isLoading" mode="circle" size="18" color="#ffffff"></u-loading-icon>
+            <text class="btn-text">{{ isLoading ? '登录中...' : '立即登录' }}</text>
+          </button>
+
+          <!-- Divider -->
+          <view class="divider">
+            <view class="divider-line"></view>
+            <text class="divider-text">其他登录方式</text>
+            <view class="divider-line"></view>
+          </view>
+
+          <!-- Social Login Buttons -->
+          <view class="social-buttons">
+            <button class="social-btn" hover-class="social-btn-hover">
+              <u-icon name="weixin-fill" size="20" color="#10B981"></u-icon>
+              <text class="social-text">微信</text>
+            </button>
+            <button class="social-btn" hover-class="social-btn-hover">
+              <u-icon name="github-circle-fill" size="20" color="#111827"></u-icon>
+              <text class="social-text">Github</text>
+            </button>
+          </view>
+
+          <!-- Guest Login -->
+          <view class="guest-section">
+            <button class="guest-btn" :disabled="isGuestLoading || isLoading" @click="handleGuestLogin"
+              hover-class="guest-btn-hover">
+              <u-icon name="account" size="20" color="#64748B"></u-icon>
+              <text class="guest-text">{{ isGuestLoading ? '进入中...' : '游客登录 / 试用' }}</text>
+            </button>
+            <text class="guest-hint">游客模式连续7天未使用将会清空数据。</text>
+          </view>
+        </view>
+
+        <!-- Footer Navigation -->
+        <view class="footer-section">
+          <view class="footer-links">
+            <text class="link-btn" @click="goToRegister">立即注册</text>
+            <text class="separator">|</text>
+            <text class="link-btn secondary" @click="handleForgotPassword">忘记密码？</text>
+          </view>
+        </view>
       </view>
-    </AuthLayout>
+    </view>
   </view>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
-import StyledInput from './components/StyledInput.vue';
-import SocialButton from './components/SocialButton.vue';
-import AuthLayout from '@/components/layout/AuthLayout.vue';
 import { loginUser } from '@/services/authService';
 import { useUserStore } from '@/stores/userStore';
 import { usePetStore } from '@/stores/petStore';
-// Local validation constants (moved from shared)
+
+// Local validation constants
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)\S+$/;
 
 const email = ref('');
 const password = ref('');
 const isLoading = ref(false);
+const isGuestLoading = ref(false);
+const showPassword = ref(false);
+const emailFocused = ref(false);
+const passwordFocused = ref(false);
 const redirectTarget = ref('');
 const userStore = useUserStore();
 const TAB_PAGES = ['/pages/summary/summary', '/pages/my/my'];
@@ -123,7 +182,6 @@ const handleLogin = async () => {
 
     showToast('登录成功');
 
-    // [新增] 登录后立即刷新一下宠物列表，以便 needsOnboarding 判断准确
     const petStore = usePetStore();
     await petStore.fetchPets();
 
@@ -138,20 +196,17 @@ const handleLogin = async () => {
       return;
     }
 
-    // Network Error
     if (error?.errMsg?.includes('request:fail')) {
       showToast('网络连接失败，请检查您的网络设置');
       return;
     }
 
-    // Specific Error Codes
     const statusCode = Number(error?.statusCode || error?.code);
     if (statusCode === 404) {
       showToast('该账号未注册，请先注册');
       return;
     }
     if (statusCode === 401) {
-      // Check if it's "Account deleted" or just invalid credentials
       const msg = error?.data?.message || '';
       if (msg.includes('deleted')) {
         showToast('该账号已注销');
@@ -177,7 +232,32 @@ const handleForgotPassword = () => {
   showToast('密码重置功能即将推出');
 };
 
+const handleGuestLogin = async () => {
+  if (isGuestLoading.value || isLoading.value) return;
 
+  try {
+    isGuestLoading.value = true;
+    await userStore.loginAsGuest();
+    showToast('已进入游客模式');
+
+    const target = redirectTarget.value;
+    if (target) {
+      if (TAB_PAGES.includes(target)) {
+        uni.switchTab({ url: target });
+      } else {
+        uni.redirectTo({ url: target });
+      }
+      return;
+    }
+
+    uni.switchTab({ url: '/pages/summary/summary' });
+  } catch (error) {
+    console.error('[login] guest login failed', error);
+    showToast('游客登录失败，请稍后重试');
+  } finally {
+    isGuestLoading.value = false;
+  }
+};
 
 const navigateAfterLogin = () => {
   const target = redirectTarget.value;
@@ -194,109 +274,294 @@ const navigateAfterLogin = () => {
 </script>
 
 <style lang="scss" scoped>
-.form-container {
+.auth-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+}
+
+.bg-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 50%, #ECFEFF 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+}
+
+.auth-card {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.12);
+  border: 2rpx solid #F1F5F9;
+  overflow: hidden;
+}
+
+/* Header Section */
+.header-section {
+  padding: 64rpx 64rpx 48rpx;
+  text-align: center;
+}
+
+.logo-container {
+  width: 96rpx;
+  height: 96rpx;
+  margin: 0 auto 32rpx;
+  background: #4F46E5;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16rpx 32rpx rgba(79, 70, 229, 0.3);
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.5rpx;
+}
+
+/* Form Section */
+.form-section {
+  padding: 0 32rpx 32rpx;
   display: flex;
   flex-direction: column;
   gap: 32rpx;
 }
 
-.login-btn {
-  width: 100%;
-  background-color: #6366f1;
-  color: #ffffff;
-  border-radius: 16rpx;
-  padding: 20rpx 32rpx;
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.input-label {
+  font-size: 22rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(99, 102, 241, 0.3);
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 1rpx;
+  margin-left: 8rpx;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 24rpx;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+  transition: color 0.2s;
+}
+
+.input-field {
+  width: 100%;
+  height: 88rpx;
+  padding-left: 68rpx;
+  padding-right: 24rpx;
+  border: 2rpx solid #E2E8F0;
+  border-radius: 16rpx;
+  background: #F8FAFC;
+  font-size: 28rpx;
+  color: #0F172A;
+  transition: all 0.2s;
+
+  &:focus {
+    background: #FFFFFF;
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 6rpx rgba(79, 70, 229, 0.1);
+  }
+}
+
+.password-toggle {
+  position: absolute;
+  right: 24rpx;
+  display: flex;
+  align-items: center;
+  padding: 8rpx;
+  cursor: pointer;
+}
+
+/* Buttons */
+.primary-btn {
+  width: 100%;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  background: #4F46E5;
+  border: none;
+  border-radius: 16rpx;
+  box-shadow: 0 8rpx 16rpx rgba(79, 70, 229, 0.2);
+  margin-top: 16rpx;
+  transition: all 0.2s;
+
+  &::after {
+    display: none;
+  }
+
+  &.loading {
+    opacity: 0.7;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.primary-btn-hover {
+  background: #4338CA;
+  box-shadow: 0 12rpx 24rpx rgba(79, 70, 229, 0.3);
+}
+
+.btn-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 16rpx 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 2rpx;
+  background: #E2E8F0;
+}
+
+.divider-text {
+  font-size: 24rpx;
+  color: #94A3B8;
+}
+
+/* Social Buttons */
+.social-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+
+.social-btn {
+  width: 100%;
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  border: none;
-  transition: all 0.2s ease;
+  background: #FFFFFF;
+  border: 2rpx solid #E2E8F0;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
 
   &::after {
     display: none;
   }
 }
 
-.btn-hover {
-  background-color: #4f46e5;
-  box-shadow: 0 6rpx 16rpx rgba(99, 102, 241, 0.4);
+.social-btn-hover {
+  background: #F8FAFC;
 }
 
-.btn-text {
+.social-text {
   font-size: 28rpx;
-  font-weight: 600;
+  font-weight: 500;
+  color: #64748B;
 }
 
-.spinner {
-  width: 32rpx;
-  height: 32rpx;
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+/* Guest Section */
+.guest-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 8rpx;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+.guest-btn {
+  width: 100%;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background: #FFFFFF;
+  border: 2rpx dashed #CBD5E1;
+  border-radius: 16rpx;
+  transition: all 0.2s;
+
+  &::after {
+    display: none;
+  }
+
+  &:disabled {
+    opacity: 0.5;
   }
 }
 
-.divider-row {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-  margin-top: 16rpx;
+.guest-btn-hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
 }
 
-.divider-line {
-  flex: 1;
-  height: 2rpx;
-  background-color: #e2e8f0;
-}
-
-.divider-text {
-  font-size: 24rpx;
-  color: #94a3b8;
-}
-
-.social-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24rpx;
-  margin-top: 16rpx;
-}
-
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 32rpx;
-}
-
-.footer-left {
-  display: flex;
-  align-items: center;
-}
-
-.footer-text {
+.guest-text {
   font-size: 28rpx;
-  color: #64748b;
+  font-weight: 500;
+  color: #64748B;
 }
 
-.link-text {
+.guest-hint {
+  font-size: 22rpx;
+  color: #94A3B8;
+  text-align: center;
+}
+
+/* Footer Section */
+.footer-section {
+  background: #F8FAFC;
+  padding: 32rpx 64rpx;
+  border-top: 2rpx solid #F1F5F9;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+}
+
+.link-btn {
   font-size: 28rpx;
   font-weight: 600;
-  color: #6366f1;
-  margin-left: 8rpx;
+  color: #4F46E5;
+
+  &.secondary {
+    color: #64748B;
+  }
 }
 
-.forgot-link {
+.separator {
   font-size: 28rpx;
-  font-weight: 600;
-  color: #6366f1;
+  color: #CBD5E1;
 }
 </style>
