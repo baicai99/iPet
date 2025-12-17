@@ -569,7 +569,8 @@ const goViewArticles = () => {
 /* 微信小程序页面背景色 */
 page {
     background-color: $app-bg-primary;
-    background-color: #f2f1f5;
+    // background-color: #f2f1f5;
+    background-color: var(--app-background);
 }
 </style>
 
