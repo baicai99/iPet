@@ -2,23 +2,14 @@
   <view class="login-page">
 
 
-    <AuthLayout title="欢迎回来" subtitle="登录以查看您的今日健康数据概览" icon="pulse" icon-color="#6366f1" icon-bg-color="#eef2ff"
-      sparkline-color="#6366f1">
+    <AuthLayout title="欢迎回来" icon="account-fill" icon-color="#6366f1" icon-bg-color="#eef2ff">
       <view class="form-container">
-        <StyledInput icon="email" placeholder="邮箱地址" v-model="email" />
-        <StyledInput icon="lock" placeholder="密码" v-model="password" isPassword />
+        <StyledInput icon="email" label="电子邮箱" v-model="email" />
+        <StyledInput icon="lock" label="密码" v-model="password" isPassword />
 
-        <view class="actions-row">
-          <view class="spacer"></view>
-          <text class="forgot-text">忘记密码?</text>
-        </view>
-
-        <button class="login-btn" :disabled="isLoading" @click="handleLogin" hover-class="btn-hover">
-          <view v-if="isLoading" class="spinner"></view>
-          <template v-else>
-            <text class="btn-text">立即登录</text>
-            <u-icon name="arrow-right" size="18" color="rgba(255,255,255,0.7)"></u-icon>
-          </template>
+        <button class="login-btn" @click="handleLogin" hover-class="btn-hover">
+          <text class="btn-text">{{ isLoading ? '登录中...' : '立即登录' }}</text>
+          <u-icon v-if="!isLoading" name="arrow-right" size="18" color="#ffffff"></u-icon>
         </button>
       </view>
 
@@ -29,14 +20,16 @@
       </view>
 
       <view class="social-row">
-        <SocialButton icon="github-circle-fill" color="#1e293b" />
-        <SocialButton icon="twitter" color="#0ea5e9" />
-        <SocialButton icon="phone" color="#6366f1" />
+        <SocialButton icon="chat-line" label="微信" color="#10b981" />
+        <SocialButton icon="github-circle-fill" label="Github" color="#1e293b" />
       </view>
 
       <view class="footer">
-        <text class="footer-text">还没有账号? </text>
-        <text class="link-text" @click="goToRegister">免费注册</text>
+        <view class="footer-left">
+          <text class="footer-text">还没有账号? </text>
+          <text class="link-text" @click="goToRegister">免费注册</text>
+        </view>
+        <text class="forgot-link" @click="handleForgotPassword">忘记密码?</text>
       </view>
     </AuthLayout>
   </view>
@@ -180,6 +173,10 @@ const goToRegister = () => {
   uni.navigateTo({ url: `/pages/register/index${redirect}` });
 };
 
+const handleForgotPassword = () => {
+  showToast('密码重置功能即将推出');
+};
+
 
 
 const navigateAfterLogin = () => {
@@ -200,56 +197,37 @@ const navigateAfterLogin = () => {
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 8rpx;
-  margin-top: 4rpx;
-}
-
-.forgot-text {
-  @include text-subhead;
-  font-weight: bold;
-  color: #6366f1;
-  /* text-indigo-500 */
+  gap: 32rpx;
 }
 
 .login-btn {
-  margin-top: 24rpx;
   width: 100%;
-  background-color: #0f172a;
-  /* bg-slate-900 */
+  background-color: #6366f1;
   color: #ffffff;
-  border-radius: 32rpx;
-  padding: 24rpx 0;
-  font-weight: bold;
-  box-shadow: 0 20rpx 50rpx rgba(15, 23, 42, 0.2);
-  /* shadow-lg shadow-slate-900/20 */
+  border-radius: 16rpx;
+  padding: 20rpx 32rpx;
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(99, 102, 241, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  position: relative;
-  overflow: hidden;
   border: none;
+  transition: all 0.2s ease;
 
   &::after {
-    border: none;
+    display: none;
   }
 }
 
 .btn-hover {
-  background-color: #1e293b;
-  /* bg-slate-800 */
-  transform: scale(0.98);
+  background-color: #4f46e5;
+  box-shadow: 0 6rpx 16rpx rgba(99, 102, 241, 0.4);
 }
 
 .btn-text {
-  @include text-body;
+  font-size: 28rpx;
+  font-weight: 600;
 }
 
 .spinner {
@@ -271,48 +249,54 @@ const navigateAfterLogin = () => {
   display: flex;
   align-items: center;
   gap: 24rpx;
-  padding: 0 8rpx;
+  margin-top: 16rpx;
 }
 
 .divider-line {
   flex: 1;
-  height: 1px;
-  background-color: var(--app-border-color);
+  height: 2rpx;
+  background-color: #e2e8f0;
 }
 
 .divider-text {
-  @include text-caption-2;
-  color: var(--app-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  /* tracking-widest */
+  font-size: 24rpx;
+  color: #94a3b8;
 }
 
 .social-row {
-  display: flex;
-  width: 100%;
-  /* 必须显式声明宽度,子元素的 flex:1 才会生效 */
-  /* ✅ 小程序兼容: 使用 margin 替代 gap (gap 需要基础库 2.10.0+) */
-  margin: 0 -12rpx;
-  /* 负边距抵消子元素的 margin */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+  margin-top: 16rpx;
 }
 
 .footer {
-  text-align: center;
-  margin-top: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 32rpx;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
 }
 
 .footer-text {
-  @include text-subhead;
-  font-weight: 500;
-  color: var(--app-text-muted);
+  font-size: 28rpx;
+  color: #64748b;
 }
 
 .link-text {
-  @include text-subhead;
-  font-weight: bold;
+  font-size: 28rpx;
+  font-weight: 600;
   color: #6366f1;
-  /* text-indigo-500 */
   margin-left: 8rpx;
+}
+
+.forgot-link {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #6366f1;
 }
 </style>

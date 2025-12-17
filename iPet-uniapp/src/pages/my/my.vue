@@ -374,21 +374,25 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     padding: 28rpx;
-    background: #ffffff; /* 固定值替代 var(--app-card-bg) */
+    background: #ffffff;
+    /* 固定值替代 var(--app-card-bg) */
     border-radius: 24rpx;
-    border: 1px solid #fecaca; /* 固定值替代 var(--app-danger-border) */
+    border: 1px solid #fecaca;
+    /* 固定值替代 var(--app-danger-border) */
     transition: all 0.2s ease;
 }
 
 .logout-button:active {
     transform: scale(0.98);
-    background: #fef2f2; /* 固定值替代 var(--app-danger-bg-active) */
+    background: #fef2f2;
+    /* 固定值替代 var(--app-danger-bg-active) */
 }
 
 .logout-text {
     font-size: 24rpx;
     font-weight: 600;
-    color: #dc2626; /* 固定值替代 var(--app-danger-color) */
+    color: #dc2626;
+    /* 固定值替代 var(--app-danger-color) */
 }
 
 /* Menu Group Styles */

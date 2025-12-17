@@ -685,7 +685,7 @@ const inferMetricDomainDefaults = (metadata: MetricMetadata): MetricMetadata => 
     // Infer missingPolicy from domain if not explicitly set
     let missingPolicy = metadata.missingPolicy
     if (!missingPolicy) {
-        missingPolicy = domain === 'cumulative' ? 'zero' : 'null'
+        missingPolicy = 'null'
     }
 
     // Infer connectAcrossMissing from domain if not explicitly set

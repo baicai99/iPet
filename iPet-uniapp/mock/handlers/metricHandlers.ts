@@ -118,6 +118,41 @@ const resolveTimestamp = (input?: string | number | Date): number => {
     return Number.isNaN(parsed) ? Date.now() : parsed
 }
 
+const ONE_HOUR = 60 * 60 * 1000
+const ONE_DAY = 24 * ONE_HOUR
+
+const getStartOfWeek = (date: Date) => {
+    const result = new Date(date)
+    const day = result.getDay() || 7
+    result.setDate(result.getDate() - day + 1)
+    result.setHours(0, 0, 0, 0)
+    return result
+}
+
+const getMockTimestamp = (
+    granularity: string,
+    index: number,
+    total: number,
+    now: Date,
+    dayStart: Date,
+    weekStart: Date
+) => {
+    if (granularity === 'day') {
+        return dayStart.getTime() + index * ONE_HOUR
+    }
+    if (granularity === 'week') {
+        return weekStart.getTime() + index * ONE_DAY
+    }
+    if (granularity === 'month') {
+        return new Date(now.getFullYear(), now.getMonth(), index + 1, 0, 0, 0, 0).getTime()
+    }
+    if (granularity === 'six_month' || granularity === 'year') {
+        const monthOffset = total - 1 - index
+        return new Date(now.getFullYear(), now.getMonth() - monthOffset, 1, 0, 0, 0, 0).getTime()
+    }
+    return weekStart.getTime() + index * ONE_DAY
+}
+
 const getHealthRecordsFromStorage = (): HealthRecord[] => {
     const stored = getStorage().get(STORAGE_KEYS.HEALTH_RECORDS)
     if (Array.isArray(stored) && stored.length > 0) {
@@ -198,27 +233,36 @@ const generateMockSeries = (key: string, granularity: string) => {
 
     const latestVal = getConsistentLatestValue(key, min, max)
     const base = (min + max) / 2
+    const now = new Date()
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+    const weekStart = getStartOfWeek(now)
+    const totalPoints = config.points
 
     // Seed includes key, granularity, and today's date (bucket by day) to ensure stability for the day
     const dateBucket = new Date().toISOString().slice(0, 10)
     const rng = new SeededRandom(`${key}_${granularity}_${dateBucket}`)
 
-    const series = Array.from({ length: config.points }, (_, index) => {
-        if (index === config.points - 1) {
+    const series = Array.from({ length: totalPoints }, (_, index) => {
+        const pointTimestamp = getMockTimestamp(granularity, index, totalPoints, now, dayStart, weekStart)
+        if (index === totalPoints - 1) {
             return {
-                label: config.label(index, config.points),
-                value: latestVal
+                label: config.label(index, totalPoints),
+                value: latestVal,
+                timestamp: pointTimestamp,
+                date: new Date(pointTimestamp).toISOString()
             }
         }
 
-        const trend = Math.sin(index / config.points * Math.PI) * 5
+        const trend = Math.sin(index / totalPoints * Math.PI) * 5
         // Use RNG for variance
         const randomFactor = rng.float(-0.5, 0.5)
         const value = Math.round(base + trend + randomFactor * config.variance * 2)
 
         return {
-            label: config.label(index, config.points),
-            value: Math.max(min, Math.min(max, value))
+            label: config.label(index, totalPoints),
+            value: Math.max(min, Math.min(max, value)),
+            timestamp: pointTimestamp,
+            date: new Date(pointTimestamp).toISOString()
         }
     })
 
@@ -390,7 +434,8 @@ export const getMetricHistoryMock = (config: RequestConfig) => {
 export const getMetricSeriesMock = (config: RequestConfig) => {
     const match = config.url.match(/\/metrics\/([^/]+)\/series/)
     const key = match ? match[1] : ''
-    const granularity = (config.data as any)?.granularity || 'day'
+    const requestData = (config.data || {}) as Record<string, any>
+    const granularity = requestData.granularity || requestData.bucket || 'day'
 
     const cacheKey = `${key}_${granularity}`
     const cached = getFromCache(STORAGE_KEYS.SERIES, cacheKey)

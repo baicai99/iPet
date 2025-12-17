@@ -26,6 +26,9 @@ export default defineConfig(({ mode }) => {
                 '@shared': path.resolve(__dirname, '../shared')
             },
         },
+        optimizeDeps: {
+            include: ['uview-plus']
+        },
         server: {
             fs: {
                 allow: [path.resolve(__dirname), path.resolve(__dirname, '..')]

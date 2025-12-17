@@ -1,5 +1,23 @@
 <template>
     <view class="mini-status-grid">
+        <!-- #ifdef MP-WEIXIN -->
+        <view class="chart-canvas">
+            <view v-for="i in 3" :key="`bg-${i}`" class="zone" :style="{
+                top: `${(getZoneY(i - 1) / height) * 100}%`,
+                height: `${(getZoneHeight(i - 1) / height) * 100}%`,
+                backgroundColor: getZoneFill(i - 1),
+                opacity: (i - 1) === 1 ? 1 : 0.1
+            }"></view>
+
+            <view v-for="(point, i) in chartPoints" :key="`pt-${i}`" class="point" :style="{
+                left: `${(point.x / width) * 100}%`,
+                top: `${(point.y / height) * 100}%`,
+                backgroundColor: pointColor
+            }"></view>
+        </view>
+        <!-- #endif -->
+
+        <!-- #ifndef MP-WEIXIN -->
         <svg width="100%" height="100%" viewBox="0 0 100 40" class="overflow-visible">
             <!-- 3-Zone Background Layers -->
             <rect v-for="(zone, i) in 3" :key="`bg-${i}`" x="0" :y="getZoneY(i)" width="100" :height="getZoneHeight(i)"
@@ -9,6 +27,7 @@
             <circle v-for="(point, i) in chartPoints" :key="`pt-${i}`" :cx="point.x" :cy="point.y" r="2.5"
                 :fill="pointColor" stroke="white" stroke-width="1.5" />
         </svg>
+        <!-- #endif -->
     </view>
 </template>
 
@@ -68,9 +87,34 @@ const chartPoints = computed(() => {
     width: 37.5%;
     height: 100%;
     margin-left: auto;
+    position: relative;
 }
 
 .overflow-visible {
     overflow: visible;
+}
+
+.chart-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 4rpx;
+}
+
+.zone {
+    position: absolute;
+    left: 0;
+    width: 100%;
+}
+
+.point {
+    position: absolute;
+    width: 5rpx;
+    height: 5rpx;
+    border-radius: 50%;
+    border: 1.5rpx solid #ffffff;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
 }
 </style>

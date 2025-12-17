@@ -4,10 +4,12 @@
             <!-- 非任务模式：图表区域 -->
             <template v-if="!isTaskMode">
                 <!-- ✅ 使用 chartSpec 替代 echartsOptions -->
-                <MetricChartArea :active-tab="activeTab" :tabs="tabs" :latest-metric-display="latestMetricDisplay"
-                    :current-data="currentData" :is-standard-chart="isStandardChart" :chart-spec="chartSpec"
+                <MetricChartArea :metric-key="metricKey" :active-tab="activeTab" :tabs="tabs"
+                    :latest-metric-display="latestMetricDisplay" :current-data="currentData"
+                    :is-standard-chart="isStandardChart" :chart-spec="chartSpec"
                     :current-chart-component="currentChartComponent" :chart-options="chartOptions" :theme="theme"
-                    :x-axis-labels="xAxisLabels" @update:activeTab="setActiveTab" @point-click="onChartPointClick" />
+                    variant="detail" :x-axis-labels="xAxisLabels" @update:activeTab="setActiveTab"
+                    @point-click="onChartPointClick" />
             </template>
 
             <!-- 任务模式：使用新组件 -->
@@ -38,7 +40,7 @@
                         <u-icon :name="metric.icon" :color="metric.color.hex" size="20"></u-icon>
                     </view>
                     <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
-                    }}</text>
+                            }}</text>
                     </view>
                     <text class="card-label">{{ metric.title }}</text>
                 </view>
@@ -76,7 +78,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow, onHide, onUnload } from '@dcloudio/uni-app'
 
 // UI Components
 import HistoryButton from '@/components/widgets/HistoryButton.vue'
@@ -161,6 +163,8 @@ provideState()
 const metricStrings = STRINGS.METRICS.DETAIL
 const HISTORY_UPDATE_EVENT = 'metric-history-updated'
 const pendingHistoryRefresh = ref(false)
+
+const isPageVisible = ref(true)
 
 const healthStore = useHealthStore()
 const articleStore = useArticleStore()  // ✅ 需要用于 ensureLoaded()
@@ -270,17 +274,25 @@ onLoad((options) => {
 })
 
 onShow(() => {
+    isPageVisible.value = true
     if (pendingHistoryRefresh.value) {
         pendingHistoryRefresh.value = false
         fetchData()
     }
 })
 
+onHide(() => {
+    isPageVisible.value = false
+})
+
+
+
 function handleAddClick() {
     uni.navigateTo({ url: `/pages/metrics/add?key=${metricKey.value || ''}` })
 }
 
 onUnload(() => {
+    isPageVisible.value = false
     uni.$off(HISTORY_UPDATE_EVENT, handleHistoryUpdate)
 })
 

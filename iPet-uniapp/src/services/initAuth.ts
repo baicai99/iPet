@@ -51,9 +51,10 @@ const syncProfile = async (userStore: ReturnType<typeof useUserStore>) => {
         if (isSessionInvalidError(error)) {
             console.warn('[initAuth] Session invalid (User deleted or Token expired), clearing session')
             userStore.clearLocalSession()
-            uni.reLaunch({
-                url: '/pages/login/index'
-            })
+            // ⚠️ TEMPORARILY DISABLED: Skip redirect to login for debugging
+            // uni.reLaunch({
+            //     url: '/pages/login/index'
+            // })
             return false // 会话已被清理
         } else {
             // 如果是 500 或 网络错误，说明是服务器抖动，保留登录状态，让用户能看缓存数据
@@ -128,14 +129,15 @@ const performInit = async () => {
         await petStore.fetchPets()
 
         // [新增] 检查是否需要引导
-        const pages = getCurrentPages()
-        const currentPage = pages[pages.length - 1]?.route || ''
+        // ⚠️ TEMPORARILY DISABLED: Skip onboarding redirect for debugging
+        // const pages = getCurrentPages()
+        // const currentPage = pages[pages.length - 1]?.route || ''
 
-        if (userStore.needsOnboarding && currentPage !== 'pages/onboarding/index') {
-            uni.reLaunch({
-                url: '/pages/onboarding/index'
-            })
-        }
+        // if (userStore.needsOnboarding && currentPage !== 'pages/onboarding/index') {
+        //     uni.reLaunch({
+        //         url: '/pages/onboarding/index'
+        //     })
+        // }
 
         const healthStore = useHealthStore()
 

@@ -125,7 +125,7 @@ export const useUserStore = defineStore('user', () => {
         petStore.$reset()
 
         const healthStore = useHealthStore()
-        healthStore.$reset()
+        healthStore.resetStore()  // ✅ Use custom reset method for setup store
     }
 
     async function logout() {

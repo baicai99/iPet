@@ -53,17 +53,19 @@ const generateTimeAxis = (range: TimeRange): TimeAxisResult => {
     let formatLabel = (_ts: number): string => ''
 
     if (range === 'day') {
-        // Generate 24 hourly points for today (00:00 - 23:00)
+        // Generate 0-24 hourly points for today (00:00 - 24:00)
+        // Display ticks at 0 / 6 / 12 / 18 / 24 (numbers only)
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
-        for (let i = 0; i < 24; i++) {
-            const ts = startOfDay.getTime() + i * ONE_HOUR
+        const startTs = startOfDay.getTime()
+
+        for (let i = 0; i <= 24; i++) {
+            const ts = startTs + i * ONE_HOUR
             timestamps.push(ts)
-            // Label every 4 hours: 0点, 4点, ...
-            const date = new Date(ts)
-            const hour = date.getHours()
-            labels.push(hour % 4 === 0 ? `${hour}点` : '')
+            labels.push(i % 6 === 0 ? String(i) : '')
         }
+
         formatLabel = (ts: number): string => {
+            if (ts === startTs + ONE_DAY) return '24:00'
             const d = new Date(ts)
             return `${String(d.getHours()).padStart(2, '0')}:00`
         }
@@ -95,9 +97,9 @@ const generateTimeAxis = (range: TimeRange): TimeAxisResult => {
         for (let i = 1; i <= daysInMonth; i++) {
             const d = new Date(year, month, i, 0, 0, 0, 0)
             timestamps.push(d.getTime())
-            // Show label for 1, 6, 12, 18, 24, last day
-            const showLabel = [1, 6, 12, 18, 24, daysInMonth].includes(i)
-            labels.push(showLabel ? `${i}日` : '')
+            // Show label every 6 days: 1 / 7 / 13 / 19 / 25 / ... / last day (numbers only)
+            const showLabel = (i - 1) % 6 === 0 || i === daysInMonth
+            labels.push(showLabel ? String(i) : '')
         }
         formatLabel = (ts: number): string => {
             const d = new Date(ts)
@@ -108,18 +110,19 @@ const generateTimeAxis = (range: TimeRange): TimeAxisResult => {
         for (let i = 5; i >= 0; i--) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
             timestamps.push(d.getTime())
-            labels.push(`${d.getMonth() + 1}月`)
+            labels.push(String(d.getMonth() + 1))
         }
         formatLabel = (ts: number): string => {
             const d = new Date(ts)
             return `${d.getFullYear()}-${d.getMonth() + 1}`
         }
     } else if (range === 'year') {
-        // Last 12 months
-        for (let i = 11; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        // Current year: 1-12 month ticks (numbers only)
+        const year = now.getFullYear()
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(year, i, 1)
             timestamps.push(d.getTime())
-            labels.push(`${d.getMonth() + 1}月`)
+            labels.push(String(i + 1))
         }
         formatLabel = (ts: number): string => {
             const d = new Date(ts)
@@ -176,7 +179,16 @@ const alignSeriesData = (
     const alignedValues: (number | null)[] = []
     let lastValidValue: number | null = null  // ✅ Track last valid value for carry
 
-    axisTimestamps.forEach((axisTs: number) => {
+    axisTimestamps.forEach((axisTs: number, axisIdx: number) => {
+        if (range === 'day') {
+            const startTs = axisTimestamps[0]
+            const isEndOfDayTick = axisIdx === axisTimestamps.length - 1 && axisTs === startTs + ONE_DAY
+            if (isEndOfDayTick) {
+                alignedValues.push(null)
+                return
+            }
+        }
+
         const d = new Date(axisTs)
         let key: string
 
@@ -378,7 +390,7 @@ export function useChartOptions(
                 color: '#94a3b8',
                 fontSize: 10,
                 formatter: (val: number) => {
-                    return Number.isInteger(val) ? val : val.toFixed(1)
+                    return `${Math.round(val)}`
                 }
             }
         }

@@ -7,6 +7,14 @@
 
         <!-- Sparkline -->
         <view class="chart-wrapper">
+            <!-- #ifdef MP-WEIXIN -->
+            <qiun-data-charts v-if="hasAnyPoint" type="area" :canvasId="canvasId" :chartData="uchartsData"
+                :opts="uchartsOpts" :canvas2d="true" :animation="false" :optsWatch="false"
+                style="width: 100%; height: 100%;" />
+            <view v-else class="empty"></view>
+            <!-- #endif -->
+
+            <!-- #ifndef MP-WEIXIN -->
             <svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none" style="overflow: visible;">
                 <defs>
                     <linearGradient :id="`grad-${uniqueId}`" x1="0" x2="0" y1="0" y2="1">
@@ -33,12 +41,13 @@
                     <circle v-if="points" :cx="endX" :cy="endY" r="2" :fill="color" />
                 </g>
             </svg>
+            <!-- #endif -->
         </view>
     </view>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, getCurrentInstance } from 'vue';
 import { normalizeData, generatePoints, generateLinePath, generateAreaPath } from '@/utils/charts/chartCore';
 
 const props = defineProps({
@@ -56,9 +65,49 @@ const uniqueId = Math.random().toString(36).substr(2, 9);
 const width = 100;
 const height = 40;
 
+const instance = getCurrentInstance()
+const canvasId = `trend_line_${instance?.uid ?? Math.random().toString(36).slice(2)}`
+
+const normalizedValues = computed(() => normalizeData(props.data.values))
+const hasAnyPoint = computed(() => normalizedValues.value.some((v) => typeof v === 'number' && Number.isFinite(v)))
+
+const uchartsData = computed(() => {
+    const values = normalizedValues.value
+    return {
+        categories: values.map((_v, idx) => String(idx + 1)),
+        series: [
+            {
+                name: props.data?.name || 'Series',
+                data: values,
+                connectNulls: true
+            }
+        ]
+    }
+})
+
+const uchartsOpts = computed(() => ({
+    color: [props.color],
+    padding: [0, 0, 0, 0],
+    enableScroll: false,
+    legend: { show: false },
+    xAxis: { disabled: true, disableGrid: true },
+    yAxis: { disabled: true, disableGrid: true },
+    dataLabel: false,
+    extra: {
+        area: {
+            type: 'curve',
+            opacity: 0.25,
+            gradient: true,
+            addLine: true,
+            width: 2,
+            activeType: 'none'
+        }
+    }
+}))
+
 const pointsData = computed(() => {
     // 1. Normalize Data (from props.data.values) - now preserves null
-    const data = normalizeData(props.data.values);
+    const data = normalizedValues.value;
     if (!data.length) return { points: '', fillPath: '', endY: 0, endX: 100, chartPoints: [] };
 
     // 2. Generate Points (now skips null values)
@@ -120,5 +169,10 @@ const singlePointY = computed(() => pointsData.value.chartPoints[0]?.y ?? 20);
     width: 100%;
     height: 100%;
     z-index: 1;
+}
+
+.empty {
+    width: 100%;
+    height: 100%;
 }
 </style>

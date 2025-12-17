@@ -11,6 +11,34 @@
         <view class="chart-main">
             <!-- 图表区域 -->
             <view class="chart-area">
+                <!-- #ifdef MP-WEIXIN -->
+                <view class="chart-canvas">
+                    <!-- 4行背景网格（中性色） -->
+                    <view v-for="i in 4" :key="`bg-${i}`" class="row" :style="{
+                        top: `${((i - 1) * zoneHeight / chartHeight) * 100}%`,
+                        height: `${(zoneHeight / chartHeight) * 100}%`
+                    }"></view>
+
+                    <!-- 水平分隔线（中性色） -->
+                    <view v-for="i in 5" :key="`hline-${i}`" class="hline" :style="{
+                        top: `${(((i - 1) * zoneHeight) / chartHeight) * 100}%`
+                    }"></view>
+
+                    <!-- 垂直网格线（中性色，形成完整二维网格） -->
+                    <view v-for="i in (gridLineCount + 1)" :key="`vline-${i}`" class="vline" :style="{
+                        left: `${(((i - 1) * segmentWidth) / width) * 100}%`
+                    }"></view>
+
+                    <!-- 数据点（唯一承载风险颜色的元素） -->
+                    <view v-for="(point, i) in chartPoints" :key="`pt-${i}`" class="point" :style="{
+                        left: `${(point.x / width) * 100}%`,
+                        top: `${(point.y / chartHeight) * 100}%`,
+                        backgroundColor: point.color
+                    }"></view>
+                </view>
+                <!-- #endif -->
+
+                <!-- #ifndef MP-WEIXIN -->
                 <svg width="100%" height="100%" :viewBox="`0 0 ${width} ${chartHeight}`" preserveAspectRatio="none"
                     style="overflow: visible;">
                     <!-- 4行背景网格（中性色） -->
@@ -29,6 +57,7 @@
                     <circle v-for="(point, i) in chartPoints" :key="`pt-${i}`" :cx="point.x" :cy="point.y" r="8"
                         :fill="point.color" stroke="white" stroke-width="3" class="drop-shadow" />
                 </svg>
+                <!-- #endif -->
             </view>
 
             <!-- X轴时间标签 -->
@@ -198,5 +227,47 @@ const trendLinePoints = computed(() => {
 
 .drop-shadow {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.chart-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 8rpx;
+}
+
+.row {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    background-color: #f8fafc;
+}
+
+.hline {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1rpx;
+    background-color: #e2e8f0;
+}
+
+.vline {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 1rpx;
+    background-color: #e2e8f0;
+}
+
+.point {
+    position: absolute;
+    width: 16rpx;
+    height: 16rpx;
+    border-radius: 50%;
+    border: 3rpx solid #ffffff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.18);
+    box-sizing: border-box;
 }
 </style>

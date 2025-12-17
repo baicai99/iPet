@@ -22,13 +22,14 @@
                 <view class="value-row">
                     <text :class="isValueText ? 'value-text' : 'value'">{{ valueStr }}</text>
                     <text v-if="unitStr && valueStr !== '暂无数据' && valueStr !== '暂无待办计划'" class="unit">{{ unitStr
-                        }}</text>
+                    }}</text>
                 </view>
             </view>
 
             <!-- Right: Chart -->
+            <!-- ⚠️ TEMPORARILY DISABLED for summary view performance -->
             <view class="chart-section" :class="{ 'wide-chart': isWide }" :style="{ height: chartHeight }"
-                v-if="hasChartData">
+                v-if="false && hasChartData">
                 <!-- 条件渲染替代动态组件 -->
                 <MiniLineChart v-if="chartComponentName === 'MiniLineChart'" v-bind="resolvedChartProps" />
                 <MiniBarChart v-else-if="chartComponentName === 'MiniBarChart'" v-bind="resolvedChartProps" />

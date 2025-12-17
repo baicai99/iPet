@@ -45,6 +45,10 @@ const buildLoginUrl = (redirectUrl = '') => {
 }
 
 const redirectToLogin = (redirectUrl = '', message = '') => {
+    // ⚠️ TEMPORARILY DISABLED: Skip redirect to login for debugging
+    console.warn('[redirectToLogin] Would redirect to login, but disabled for debugging')
+    return
+
     if (message) {
         uni.showToast({
             title: message,
@@ -76,6 +80,9 @@ const handleUnauthorized = (reason = 'missing-token', url: string) => {
 }
 
 const hasPermission = (url: string) => {
+    // ⚠️ TEMPORARILY DISABLED: Skip all auth checks for debugging
+    return { allowed: true }
+
     // Mock mode: skip all auth checks
     if (import.meta.env.VITE_USE_MOCK === 'true') {
         return { allowed: true }

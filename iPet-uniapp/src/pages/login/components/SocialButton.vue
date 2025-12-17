@@ -1,12 +1,14 @@
 <template>
   <button class="social-button" hover-class="button-hover">
-    <u-icon :name="icon" size="24" :color="color"></u-icon>
+    <u-icon :name="icon" size="20" :color="color"></u-icon>
+    <text v-if="label" class="button-label">{{ label }}</text>
   </button>
 </template>
 
 <script setup>
 defineProps({
   icon: { type: String, required: true },
+  label: { type: String, default: '' },
   color: { type: String, default: '#333' }
 });
 </script>
@@ -14,27 +16,31 @@ defineProps({
 <style lang="scss" scoped>
 .social-button {
   flex: 1;
-  width: 0;
-  /* Force equal flex distribution */
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--app-card-bg);
-  border: 1px solid var(--app-border-color);
-  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.03);
-  padding: 20rpx 0;
-  border-radius: 20rpx;
-  transition: all 0.3s;
-  /* ✅ 小程序兼容: 使用 margin 替代父级 gap */
-  margin: 0 12rpx;
+  gap: 12rpx;
+  background-color: #ffffff;
+  border: 2rpx solid #e2e8f0;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  transition: all 0.2s ease;
 
   &::after {
-    border: none;
+    display: none;
   }
 }
 
 .button-hover {
-  background-color: var(--app-active-bg);
-  transform: scale(0.95);
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.button-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #64748b;
 }
 </style>

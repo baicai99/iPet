@@ -1,30 +1,6 @@
 {
 	"pages": [
 		{
-			"path": "pages/login/index",
-			"style": {
-				"navigationBarTitleText": "登录",
-				"navigationStyle": "custom",
-				"backgroundColor": "#f8fafc"
-			}
-		},
-		{
-			"path": "pages/register/index",
-			"style": {
-				"navigationBarTitleText": "注册",
-				"navigationStyle": "custom",
-				"backgroundColor": "#f8fafc"
-			}
-		},
-		{
-			"path": "pages/onboarding/index",
-			"style": {
-				"navigationBarTitleText": "完善信息",
-				"navigationStyle": "custom",
-				"backgroundColor": "#f8fafc"
-			}
-		},
-		{
 			"path": "pages/summary/summary",
 			"style": {
 				"navigationBarTitleText": "摘要",
@@ -141,6 +117,30 @@
 				"navigationBarTextStyle": "black",
 				"backgroundColor": "#f5f5f5"
 			}
+		},
+		{
+			"path": "pages/login/index",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom",
+				"backgroundColor": "#f8fafc"
+			}
+		},
+		{
+			"path": "pages/register/index",
+			"style": {
+				"navigationBarTitleText": "注册",
+				"navigationStyle": "custom",
+				"backgroundColor": "#f8fafc"
+			}
+		},
+		{
+			"path": "pages/onboarding/index",
+			"style": {
+				"navigationBarTitleText": "完善信息",
+				"navigationStyle": "custom",
+				"backgroundColor": "#f8fafc"
+			}
 		}
 	],
 	"globalStyle": {
@@ -232,8 +232,11 @@
 	"easycom": {
 		"autoscan": true,
 		"custom": {
-			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
-			"^up-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+			"^qiun-(.*)": "@qiun/uni-ucharts/components/qiun-$1/qiun-$1.vue",
+			"^u--(.*)": "uview-plus/components/u-$1/u-$1.vue",
+			"^up--(.*)": "uview-plus/components/u-$1/u-$1.vue",
+			"^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue",
+			"^up-([^-].*)": "uview-plus/components/u-$1/u-$1.vue"
 		}
 	}
 }

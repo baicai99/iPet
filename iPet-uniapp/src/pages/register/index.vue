@@ -1,27 +1,47 @@
 <template>
-    <AuthLayout title="创建账号" subtitle="注册以开始您的健康管理之旅" icon="account-fill" icon-color="#6366f1" icon-bg-color="#eef2ff"
-        sparkline-color="#6366f1">
+    <AuthLayout title="创建新账号" subtitle="免费注册，开启您的旅程" icon="account-fill" icon-color="#6366f1" icon-bg-color="#eef2ff">
         <view class="form-container">
-            <StyledInput icon="email" placeholder="邮箱地址" v-model="email" />
-            <text class="error-text" v-if="errors.email">{{ errors.email }}</text>
+            <view class="input-wrapper">
+                <StyledInput 
+                    icon="email" 
+                    label="电子邮箱"
+                    v-model="email" 
+                />
+                <text class="error-text" v-if="errors.email">{{ errors.email }}</text>
+            </view>
 
-            <StyledInput icon="lock" placeholder="设置密码" v-model="password" isPassword />
-            <text class="error-text" v-if="errors.password">{{ errors.password }}</text>
-            <StyledInput icon="lock" placeholder="确认密码" v-model="confirmPassword" isPassword />
-            <text class="error-text" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</text>
+            <view class="input-wrapper">
+                <StyledInput 
+                    icon="lock" 
+                    label="密码"
+                    v-model="password" 
+                    isPassword 
+                />
+                <text class="error-text" v-if="errors.password">{{ errors.password }}</text>
+            </view>
 
-            <button class="login-btn" :disabled="isLoading" @click="handleRegister" hover-class="btn-hover">
+            <view class="input-wrapper">
+                <StyledInput 
+                    icon="lock" 
+                    label="验证密码"
+                    v-model="confirmPassword" 
+                    isPassword 
+                />
+                <text class="error-text" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</text>
+            </view>
+
+            <button class="register-btn" :disabled="isLoading" @click="handleRegister" :hover-class="isLoading ? 'none' : 'btn-hover'">
                 <view v-if="isLoading" class="spinner"></view>
                 <template v-else>
-                    <text class="btn-text">立即注册</text>
-                    <u-icon name="arrow-right" size="18" color="rgba(255,255,255,0.7)"></u-icon>
+                    <text class="btn-text">创建账号</text>
+                    <u-icon name="arrow-right" size="18" color="#ffffff"></u-icon>
                 </template>
             </button>
         </view>
 
         <view class="footer">
-            <text class="footer-text">已有账号? </text>
-            <text class="link-text" @click="goToLogin">立即登录</text>
+            <text class="footer-text">已经有账号了? </text>
+            <text class="link-text" @click="goToLogin">直接登录</text>
         </view>
     </AuthLayout>
 </template>
@@ -191,40 +211,43 @@ const redirectToLogin = (fromSuccess: boolean) => {
 .form-container {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 32rpx;
 }
 
+.input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
 
-
-.login-btn {
-    margin-top: 24rpx;
+.register-btn {
     width: 100%;
-    background-color: #0f172a;
+    background-color: #6366f1;
     color: #ffffff;
-    border-radius: 32rpx;
-    padding: 24rpx 0;
-    font-weight: bold;
-    box-shadow: 0 20rpx 50rpx rgba(15, 23, 42, 0.2);
+    border-radius: 16rpx;
+    padding: 20rpx 32rpx;
+    font-weight: 600;
+    box-shadow: 0 4rpx 12rpx rgba(99, 102, 241, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    position: relative;
-    overflow: hidden;
     border: none;
+    transition: all 0.2s ease;
 
     &::after {
-        border: none;
+        display: none;
     }
 }
 
 .btn-hover {
-    background-color: #1e293b;
-    transform: scale(0.98);
+    background-color: #4f46e5;
+    box-shadow: 0 6rpx 16rpx rgba(99, 102, 241, 0.4);
 }
 
 .btn-text {
     font-size: 28rpx;
+    font-weight: 600;
 }
 
 .spinner {
@@ -244,18 +267,17 @@ const redirectToLogin = (fromSuccess: boolean) => {
 
 .footer {
     text-align: center;
-    margin-top: 24rpx;
+    margin-top: 32rpx;
 }
 
 .footer-text {
-    font-size: 22rpx;
-    font-weight: 500;
-    color: #94a3b8;
+    font-size: 28rpx;
+    color: #64748b;
 }
 
 .link-text {
-    font-size: 22rpx;
-    font-weight: bold;
+    font-size: 28rpx;
+    font-weight: 600;
     color: #6366f1;
     margin-left: 8rpx;
 }
@@ -263,6 +285,7 @@ const redirectToLogin = (fromSuccess: boolean) => {
 .error-text {
     color: #ef4444;
     font-size: 24rpx;
-    margin-top: -8rpx;
+    margin-top: -4rpx;
+    margin-left: 8rpx;
 }
 </style>

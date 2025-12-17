@@ -6,6 +6,31 @@
             <text v-for="(label, i) in reversedLevels" :key="i" class="label">{{ label }}</text>
         </view>
         <view class="chart-area">
+            <!-- #ifdef MP-WEIXIN -->
+            <view class="chart-canvas">
+                <!-- 3-Zone Background -->
+                <view v-for="i in 3" :key="`bg-${i}`" class="zone" :style="{
+                    top: `${(getZoneY(i - 1) / height) * 100}%`,
+                    height: `${(getZoneHeight(i - 1) / height) * 100}%`,
+                    backgroundColor: getZoneFill(i - 1),
+                    opacity: (i - 1) === 1 ? 1 : 0.1
+                }"></view>
+
+                <!-- Vertical Grid Lines -->
+                <view v-for="i in (gridLineCount - 1)" :key="`grid-${i}`" class="vline" :style="{
+                    left: `${(i / segmentCount) * 100}%`
+                }"></view>
+
+                <!-- Data Points positioned by timestamp, colored by status -->
+                <view v-for="(point, i) in chartPoints" :key="`pt-${i}`" class="point" :style="{
+                    left: `${(point.x / width) * 100}%`,
+                    top: `${(point.y / height) * 100}%`,
+                    backgroundColor: point.isNormal ? '#3B82F6' : '#EF4444'
+                }"></view>
+            </view>
+            <!-- #endif -->
+
+            <!-- #ifndef MP-WEIXIN -->
             <svg width="100%" height="100%" viewBox="0 0 300 160" preserveAspectRatio="none" style="overflow: visible;">
                 <!-- 3-Zone Background -->
                 <rect v-for="(zone, i) in 3" :key="`bg-${i}`" x="0" :y="getZoneY(i)" width="300"
@@ -24,6 +49,7 @@
                     :fill="point.isNormal ? '#3B82F6' : '#EF4444'" stroke="white" stroke-width="3"
                     class="drop-shadow" />
             </svg>
+            <!-- #endif -->
         </view>
     </view>
 </template>
@@ -195,5 +221,39 @@ const latestStatus = computed(() => {
     flex: 1;
     height: 100%;
     position: relative;
+}
+
+.chart-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 8rpx;
+}
+
+.zone {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    border-radius: 8rpx;
+}
+
+.vline {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 2rpx;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.point {
+    position: absolute;
+    width: 12rpx;
+    height: 12rpx;
+    border-radius: 50%;
+    border: 3rpx solid #ffffff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.18);
+    box-sizing: border-box;
 }
 </style>

@@ -34,21 +34,18 @@
                 <text class="section-title">{{ t('SUMMARY.TRENDS_TITLE') }}</text>
             </view>
 
-            <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="trendsState" :min-height="trendsMinHeight">
-                <!-- ✅ Three-State Rendering Logic -->
+            <!-- ✅ 趋势区块不使用 AppSectionState，直接展示内容 -->
+            <!-- TrendHintCard 自己负责空状态展示，无需外层 loading/empty 状态管理 -->
+            <view class="trends-section" :style="{ minHeight: trendsMinHeight }">
                 <!-- State 1: Has Trends - Show TrendCard list -->
-                <view v-if="changedMetricKeys.length > 0" class="trends-section">
+                <template v-if="changedMetricKeys.length > 0">
                     <TrendCard v-for="key in changedMetricKeys.slice(0, 3)" :key="key" :metricKey="key"
                         :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
                         :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :themeBg="getMetricBg(key)" />
-                </view>
-                <!-- State 2: No Change - Show dynamic hint (insufficient data OR stable) -->
-                <view v-else class="trends-section">
-                    <TrendHintCard :message="trendStatusHint.message" navigate-to="/pages/trends/trends" />
-                </view>
-                <!-- State 3: Loading - Skeleton handled by AppSectionState -->
-            </AppSectionState>
+                </template>
+                <!-- State 2: No Trends - Show hint card (insufficient data OR stable) -->
+                <TrendHintCard v-else :message="trendStatusHint.message" navigate-to="/pages/trends/trends" />
+            </view>
 
             <view class="action-button">
                 <u-button type="primary" plain shape="circle" :text="t('SUMMARY.TRENDS_CTA')"
@@ -62,16 +59,20 @@
                 <text class="section-title">{{ articlesSectionTitle }}</text>
             </view>
 
-            <!-- ✅ 使用统一 AppSectionState 组件 -->
-            <AppSectionState :section-state="articlesState" empty-reason="no-articles" min-height="500rpx">
-                <!-- Data Slot -->
-                <view class="articles-list">
-                    <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id"
-                        :title="article.title" :summary="article.summary" :cover="article.cover"
-                        :category="article.category" :isNew="isArticleNew(article.updateTime, index)"
-                        :updateTime="article.updateTime" />
-                </view>
-            </AppSectionState>
+            <!-- ✅ 文章区块不使用 AppSectionState，直接展示内容 -->
+            <view class="articles-section" style="min-height: 300rpx;">
+                <!-- State 1: Has Articles - Show ArticleCard list -->
+                <template v-if="articles.length > 0">
+                    <view class="articles-list">
+                        <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id"
+                            :title="article.title" :summary="article.summary" :cover="article.cover"
+                            :category="article.category" :isNew="isArticleNew(article.updateTime, index)"
+                            :updateTime="article.updateTime" />
+                    </view>
+                </template>
+                <!-- State 2: No Articles - Show hint card -->
+                <TrendHintCard v-else message="暂无文章" navigate-to="/pages/articles/list" />
+            </view>
 
             <view class="action-button" v-if="articles.length">
                 <u-button type="primary" plain shape="circle" :text="t('SUMMARY.ARTICLES_CTA')"
@@ -573,7 +574,7 @@ page {
 
 <style lang="scss" scoped>
 .empty {
-    background-color: #ffffff;          // 兜底值
+    background-color: #ffffff; // 兜底值
     background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 30rpx;
     padding: 30rpx;
@@ -616,7 +617,7 @@ page {
 
 .section-title {
     @include text-title-2;
-    color: #1f2937;                 // 兜底值，确保小程序显示
+    color: #1f2937; // 兜底值，确保小程序显示
     color: var(--app-text-primary); // H5 / 支持 CSS var 的平台走这一条
 }
 
@@ -627,15 +628,15 @@ page {
     justify-content: center;
     padding: 64rpx 32rpx;
     gap: 16rpx;
-    background-color: #ffffff;          // 兜底值
+    background-color: #ffffff; // 兜底值
     background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 48rpx;
 }
 
 .empty-trend-text {
     @include text-body;
-    color: #9ca3af;                 // 兜底值
-    color: var(--app-text-muted);   // H5 支持 CSS var
+    color: #9ca3af; // 兜底值
+    color: var(--app-text-muted); // H5 支持 CSS var
 }
 
 /* ✅ Lightweight Refresh Indicator */
@@ -657,14 +658,14 @@ page {
 .error-state {
     padding: 48rpx 32rpx;
     text-align: center;
-    background-color: #ffffff;          // 兜底值
+    background-color: #ffffff; // 兜底值
     background-color: var(--app-card-bg); // H5 支持 CSS var
     border-radius: 30rpx;
 }
 
 .error-text {
     @include text-body;
-    color: #dc2626;                   // 兜底值
-    color: var(--app-danger-color);   // H5 支持 CSS var
+    color: #dc2626; // 兜底值
+    color: var(--app-danger-color); // H5 支持 CSS var
 }
 </style>
