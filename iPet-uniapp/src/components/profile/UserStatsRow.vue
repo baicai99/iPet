@@ -31,7 +31,7 @@ const displayWalkDistance = computed(() => formatDistance(props.stats?.walkDista
 
 <style lang="scss" scoped>
 .user-stats-row {
-    background: var(--app-card-bg);
+    background: $app-card-bg;
     border-radius: 24rpx;
     overflow: hidden;
     display: flex;
@@ -50,18 +50,18 @@ const displayWalkDistance = computed(() => formatDistance(props.stats?.walkDista
 }
 
 .stat-item+.stat-item {
-    border-left: 1px solid var(--app-border-color);
+    border-left: 1px solid $app-border-color;
 }
 
 .stat-value {
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--app-text-primary);
+    color: $app-text-primary;
     margin-bottom: 8rpx;
 }
 
 .stat-label {
     font-size: 20rpx;
-    color: var(--app-text-muted);
+    color: $app-text-muted;
 }
 </style>

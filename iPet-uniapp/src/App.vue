@@ -11,32 +11,14 @@ onLaunch(() => {
 @import 'uview-plus/index.scss';
 @import '@/styles/theme-variables.scss';
 
-:root {
-    /* Global Color Tokens */
-    --uni-color-primary: #007aff;
-    --uni-color-success: #4cd964;
-    --uni-color-warning: #f0ad4e;
-    --uni-color-error: #dd524d;
-    --uni-color-primary-orange: #f97316;
-    --uni-color-orange-light: #fb923c;
-    --uni-text-color-dark: #1f2937;
-    --uni-text-color-gray-light: #9ca3af;
-    --uni-border-color-light: #d1d5db;
-    --uni-text-color-placeholder: #808080;
-    --uni-text-color-disable: #c0c0c0;
-    --uni-bg-color-card: #fbfbfb;
-    --uni-bg-color-hover: #f1f1f1;
-    --uni-bg-color-mask: rgba(0, 0, 0, 0.4);
-}
-
 /* ⚠️ 保留兼容性：.dark-theme class 仍然有效，但优先使用 [data-theme="dark"] */
 .dark-theme {
-    color: var(--app-text-primary);
-    background-color: var(--app-background);
+    color: $app-text-primary;
+    background-color: $app-background;
 }
 
 page {
-    background-color: var(--app-background);
+    background-color: $app-background;
     min-height: 100%;
     height: auto;
 }

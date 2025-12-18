@@ -138,7 +138,6 @@ const arrowColor = computed(() => '#d1d5db');
 <style lang="scss" scoped>
 .user-profile-card {
     width: 100%;
-    // max-width: 380px; // Removed max-width to fit container
     border-radius: 32rpx;
     padding: 28rpx;
     display: flex;
@@ -146,7 +145,8 @@ const arrowColor = computed(() => '#d1d5db');
     gap: 28rpx;
     cursor: pointer;
     user-select: none;
-    border: 1px solid transparent;
+    background-color: $app-card-bg;
+    border: 1px solid $app-border-color;
     transition: all 0.2s ease-in-out;
     box-sizing: border-box;
 

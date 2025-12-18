@@ -568,16 +568,13 @@ const goViewArticles = () => {
 <style lang="scss">
 /* 微信小程序页面背景色 */
 page {
-    background-color: $app-bg-primary;
-    // background-color: #f2f1f5;
-    background-color: var(--app-background);
+    background-color: $app-background;
 }
 </style>
 
 <style lang="scss" scoped>
 .empty {
-    background-color: $app-bg-card; // 兜底值
-    background-color: var(--app-card-bg); // H5 支持 CSS var
+    background-color: $app-card-bg;
     border-radius: 30rpx;
     padding: 30rpx;
 }
@@ -619,8 +616,7 @@ page {
 
 .section-title {
     @include text-title-2;
-    color: $app-text-primary; // 兜底值，确保小程序显示
-    color: var(--app-text-primary); // H5 / 支持 CSS var 的平台走这一条
+    color: $app-text-primary;
 }
 
 .empty-trend {
@@ -630,15 +626,13 @@ page {
     justify-content: center;
     padding: 64rpx 32rpx;
     gap: 16rpx;
-    background-color: $app-bg-card; // 兜底值
-    background-color: var(--app-card-bg); // H5 支持 CSS var
+    background-color: $app-card-bg;
     border-radius: 48rpx;
 }
 
 .empty-trend-text {
     @include text-body;
-    color: $app-text-muted; // 兜底值
-    color: var(--app-text-muted); // H5 支持 CSS var
+    color: $app-text-muted;
 }
 
 /* ✅ Lightweight Refresh Indicator */
@@ -660,14 +654,12 @@ page {
 .error-state {
     padding: 48rpx 32rpx;
     text-align: center;
-    background-color: $app-bg-card; // 兜底值
-    background-color: var(--app-card-bg); // H5 支持 CSS var
+    background-color: $app-card-bg;
     border-radius: 30rpx;
 }
 
 .error-text {
     @include text-body;
-    color: $app-danger-color; // 兜底值
-    color: var(--app-danger-color); // H5 支持 CSS var
+    color: $app-danger-color;
 }
 </style>

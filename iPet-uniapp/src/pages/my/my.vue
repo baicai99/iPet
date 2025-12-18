@@ -6,17 +6,6 @@
             <UserProfileCard :user="realUserData" @click="handleProfileClick" />
         </view>
 
-        <!-- Guest Upgrade Banner -->
-        <view class="section" v-if="isGuestAccount">
-            <view class="guest-banner">
-                <view class="guest-banner-left">
-                    <text class="guest-banner-title">游客模式</text>
-                    <text class="guest-banner-desc">连续 7 天未使用将自动删除数据</text>
-                </view>
-                <button class="guest-upgrade-btn" @click="goUpgradeAccount">升级账号</button>
-            </view>
-        </view>
-
         <!-- Pet Management -->
         <view class="pet-section-wrapper">
             <PetSelectorBar :pets="activePets" :loading="petListLoading" mode="edit" @add="goManagePets"
@@ -399,7 +388,7 @@ onMounted(() => {
 .section-title {
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--app-text-secondary);
+    color: $app-text-secondary;
     margin-bottom: 24rpx;
     padding-left: 8rpx;
 }
@@ -455,30 +444,26 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     padding: 28rpx;
-    background: #ffffff;
-    /* 固定值替代 var(--app-card-bg) */
+    background: $app-card-bg;
     border-radius: 24rpx;
-    border: 1px solid #fecaca;
-    /* 固定值替代 var(--app-danger-border) */
+    border: 1px solid $app-danger-border;
     transition: all 0.2s ease;
 }
 
 .logout-button:active {
     transform: scale(0.98);
-    background: #fef2f2;
-    /* 固定值替代 var(--app-danger-bg-active) */
+    background: $app-danger-bg-active;
 }
 
 .logout-text {
     font-size: 24rpx;
     font-weight: 600;
-    color: #dc2626;
-    /* 固定值替代 var(--app-danger-color) */
+    color: $app-danger-color;
 }
 
 /* Menu Group Styles */
 .menu-group {
-    background: var(--app-card-bg);
+    background: $app-card-bg;
     border-radius: 24rpx;
     overflow: hidden;
 }
@@ -488,13 +473,13 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
     padding: 32rpx;
-    background: var(--app-card-bg);
-    border-bottom: 1px solid var(--app-border-color);
+    background: $app-card-bg;
+    border-bottom: 1px solid $app-border-color;
     transition: background-color 0.2s;
 }
 
 .menu-item:active {
-    background-color: var(--app-active-bg);
+    background-color: $app-active-bg;
 }
 
 .menu-item.no-border {
@@ -511,7 +496,7 @@ onMounted(() => {
 
 .menu-label {
     font-size: 24rpx;
-    color: var(--app-text-primary);
+    color: $app-text-primary;
     font-weight: 500;
 }
 
@@ -523,6 +508,6 @@ onMounted(() => {
 
 .menu-value {
     font-size: 22rpx;
-    color: var(--app-text-muted);
+    color: $app-text-muted;
 }
 </style>

@@ -34,7 +34,7 @@ const props = defineProps({
     },
     stroke: {
         type: String,
-        default: 'var(--uni-color-primary, #2563EB)'
+        default: '#007aff'
     },
     showArea: {
         type: Boolean,
