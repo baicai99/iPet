@@ -1,0 +1,86 @@
+name: Build & Size Check
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-mp-weixin:
+    name: Build WeChat Mini Program
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: iPet-uniapp/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./iPet-uniapp
+        run: npm ci
+      
+      - name: Type check
+        working-directory: ./iPet-uniapp
+        run: npm run type-check
+      
+      - name: Build WeChat Mini Program
+        working-directory: ./iPet-uniapp
+        run: npm run build:mp-weixin
+      
+      - name: Check package size
+        working-directory: ./iPet-uniapp
+        run: |
+          # 计算构建产物大小
+          SIZE=$(du -sb dist/build/mp-weixin | cut -f1)
+          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+          echo "📦 Package size: ${SIZE_MB}MB"
+          
+          # 微信小程序主包限制: 2MB = 2097152 bytes
+          LIMIT_BYTES=2097152
+          LIMIT_MB=2
+          
+          if [ $SIZE -gt $LIMIT_BYTES ]; then
+            echo "❌ ERROR: Package size (${SIZE_MB}MB) exceeds ${LIMIT_MB}MB limit!"
+            echo "::error::Package size ${SIZE_MB}MB exceeds ${LIMIT_MB}MB limit. Please reduce bundle size."
+            exit 1
+          fi
+          
+          # 警告阈值: 1.8MB (90%)
+          WARN_BYTES=1887436
+          if [ $SIZE -gt $WARN_BYTES ]; then
+            echo "⚠️ WARNING: Package size (${SIZE_MB}MB) is approaching ${LIMIT_MB}MB limit!"
+            echo "::warning::Package size ${SIZE_MB}MB is approaching ${LIMIT_MB}MB limit (>90%). Consider optimization."
+          else
+            echo "✅ Package size within limit"
+          fi
+
+  # 依赖安全审计 (可选，仅在 PR 时运行)
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        working-directory: ./iPet-uniapp
+        run: npm ci
+      
+      - name: Run npm audit
+        working-directory: ./iPet-uniapp
+        run: npm audit --production --audit-level=high
+        continue-on-error: true  # 不阻塞 PR，仅报告

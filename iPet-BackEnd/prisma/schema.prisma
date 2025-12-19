@@ -92,6 +92,9 @@ model Pet {
   healthRecords  HealthRecord[]
   pinnedMetrics  PinnedMetric[]
   healthSchedules HealthSchedule[]
+
+  // TD-008: Index for user's active pets query
+  @@index([userId, deleted], name: "idx_pet_user_active")
 }
 
 model HealthRecord {
@@ -110,6 +113,9 @@ model HealthRecord {
   updatedAt DateTime @updatedAt
   deleted   Boolean  @default(false)
   version   Int      @default(1)
+
+  // TD-008: Index for date-range queries
+  @@index([petId, date(sort: Desc)], name: "idx_health_record_pet_date")
 }
 
 
@@ -126,6 +132,9 @@ model Article {
   likes     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // TD-008: Index for category filtering with date ordering
+  @@index([category, createdAt(sort: Desc)], name: "idx_article_category_created")
 }
 
 model PinnedMetric {
@@ -153,4 +162,7 @@ model HealthSchedule {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // TD-008: Index for active schedules per pet
+  @@index([petId, isActive, date], name: "idx_health_schedule_pet_active")
 }

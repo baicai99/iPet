@@ -1,4 +1,105 @@
-## 0.0.5 (2025-12-18)
+## 0.0.5 (2025-12-19)
+
+### Bug Fixes
+- [x] **趋势卡片显示与趋势判定问题修复**
+  - 修复趋势检测阈值配置不符合需求的问题
+    - 更新 `src/domain/trend/detectSignificantChanges.ts`: 将默认阈值从 30% 调整为 20%
+    - 更新相关文档注释，确保代码与文档一致性
+    - 影响：趋势检测更敏感，能够捕捉到更多有意义的变化（20%-30% 区间的变化现在会被识别为趋势）
+    - ⚠️ **重要提示**：首次使用时需要刷新数据以应用新阈值
+      - 方法1：下拉刷新Summary页面
+      - 方法2：切换宠物后再切换回来
+      - 方法3：退出登录后重新登录
+  - 增强趋势页面视觉区分度
+    - 更新 `src/pages/trends/trends.vue`: 为"有趋势变化"和"无趋势变化"分区添加色彩区分
+    - 新增分区图标（trending-up / checkmark-circle）
+    - 新增计数徽章显示每个分区的指标数量
+    - 新增渐变背景和彩色边框提升视觉对比度
+    - 影响：用户能够更快速地识别和区分不同类型的趋势数据
+
+### 工程化
+- [x] **TD-008: 数据库索引未优化** - 添加关键数据库索引，防止数据量增长后的性能问题
+  - 更新 `prisma/schema.prisma`: 为 Pet、HealthRecord、Article、HealthSchedule 添加 4 个性能索引
+  - 新增 `prisma/migrations/20251219_add_missing_indexes/migration.sql`: 索引创建 SQL
+  - 更新 `src-backend/health/health.service.ts`: 扩展 `ensureHealthIndexes()` 方法作为运行时保障
+  - 索引覆盖：
+    - `idx_pet_user_active`: 用户宠物查询优化 (~70% 提升)
+    - `idx_health_record_pet_date`: 日期范围查询优化 (~60% 提升)
+    - `idx_health_schedule_pet_active`: 健康计划查询优化 (~67% 提升)
+    - `idx_article_category_created`: 文章分类查询优化 (~68% 提升)
+
+- [x] **TD-007: 缺少性能监控** - 实现统一的性能监控系统，解决"只能感觉卡，无法量化定位"问题
+  - 新增 `src/utils/performance/performanceMonitor.ts`: 核心性能监控服务
+    - API 请求耗时追踪（集成到 request.ts）
+    - 缓存命中率追踪（集成到 healthCacheService.ts）
+    - 页面加载时间追踪（FCP/LCP）
+    - 错误追踪（集成到 errorHandler.ts + Vue 全局错误捕获）
+    - P50/P95/P99 百分位数自动计算
+    - 开发环境彩色控制台输出
+    - 预留远程上报接口（Sentry/阿里云 ARMS）
+  - 新增 `src/composables/usePerformanceTracker.ts`: 页面性能追踪 Composable
+  - 更新 `src/utils/config.ts`: 添加 ENABLE_PERFORMANCE_MONITOR 和 PERFORMANCE_REPORT_URL 配置
+  - 更新 `src/main.ts`: 初始化全局错误捕获
+
+- [x] **TD-006: 代码重复率高** - 提取公共工具函数和组件，降低代码重复率
+  - 新增 `src/utils/common/toast.ts`: 统一 Toast 工具（showToast/showSuccess/showError/showLoading/showModal）
+  - 新增 `src/utils/validation/auth.ts`: 统一认证验证工具（validateEmail/validatePassword/validateLoginForm/validateRegisterForm + 错误处理工具）
+  - 新增 `src/components/widgets/BaseTrendCard.vue`: 趋势卡片基础组件（提取 TrendCard 和 StepCountTrendCard 共享逻辑）
+  - 新增 `src/components/layout/AuthLayout.vue`: 认证页面通用布局组件（渐变背景、卡片容器、社交登录、游客登录、页脚插槽）
+  - 重构 `src/pages/login/index.vue`: 使用 AuthLayout + 统一工具函数，从 540 行减少到 ~270 行
+  - 重构 `src/pages/register/index.vue`: 使用 AuthLayout + 统一工具函数，从 511 行减少到 ~280 行
+  - 总计减少代码行数 ~500 行
+
+### 文档结构
+- [x] 重组 `/docs` 目录结构，分为 `frontend/` 和 `api/` 两个子目录
+  - `api/`: API-Reference.md、接口契约层.md
+  - `frontend/`: 产品与业务层.md、架构与代码组织层.md、数据层.md、设计规范.md、性能与稳定性层.md、工程化与开发指南层.md、产品迭代与技术债管理层.md、运维与可观测性层.md、安全与合规层.md
+
+### 工程化
+- [x] 新增 GitHub Actions CI/CD 工作流 (`.github/workflows/build-check.yml`)
+  - 微信小程序包体大小检测（主包 ≤2MB，超 90% 警告）
+  - TypeScript 类型检查
+  - 依赖安全审计（PR 时运行）
+  - 触发条件：push 到 main/develop，PR 到 main
+
+### 文档更新
+- [x] 新增《API-Reference.md》接口详细文档（TD-005 技术债偿还进行中）
+  - 6 大模块完整接口定义：认证、宠物管理、健康记录、用户资料、数据同步、其他接口
+  - 每个接口包含：请求方法、参数表、请求/响应示例、错误码说明
+  - 3 个核心类型定义（Pet、HealthRecord、AccountInfo）
+  - TODO 标记：计划迁移到 OpenAPI/Swagger 规范
+  - 更新 `接口契约层.md` 添加到 API Reference 的引用链接
+  - 更新技术债清单 TD-005 状态为「进行中」
+
+
+### Added
+- [x] 新增统一错误处理机制（TD-002 技术债偿还）
+  - `src/types/error.ts`: AppError 类 + ErrorCode 枚举（对齐接口契约层 10000-60004 错误码）
+  - `src/utils/common/errorHandler.ts`: showError / withErrorHandler / 错误判断工具
+  - 更新 `src/utils/common/request.ts`: handleError 返回 AppError，fail 回调使用 AppError
+  - 中文友好错误消息映射（22 种错误类型）
+
+### 文档更新
+- [x] 新增错误处理规范章节（工程化与开发指南层.md）
+  - 错误码分类表、使用示例、最佳实践
+- [x] 更新 TD-002 改造进度（产品迭代与技术债管理层.md）
+  - 标记各 Phase 为已完成
+  - 更新 Roadmap：qiun-data-charts、API 错误处理 → ✅
+- [x] 修复 P1 样式规范冲突：工程化与开发指南层.md 示例代码从 CSS 变量改为 Sass 变量
+  - 删除 `var(--color-danger)` → `$color-danger`
+  - 删除 `var(--color-primary-light)` → `$color-primary-light`
+  - 删除 `var(--color-text-tertiary)` → `$color-text-tertiary`
+  - 说明：设计规范明确禁止 CSS 变量，本次修正使文档保持一致
+- [x] 同步技术债清单状态（产品迭代与技术债管理层.md）
+  - TD-003: 描述修正为"单元测试覆盖率不足"（Vitest 已配置，但覆盖率待提升）
+  - TD-004: 标记为 ✅ 已完成（Mock 机制已实现，17 个 API 处理器）
+  - TD-005: 标记为 ✅ 已完成（图片优化脚本已实现，构建已集成）
+- [x] 统一跨端存储方案术语，修复 P0 文档口径冲突问题
+  - 接口契约层.md: Token 存储策略/离线队列 localStorage → uni.storage / uni.setStorageSync
+  - 性能与稳定性层.md: L2 缓存描述 localStorage → uni.storage（含平台说明）
+  - 数据层.md: Token 安全描述 Keychain/EncryptedSharedPreferences → uni.setStorageSync
+  - 说明：代码实现已正确使用 UniApp 跨端 API，本次仅修正文档术语
+- [x] 更新 CI/CD 配置状态描述（性能与稳定性层.md、安全与合规层.md）
 
 ### 文档更新
 - [x] 新增《产品迭代与技术债管理层.md》文档，建立产品路线图与技术债治理体系

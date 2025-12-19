@@ -1,95 +1,70 @@
 <template>
-  <view class="auth-page">
-    <!-- Gradient Background -->
-    <view class="bg-gradient">
-      <!-- Card Container -->
-      <view class="auth-card">
-
-        <!-- Logo and Title -->
-        <view class="header-section">
-          <view class="logo-container">
-            <u-icon name="account-fill" size="48" color="#ffffff"></u-icon>
-          </view>
-          <text class="title">欢迎回来</text>
+  <AuthLayout 
+    title="欢迎回来" 
+    :guest-loading="isGuestLoading"
+    :primary-loading="isLoading"
+    @guest-login="handleGuestLogin"
+  >
+    <!-- Email Input -->
+    <view class="input-group">
+      <text class="input-label">电子邮箱</text>
+      <view class="input-wrapper">
+        <view class="input-icon">
+          <u-icon name="email" size="20" :color="emailFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
         </view>
+        <input 
+          type="text" 
+          v-model="email" 
+          class="input-field" 
+          placeholder="请输入邮箱" 
+          @focus="emailFocused = true"
+          @blur="emailFocused = false" 
+        />
+      </view>
+    </view>
 
-        <!-- Form Section -->
-        <view class="form-section">
-          <!-- Email Input -->
-          <view class="input-group">
-            <text class="input-label">电子邮箱</text>
-            <view class="input-wrapper">
-              <view class="input-icon">
-                <u-icon name="email" size="20" :color="emailFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
-              </view>
-              <input type="text" v-model="email" class="input-field" placeholder="请输入邮箱" @focus="emailFocused = true"
-                @blur="emailFocused = false" />
-            </view>
-          </view>
-
-          <!-- Password Input -->
-          <view class="input-group">
-            <text class="input-label">密码</text>
-            <view class="input-wrapper">
-              <view class="input-icon">
-                <u-icon name="lock" size="20" :color="passwordFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
-              </view>
-              <input :type="showPassword ? 'text' : 'password'" v-model="password" class="input-field"
-                placeholder="请输入密码" @focus="passwordFocused = true" @blur="passwordFocused = false" />
-              <view class="password-toggle" @click="showPassword = !showPassword">
-                <u-icon :name="showPassword ? 'eye-off' : 'eye'" size="20" color="#94A3B8"></u-icon>
-              </view>
-            </view>
-          </view>
-
-          <!-- Primary Button -->
-          <button class="primary-btn" :class="{ 'loading': isLoading }" :disabled="isLoading" @click="handleLogin"
-            hover-class="primary-btn-hover">
-            <u-loading-icon v-if="isLoading" mode="circle" size="18" color="#ffffff"></u-loading-icon>
-            <text class="btn-text">{{ isLoading ? '登录中...' : '立即登录' }}</text>
-          </button>
-
-          <!-- Divider -->
-          <view class="divider">
-            <view class="divider-line"></view>
-            <text class="divider-text">其他登录方式</text>
-            <view class="divider-line"></view>
-          </view>
-
-          <!-- Social Login Buttons -->
-          <view class="social-buttons">
-            <button class="social-btn" hover-class="social-btn-hover">
-              <u-icon name="weixin-fill" size="20" color="#10B981"></u-icon>
-              <text class="social-text">微信</text>
-            </button>
-            <button class="social-btn" hover-class="social-btn-hover">
-              <u-icon name="github-circle-fill" size="20" color="#111827"></u-icon>
-              <text class="social-text">Github</text>
-            </button>
-          </view>
-
-          <!-- Guest Login -->
-          <view class="guest-section">
-            <button class="guest-btn" :disabled="isGuestLoading || isLoading" @click="handleGuestLogin"
-              hover-class="guest-btn-hover">
-              <u-icon name="account" size="20" color="#64748B"></u-icon>
-              <text class="guest-text">{{ isGuestLoading ? '进入中...' : '游客登录 / 试用' }}</text>
-            </button>
-            <text class="guest-hint">游客模式连续7天未使用将会清空数据。</text>
-          </view>
+    <!-- Password Input -->
+    <view class="input-group">
+      <text class="input-label">密码</text>
+      <view class="input-wrapper">
+        <view class="input-icon">
+          <u-icon name="lock" size="20" :color="passwordFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
         </view>
-
-        <!-- Footer Navigation -->
-        <view class="footer-section">
-          <view class="footer-links">
-            <text class="link-btn" @click="goToRegister">立即注册</text>
-            <text class="separator">|</text>
-            <text class="link-btn secondary" @click="handleForgotPassword">忘记密码？</text>
-          </view>
+        <input 
+          :type="showPassword ? 'text' : 'password'" 
+          v-model="password" 
+          class="input-field"
+          placeholder="请输入密码" 
+          @focus="passwordFocused = true" 
+          @blur="passwordFocused = false" 
+        />
+        <view class="password-toggle" @click="showPassword = !showPassword">
+          <u-icon :name="showPassword ? 'eye-off' : 'eye'" size="20" color="#94A3B8"></u-icon>
         </view>
       </view>
     </view>
-  </view>
+
+    <!-- Primary Button -->
+    <button 
+      class="primary-btn" 
+      :class="{ 'loading': isLoading }" 
+      :disabled="isLoading" 
+      @click="handleLogin"
+      hover-class="primary-btn-hover"
+    >
+      <u-loading-icon v-if="isLoading" mode="circle" size="18" color="#ffffff"></u-loading-icon>
+      <text class="btn-text">{{ isLoading ? '登录中...' : '立即登录' }}</text>
+    </button>
+
+    <!-- Footer -->
+    <template #footer>
+      <view class="footer-links">
+        <text class="link-btn" @click="goToRegister">立即注册</text>
+        <text class="separator">|</text>
+        <text class="link-btn secondary" @click="handleForgotPassword">忘记密码？</text>
+      </view>
+    </template>
+  </AuthLayout>
 </template>
 
 <script setup>
@@ -98,10 +73,17 @@ import { onLoad } from '@dcloudio/uni-app';
 import { loginUser } from '@/services/authService';
 import { useUserStore } from '@/stores/userStore';
 import { usePetStore } from '@/stores/petStore';
+import AuthLayout from '@/components/layout/AuthLayout.vue';
 
-// Local validation constants
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)\S+$/;
+// ✅ 使用统一的工具函数
+import { showToast } from '@/utils/common/toast';
+import {
+  validateLoginForm,
+  isRateLimitError,
+  isNetworkError,
+  getErrorMessage,
+  getAuthErrorMessage
+} from '@/utils/validation/auth';
 
 const email = ref('');
 const password = ref('');
@@ -119,24 +101,6 @@ onLoad((options) => {
   redirectTarget.value = redirectParam;
 });
 
-const showToast = (title) => {
-  uni.showToast({
-    title,
-    icon: 'none',
-    duration: 2000,
-  });
-};
-
-const isRateLimitError = (error) => Number(error?.statusCode) === 429;
-
-const getErrorMessage = (error, fallback) => {
-  const message = error?.data?.message || error?.errMsg;
-  if (message && typeof message === 'string') {
-    return message;
-  }
-  return fallback;
-};
-
 const handleLogin = async () => {
   if (isLoading.value) return;
 
@@ -146,18 +110,10 @@ const handleLogin = async () => {
   email.value = trimmedEmail;
   password.value = trimmedPassword;
 
-  if (!trimmedEmail || !trimmedPassword) {
-    showToast('邮箱和密码不能为空');
-    return;
-  }
-
-  if (!EMAIL_REGEX.test(trimmedEmail)) {
-    showToast('请输入有效的邮箱地址');
-    return;
-  }
-
-  if (!PASSWORD_REGEX.test(trimmedPassword)) {
-    showToast('密码至少 8 位，需包含字母和数字');
+  // ✅ 使用统一的表单验证
+  const validation = validateLoginForm(trimmedEmail, trimmedPassword);
+  if (!validation.valid) {
+    showToast(validation.message);
     return;
   }
 
@@ -191,28 +147,20 @@ const handleLogin = async () => {
       navigateAfterLogin();
     }
   } catch (error) {
+    // ✅ 使用统一的错误处理
     if (isRateLimitError(error)) {
       showToast(getErrorMessage(error, '登录尝试过于频繁，请稍后再试'));
       return;
     }
 
-    if (error?.errMsg?.includes('request:fail')) {
+    if (isNetworkError(error)) {
       showToast('网络连接失败，请检查您的网络设置');
       return;
     }
 
-    const statusCode = Number(error?.statusCode || error?.code);
-    if (statusCode === 404) {
-      showToast('该账号未注册，请先注册');
-      return;
-    }
-    if (statusCode === 401) {
-      const msg = error?.data?.message || '';
-      if (msg.includes('deleted')) {
-        showToast('该账号已注销');
-      } else {
-        showToast('账号或密码错误，请重试');
-      }
+    const authError = getAuthErrorMessage(error, 'login');
+    if (authError) {
+      showToast(authError);
       return;
     }
 
@@ -274,69 +222,9 @@ const navigateAfterLogin = () => {
 </script>
 
 <style lang="scss" scoped>
-.auth-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32rpx;
-}
-
-.bg-gradient {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 50%, #ECFEFF 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32rpx;
-}
-
-.auth-card {
-  width: 100%;
-  background: #FFFFFF;
-  border-radius: 32rpx;
-  box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.12);
-  border: 2rpx solid #F1F5F9;
-  overflow: hidden;
-}
-
-/* Header Section */
-.header-section {
-  padding: 64rpx 64rpx 48rpx;
-  text-align: center;
-}
-
-.logo-container {
-  width: 96rpx;
-  height: 96rpx;
-  margin: 0 auto 32rpx;
-  background: #4F46E5;
-  border-radius: 24rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 16rpx 32rpx rgba(79, 70, 229, 0.3);
-}
-
-.title {
-  font-size: 48rpx;
-  font-weight: 700;
-  color: #0F172A;
-  letter-spacing: -0.5rpx;
-}
-
-/* Form Section */
-.form-section {
-  padding: 0 32rpx 32rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 32rpx;
-}
+/* ============================================================================
+   Form Inputs - 表单输入框样式
+   ============================================================================ */
 
 .input-group {
   display: flex;
@@ -396,7 +284,10 @@ const navigateAfterLogin = () => {
   cursor: pointer;
 }
 
-/* Buttons */
+/* ============================================================================
+   Primary Button
+   ============================================================================ */
+
 .primary-btn {
   width: 100%;
   height: 88rpx;
@@ -436,112 +327,9 @@ const navigateAfterLogin = () => {
   color: #FFFFFF;
 }
 
-/* Divider */
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin: 16rpx 0;
-}
-
-.divider-line {
-  flex: 1;
-  height: 2rpx;
-  background: #E2E8F0;
-}
-
-.divider-text {
-  font-size: 24rpx;
-  color: #94A3B8;
-}
-
-/* Social Buttons */
-.social-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24rpx;
-}
-
-.social-btn {
-  width: 100%;
-  height: 88rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-  background: #FFFFFF;
-  border: 2rpx solid #E2E8F0;
-  border-radius: 16rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
-  transition: all 0.2s;
-
-  &::after {
-    display: none;
-  }
-}
-
-.social-btn-hover {
-  background: #F8FAFC;
-}
-
-.social-text {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #64748B;
-}
-
-/* Guest Section */
-.guest-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-  margin-top: 8rpx;
-}
-
-.guest-btn {
-  width: 100%;
-  height: 88rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-  background: #FFFFFF;
-  border: 2rpx dashed #CBD5E1;
-  border-radius: 16rpx;
-  transition: all 0.2s;
-
-  &::after {
-    display: none;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-  }
-}
-
-.guest-btn-hover {
-  background: #F8FAFC;
-  border-color: #94A3B8;
-}
-
-.guest-text {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #64748B;
-}
-
-.guest-hint {
-  font-size: 22rpx;
-  color: #94A3B8;
-  text-align: center;
-}
-
-/* Footer Section */
-.footer-section {
-  background: #F8FAFC;
-  padding: 32rpx 64rpx;
-  border-top: 2rpx solid #F1F5F9;
-}
+/* ============================================================================
+   Footer Links
+   ============================================================================ */
 
 .footer-links {
   display: flex;

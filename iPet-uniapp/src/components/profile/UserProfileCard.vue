@@ -3,7 +3,7 @@
         themeClass,
         { 'is-pressed': isPressed, 'is-vip': isVip }
     ]" @touchstart="handlePressStart" @touchend="handlePressEnd" @mousedown="handlePressStart"
-        @mouseup="handlePressEnd" @mouseleave="handlePressEnd">
+        @mouseup="handlePressEnd" @mouseleave="handlePressEnd" @click="$emit('click')">
         <!-- 1. Avatar Area -->
         <view class="avatar-container">
             <view class="avatar-wrapper" :class="avatarBorderClass">

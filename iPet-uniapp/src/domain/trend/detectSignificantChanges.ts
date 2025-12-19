@@ -19,7 +19,7 @@
  * 趋势检测配置
  */
 export interface TrendDetectionConfig {
-    /** 显著变化的阈值百分比（默认 30%） */
+    /** 显著变化的阈值百分比（默认 20%） */
     thresholdPercent: number
     /** 最少数据点数量（默认 20） */
     minDataPoints: number
@@ -58,7 +58,7 @@ export interface TrendAnalysis {
 // ============================================================================
 
 const DEFAULT_CONFIG: TrendDetectionConfig = {
-    thresholdPercent: 30,
+    thresholdPercent: 20,
     minDataPoints: 20,
     windowSize: 40
 }
@@ -179,7 +179,7 @@ export function detectSignificantChange(
 
     // 计算变化百分比
     const changePercent = Math.abs((recentAvg - prevAvg) / prevAvg * 100)
-    const hasSignificantChange = changePercent >= finalConfig.thresholdPercent
+    const hasSignificantChange = changePercent > finalConfig.thresholdPercent  // 使用 > 而非 >=
 
     // 确定趋势方向
     let direction: 'up' | 'down' | 'stable' = 'stable'

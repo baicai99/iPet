@@ -6,6 +6,9 @@
 import { getAccessToken, setAuthToken, clearAuthToken, getRefreshToken, setRefreshToken } from '@/utils/business/authStorage'
 import { APP_CONFIG } from '@/utils/config'
 import { handleMockRequest, handleMockRefreshToken } from './mockRegistry'
+import { AppError, ErrorCode } from '@/types/error'
+import { showError } from './errorHandler'
+import { performanceMonitor } from '@/utils/performance/performanceMonitor'
 
 const BASE_URL = APP_CONFIG.API_BASE_URL
 
@@ -314,42 +317,71 @@ const triggerTokenRefresh = () => {
     return refreshPromise
 }
 
-const handleError = (status: number, data: any) => {
-    let message = 'Request Failed'
-    switch (status) {
-        case 401:
-            message = 'Unauthorized. Please login again.'
-            break
-        case 403:
-            message = 'Forbidden.'
-            break
-        case 404:
-            message = 'Resource not found.'
-            break
-        case 500:
-            message = 'Server Error.'
-            break
-        default:
-            const rawMessage = data?.message
-            message = Array.isArray(rawMessage)
-                ? rawMessage.join(', ')
-                : (rawMessage || `Error: ${status}`)
+const handleError = (status: number, data: any, skipToast = false): AppError => {
+    // 尝试解析业务错误码
+    let bizCode: ErrorCode = ErrorCode.UNKNOWN
+
+    // 从响应中获取业务错误码
+    if (data?.code && typeof data.code === 'number') {
+        bizCode = data.code as ErrorCode
+    } else {
+        // 根据 HTTP 状态码映射
+        switch (status) {
+            case 400:
+                bizCode = ErrorCode.INVALID_PARAMS
+                break
+            case 401:
+                bizCode = ErrorCode.TOKEN_INVALID
+                break
+            case 403:
+                bizCode = ErrorCode.FORBIDDEN
+                break
+            case 404:
+                bizCode = ErrorCode.NOT_FOUND
+                break
+            case 409:
+                bizCode = ErrorCode.CONFLICT
+                break
+            case 429:
+                bizCode = ErrorCode.RATE_LIMIT
+                break
+            default:
+                bizCode = ErrorCode.UNKNOWN
+        }
     }
 
-    uni.showToast({
-        title: message,
-        icon: 'none'
+    // 获取错误消息（优先使用服务端消息）
+    let message = data?.message
+    if (Array.isArray(message)) {
+        message = message.join(', ')
+    }
+
+    const error = new AppError(bizCode, message || undefined, {
+        httpStatus: status,
+        details: data?.errors
     })
+
+    // 显示 Toast（除非跳过）
+    if (!skipToast) {
+        showError(error)
+    }
+
+    return error
 }
 
 const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Promise<T> => {
+    const requestStartTime = Date.now()
+
     // Mock mode: completely bypass network, use mock handlers
     if (APP_CONFIG.USE_MOCK) {
         if (config.showLoading) {
             showGlobalLoading(config.loadingText)
         }
         try {
-            return await handleMockRequest<T>(config)
+            const result = await handleMockRequest<T>(config)
+            const duration = Date.now() - requestStartTime
+            performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, 200)
+            return result
         } finally {
             if (config.showLoading) {
                 hideGlobalLoading()
@@ -386,9 +418,13 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
             header,
             timeout: config.timeout,
             success: async (res) => {
+                const duration = Date.now() - requestStartTime
                 const { statusCode, data } = res
                 const isSuccess = statusCode >= 200 && statusCode < 300
                 const isNotModified = statusCode === 304
+
+                // 记录 API 耗时
+                performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, statusCode)
 
                 if (config.rawResponse) {
                     if (isSuccess || isNotModified) {
@@ -416,39 +452,49 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
                         })
                     return
                 } else {
-                    if (!config.skipErrorHandle) {
-                        handleError(statusCode, data)
-                    }
-                    reject(res)
+                    const error = handleError(statusCode, data, config.skipErrorHandle)
+                    reject(error)
                 }
             },
             fail: (err) => {
-                if (err?.errMsg && (err.errMsg.includes('request:fail') || err.errMsg.includes('timeout'))) {
+                const duration = Date.now() - requestStartTime
+                const errMsg = err?.errMsg ?? ''
+
+                // 记录失败的 API 调用（status 0 表示网络失败）
+                performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, 0)
+
+                if (errMsg.includes('request:fail') || errMsg.includes('timeout')) {
                     const method = (config.method || 'GET').toUpperCase()
-                    // Only queue mutation requests
+
+                    // 只有写操作加入离线队列
                     if (method !== 'GET') {
                         addToOfflineQueue(config)
-                        uni.showToast({
-                            title: '网络不可用，已保存到离线队列',
-                            icon: 'none'
-                        })
-                        // Reject with a specific error so caller knows it was queued?
-                        // Or just reject normally.
-                        reject({ ...err, isOffline: true })
+                        const error = new AppError(ErrorCode.OFFLINE, '网络不可用，已保存到离线队列')
+                        if (!config.skipErrorHandle) {
+                            showError(error)
+                        }
+                        reject({ ...err, isOffline: true, appError: error })
                         return
                     }
 
-                    uni.showToast({
-                        title: '网络连接失败',
-                        icon: 'none'
-                    })
-                } else if (err?.errMsg !== 'request:fail abort') {
-                    uni.showToast({
-                        title: 'Network Error',
-                        icon: 'none'
-                    })
+                    // GET 请求显示网络错误
+                    const error = errMsg.includes('timeout')
+                        ? new AppError(ErrorCode.TIMEOUT)
+                        : new AppError(ErrorCode.NETWORK_ERROR)
+                    if (!config.skipErrorHandle) {
+                        showError(error)
+                    }
+                    reject(error)
+                } else if (errMsg !== 'request:fail abort') {
+                    const error = new AppError(ErrorCode.NETWORK_ERROR, 'Network Error')
+                    if (!config.skipErrorHandle) {
+                        showError(error)
+                    }
+                    reject(error)
+                } else {
+                    // 请求被取消，静默处理
+                    reject(new AppError(ErrorCode.ABORTED))
                 }
-                reject(err)
             },
             complete: () => {
                 if (config.showLoading) {

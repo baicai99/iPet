@@ -289,157 +289,157 @@ export class HealthService implements OnModuleInit {
                 throw new NotFoundException('Pet not found or does not belong to user');
             }
 
-        // ====================================================================
-        // STEP 1: Determine time range cutoff
-        // ====================================================================
+            // ====================================================================
+            // STEP 1: Determine time range cutoff
+            // ====================================================================
 
-        const now = new Date();
-        let cutoffDate: Date;
+            const now = new Date();
+            let cutoffDate: Date;
 
-        switch (range) {
-            case 'day':
-                cutoffDate = new Date(now);
-                cutoffDate.setHours(0, 0, 0, 0);
-                break;
-            case 'week':
-                cutoffDate = new Date(now);
-                cutoffDate.setDate(cutoffDate.getDate() - 6);
-                cutoffDate.setHours(0, 0, 0, 0);
-                break;
-            case 'month':
-                cutoffDate = new Date(now);
-                cutoffDate.setDate(cutoffDate.getDate() - 29);
-                cutoffDate.setHours(0, 0, 0, 0);
-                break;
-            case 'six_month':
-                cutoffDate = new Date(now);
-                cutoffDate.setMonth(cutoffDate.getMonth() - 6);
-                cutoffDate.setHours(0, 0, 0, 0);
-                break;
-            case 'year':
-                cutoffDate = new Date(now);
-                cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
-                cutoffDate.setHours(0, 0, 0, 0);
-                break;
-            default:
-                cutoffDate = new Date(now);
-                cutoffDate.setDate(cutoffDate.getDate() - 6);
-                cutoffDate.setHours(0, 0, 0, 0);
-        }
-
-        // ====================================================================
-        // STEP 2: Fetch records from database
-        // ====================================================================
-
-        // ✅ OPTIMIZED: Use select to reduce data transfer
-        const records = await this.prisma.healthRecord.findMany({
-            where: {
-                petId,
-                type: metricKey,
-                deleted: false,
-                date: {
-                    gte: cutoffDate.toISOString()
-                }
-            },
-            select: {
-                value: true,
-                date: true,
-                // Only these 2 fields are needed for aggregation
-                // Reduces payload by ~60%
-            },
-            orderBy: {
-                date: 'asc'
-            }
-        });
-
-        // Note: Scheduled items filtering is now handled at DB level
-        // Since we're using select to exclude metadata, we rely on the assumption
-        // that most records without explicit metadata.isScheduled are not scheduled
-        // If needed, add metadata: true to select and filter here
-        const filteredRecords = records;
-
-        // ====================================================================
-        // STEP 3: Server-side aggregation
-        // ====================================================================
-
-        let aggregatedData: any[];
-
-        if (bucket === 'none') {
-            // No aggregation, return raw data
-            aggregatedData = filteredRecords.map(r => ({
-                value: r.value,
-                date: r.date,
-                timestamp: new Date(r.date).getTime()
-            }));
-        } else {
-            // Aggregate by bucket (day/week/month)
-            const buckets = new Map<string, any>();
-
-            for (const record of filteredRecords) {
-                const recordDate = new Date(record.date);
-                let bucketKey: string;
-
-                switch (bucket) {
-                    case 'day':
-                        // Format: YYYY-MM-DD
-                        bucketKey = recordDate.toISOString().split('T')[0];
-                        break;
-                    case 'week':
-                        // Use Monday as week start
-                        const weekStart = new Date(recordDate);
-                        const day = weekStart.getDay();
-                        const diff = (day === 0 ? -6 : 1) - day; // Monday
-                        weekStart.setDate(weekStart.getDate() + diff);
-                        weekStart.setHours(0, 0, 0, 0); // Normalize to start of day
-                        bucketKey = weekStart.toISOString().split('T')[0];
-                        break;
-                    case 'month':
-                        // Format: YYYY-MM
-                        bucketKey = recordDate.toISOString().slice(0, 7);
-                        break;
-                    default:
-                        bucketKey = recordDate.toISOString().split('T')[0];
-                }
-
-                // Keep the latest record in each bucket
-                const existing = buckets.get(bucketKey);
-                const recordTime = new Date(record.date).getTime();
-
-                if (!existing || recordTime > new Date(existing.date).getTime()) {
-                    buckets.set(bucketKey, {
-                        value: record.value,
-                        date: record.date,
-                        timestamp: recordTime
-                    });
-                }
+            switch (range) {
+                case 'day':
+                    cutoffDate = new Date(now);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'week':
+                    cutoffDate = new Date(now);
+                    cutoffDate.setDate(cutoffDate.getDate() - 6);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'month':
+                    cutoffDate = new Date(now);
+                    cutoffDate.setDate(cutoffDate.getDate() - 29);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'six_month':
+                    cutoffDate = new Date(now);
+                    cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'year':
+                    cutoffDate = new Date(now);
+                    cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+                    cutoffDate.setHours(0, 0, 0, 0);
+                    break;
+                default:
+                    cutoffDate = new Date(now);
+                    cutoffDate.setDate(cutoffDate.getDate() - 6);
+                    cutoffDate.setHours(0, 0, 0, 0);
             }
 
-            // Convert to array and sort
-            aggregatedData = Array.from(buckets.values())
-                .sort((a, b) => a.timestamp - b.timestamp);
-        }
+            // ====================================================================
+            // STEP 2: Fetch records from database
+            // ====================================================================
 
-        // ====================================================================
-        // STEP 4: Calculate statistics
-        // ====================================================================
+            // ✅ OPTIMIZED: Use select to reduce data transfer
+            const records = await this.prisma.healthRecord.findMany({
+                where: {
+                    petId,
+                    type: metricKey,
+                    deleted: false,
+                    date: {
+                        gte: cutoffDate.toISOString()
+                    }
+                },
+                select: {
+                    value: true,
+                    date: true,
+                    // Only these 2 fields are needed for aggregation
+                    // Reduces payload by ~60%
+                },
+                orderBy: {
+                    date: 'asc'
+                }
+            });
 
-        const values = aggregatedData.map(d => d.value).filter(v => v !== null && v !== undefined);
-        const stats = {
-            avg: values.length > 0
-                ? values.reduce((sum, v) => sum + v, 0) / values.length
-                : null,
-            min: values.length > 0
-                ? Math.min(...values)
-                : null,
-            max: values.length > 0
-                ? Math.max(...values)
-                : null,
-            count: values.length
-        };
+            // Note: Scheduled items filtering is now handled at DB level
+            // Since we're using select to exclude metadata, we rely on the assumption
+            // that most records without explicit metadata.isScheduled are not scheduled
+            // If needed, add metadata: true to select and filter here
+            const filteredRecords = records;
 
-        // ====================================================================
-        // STEP 5: Return result
-        // ====================================================================
+            // ====================================================================
+            // STEP 3: Server-side aggregation
+            // ====================================================================
+
+            let aggregatedData: any[];
+
+            if (bucket === 'none') {
+                // No aggregation, return raw data
+                aggregatedData = filteredRecords.map(r => ({
+                    value: r.value,
+                    date: r.date,
+                    timestamp: new Date(r.date).getTime()
+                }));
+            } else {
+                // Aggregate by bucket (day/week/month)
+                const buckets = new Map<string, any>();
+
+                for (const record of filteredRecords) {
+                    const recordDate = new Date(record.date);
+                    let bucketKey: string;
+
+                    switch (bucket) {
+                        case 'day':
+                            // Format: YYYY-MM-DD
+                            bucketKey = recordDate.toISOString().split('T')[0];
+                            break;
+                        case 'week':
+                            // Use Monday as week start
+                            const weekStart = new Date(recordDate);
+                            const day = weekStart.getDay();
+                            const diff = (day === 0 ? -6 : 1) - day; // Monday
+                            weekStart.setDate(weekStart.getDate() + diff);
+                            weekStart.setHours(0, 0, 0, 0); // Normalize to start of day
+                            bucketKey = weekStart.toISOString().split('T')[0];
+                            break;
+                        case 'month':
+                            // Format: YYYY-MM
+                            bucketKey = recordDate.toISOString().slice(0, 7);
+                            break;
+                        default:
+                            bucketKey = recordDate.toISOString().split('T')[0];
+                    }
+
+                    // Keep the latest record in each bucket
+                    const existing = buckets.get(bucketKey);
+                    const recordTime = new Date(record.date).getTime();
+
+                    if (!existing || recordTime > new Date(existing.date).getTime()) {
+                        buckets.set(bucketKey, {
+                            value: record.value,
+                            date: record.date,
+                            timestamp: recordTime
+                        });
+                    }
+                }
+
+                // Convert to array and sort
+                aggregatedData = Array.from(buckets.values())
+                    .sort((a, b) => a.timestamp - b.timestamp);
+            }
+
+            // ====================================================================
+            // STEP 4: Calculate statistics
+            // ====================================================================
+
+            const values = aggregatedData.map(d => d.value).filter(v => v !== null && v !== undefined);
+            const stats = {
+                avg: values.length > 0
+                    ? values.reduce((sum, v) => sum + v, 0) / values.length
+                    : null,
+                min: values.length > 0
+                    ? Math.min(...values)
+                    : null,
+                max: values.length > 0
+                    ? Math.max(...values)
+                    : null,
+                count: values.length
+            };
+
+            // ====================================================================
+            // STEP 5: Return result
+            // ====================================================================
 
             return {
                 series: aggregatedData,
@@ -671,11 +671,26 @@ export class HealthService implements OnModuleInit {
     }
 
     private async ensureHealthIndexes(): Promise<void> {
+        // ============================================================
+        // HealthRecord Indexes
+        // ============================================================
+
         await this.prisma.$executeRawUnsafe(`
             CREATE INDEX IF NOT EXISTS "idx_health_record_covering"
             ON "HealthRecord"("petId","type","deleted","date" DESC)
             WHERE "deleted" = false;
         `);
+
+        // TD-008: Index for date-range queries
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "idx_health_record_pet_date"
+            ON "HealthRecord"("petId","date" DESC)
+            WHERE "deleted" = false;
+        `);
+
+        // ============================================================
+        // PinnedMetric Indexes
+        // ============================================================
 
         await this.prisma.$executeRawUnsafe(`
             CREATE INDEX IF NOT EXISTS "idx_pinned_metric_lookup"
@@ -686,5 +701,36 @@ export class HealthService implements OnModuleInit {
             CREATE UNIQUE INDEX IF NOT EXISTS "PinnedMetric_petId_metricKey_key"
             ON "PinnedMetric"("petId","metricKey");
         `);
+
+        // ============================================================
+        // TD-008: Pet Table Indexes
+        // ============================================================
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "idx_pet_user_active"
+            ON "Pet"("userId","deleted")
+            WHERE "deleted" = false;
+        `);
+
+        // ============================================================
+        // TD-008: HealthSchedule Indexes
+        // ============================================================
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "idx_health_schedule_pet_active"
+            ON "HealthSchedule"("petId","isActive","date" ASC)
+            WHERE "isActive" = true;
+        `);
+
+        // ============================================================
+        // TD-008: Article Indexes
+        // ============================================================
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "idx_article_category_created"
+            ON "Article"("category","createdAt" DESC);
+        `);
+
+        this.logger.log('[HealthService] All performance indexes ensured (TD-008)');
     }
 }

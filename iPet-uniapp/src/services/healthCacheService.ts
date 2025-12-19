@@ -15,6 +15,7 @@ import {
     type HealthCacheKey,
     type CacheEntry
 } from '@shared/types/health'
+import { performanceMonitor } from '@/utils/performance/performanceMonitor'
 
 // ============================================================================
 // Constants
@@ -154,7 +155,10 @@ function get<T>(key: HealthCacheKey): T | null {
         const storageKey = getStorageKey(key)
         const raw = uni.getStorageSync(storageKey)
 
-        if (!raw) return null
+        if (!raw) {
+            performanceMonitor.trackCacheHit(key, false)
+            return null
+        }
 
         const entry: CacheEntry<T> = JSON.parse(raw)
 
@@ -174,9 +178,13 @@ function get<T>(key: HealthCacheKey): T | null {
         // 更新 LRU 访问时间
         updateLRUAccess(key)
 
+        // 记录缓存命中
+        performanceMonitor.trackCacheHit(key, true)
+
         return entry.data
     } catch (e) {
         console.warn(`[HealthCacheService] Failed to get cache for ${key}:`, e)
+        performanceMonitor.trackCacheHit(key, false)
         return null
     }
 }

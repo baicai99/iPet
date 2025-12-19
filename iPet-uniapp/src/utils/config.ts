@@ -47,6 +47,9 @@ export const APP_CONFIG = {
     API_BASE_URL: resolveApiBaseUrl(),
     TIMEOUT: 10000,
     USE_MOCK: import.meta.env.VITE_USE_MOCK === 'true',
+    // 性能监控配置
+    ENABLE_PERFORMANCE_MONITOR: import.meta.env.VITE_ENABLE_PERF_MONITOR !== 'false',
+    PERFORMANCE_REPORT_URL: import.meta.env.VITE_PERF_REPORT_URL || '',
 };
 
 // Log config on startup (DEV only)

@@ -2,6 +2,7 @@ import App from './App.vue'
 import { i18n } from '@/locale'
 import { initPermission } from './permission'
 import { initAuthHandlers } from '@/services/authSetup'
+import { initGlobalErrorHandler } from '@/utils/performance/performanceMonitor'
 
 
 
@@ -31,6 +32,9 @@ export function createApp() {
 
   // Initialize auth handlers
   initAuthHandlers()
+
+  // Initialize global error handler for performance monitoring
+  initGlobalErrorHandler(app)
 
   return {
     app,

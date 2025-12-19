@@ -286,9 +286,20 @@ const removeStorageItem = (key: string) => {
 }
 
 const resetPersistedAppState = () => {
+    // Reset stores with proper handling for Setup vs Options stores
     STORES_REQUIRING_RESET.forEach((store) => {
-        if (store && typeof store.$reset === 'function') {
-            store.$reset()
+        try {
+            // healthStore uses resetStore() instead of $reset()
+            if (store === healthStore) {
+                if (typeof store.resetStore === 'function') {
+                    store.resetStore()
+                }
+            } else if (store && typeof store.$reset === 'function') {
+                // Other stores (userStore, petStore, preferenceStore) have $reset()
+                store.$reset()
+            }
+        } catch (error) {
+            console.warn('[MY] Failed to reset store', error)
         }
     })
 
@@ -313,6 +324,7 @@ const resetPersistedAppState = () => {
 
     PERSISTED_PINIA_KEYS.forEach((key) => removeStorageItem(key))
 }
+
 
 const handleLogout = () => {
     uni.showModal({
