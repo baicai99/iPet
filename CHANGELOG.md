@@ -8,6 +8,9 @@
 - 文档：新增 `iPet-uniapp/docs/backend/preaggregation.md` 落档“预聚合/物化”规范；补充 `iPet-uniapp/docs/backend/cache.md` 的 L3 预聚合说明。
 - 前端（uni-app）：增加 postinstall 补丁脚本，修复 `uni:sourcemap` 在某些 bundle chunk 为 asset 时对 `outputChunk.code.replace` 的崩溃（`Cannot read properties of undefined (reading 'replace')`）。
 - 文档：新增 `iPet-uniapp/docs/dev/dependency-patches.md`，落档依赖补丁（postinstall）机制与约束。
+- 前端（uni-app）：CI 增加微信小程序“主包”体积校验（不含分包），主包必须 `< 1.5MB`（90% 阈值 `1.35MB` 预警）。
+- 前端（uni-app）：为满足主包预算，mp-weixin 构建后将文章封面图从 `static/images/articles` 归并到 `pages/articles` 分包目录，并在文章封面渲染时对 mp-weixin 平台做路径兼容映射。
+- 文档：新增 `iPet-uniapp/docs/performance/package-size.md`，并同步修正前端性能/工程化/安全相关文档中的包体阈值描述。
 
 ## v2025.12.19 (2025-12-19)
 

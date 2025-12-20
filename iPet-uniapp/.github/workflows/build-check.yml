@@ -37,29 +37,9 @@ jobs:
       - name: Check package size
         working-directory: ./iPet-uniapp
         run: |
-          # 计算构建产物大小
-          SIZE=$(du -sb dist/build/mp-weixin | cut -f1)
-          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
-          echo "📦 Package size: ${SIZE_MB}MB"
-          
-          # 微信小程序主包限制: 2MB = 2097152 bytes
-          LIMIT_BYTES=2097152
-          LIMIT_MB=2
-          
-          if [ $SIZE -gt $LIMIT_BYTES ]; then
-            echo "❌ ERROR: Package size (${SIZE_MB}MB) exceeds ${LIMIT_MB}MB limit!"
-            echo "::error::Package size ${SIZE_MB}MB exceeds ${LIMIT_MB}MB limit. Please reduce bundle size."
-            exit 1
-          fi
-          
-          # 警告阈值: 1.8MB (90%)
-          WARN_BYTES=1887436
-          if [ $SIZE -gt $WARN_BYTES ]; then
-            echo "⚠️ WARNING: Package size (${SIZE_MB}MB) is approaching ${LIMIT_MB}MB limit!"
-            echo "::warning::Package size ${SIZE_MB}MB is approaching ${LIMIT_MB}MB limit (>90%). Consider optimization."
-          else
-            echo "✅ Package size within limit"
-          fi
+          # 检测微信小程序“主包”大小（不包含分包；插件不计入本仓构建产物）
+          # 主包限制: 1.5MB = 1572864 bytes
+          node scripts/dist/check-mp-weixin-size.mjs --dist dist/build/mp-weixin --limitBytes 1572864 --warnBytes 1415577
 
   # 依赖安全审计 (可选，仅在 PR 时运行)
   security-audit:

@@ -1,7 +1,7 @@
 <template>
     <view class="article-card" @click="goToDetail">
         <view class="cover-wrapper">
-            <image :src="cover" class="cover-image" mode="aspectFill" lazy-load="true"></image>
+            <image :src="resolvedCover" class="cover-image" mode="aspectFill" lazy-load="true"></image>
             <view v-if="isNew" class="new-badge">最新</view>
         </view>
         <view class="info">
@@ -13,6 +13,9 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { resolveArticleCoverUrl } from '@/modules/articles/services/resolveArticleCoverUrl'
+
 const props = defineProps({
     id: { type: [String, Number], required: true },
     title: { type: String, required: true },
@@ -25,6 +28,8 @@ const props = defineProps({
     /** 文章更新时间，格式 YYYY-MM-DD */
     updateTime: { type: String, default: '' }
 })
+
+const resolvedCover = computed(() => resolveArticleCoverUrl(props.cover))
 
 const goToDetail = () => {
     if (!props.navigateToDetail) {
@@ -110,4 +115,3 @@ const formatUpdateTime = (dateStr) => {
     margin-top: 4rpx;
 }
 </style>
-

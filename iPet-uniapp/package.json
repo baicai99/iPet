@@ -38,12 +38,13 @@
     "build:mp-lark": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p mp-lark && node scripts/generate-articles-report.js",
     "build:mp-qq": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p mp-qq && node scripts/generate-articles-report.js",
     "build:mp-toutiao": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p mp-toutiao && node scripts/generate-articles-report.js",
-    "build:mp-weixin": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p mp-weixin && node scripts/generate-articles-report.js",
+    "build:mp-weixin": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p mp-weixin && node scripts/dist/relocate-mp-weixin-article-images.mjs && node scripts/generate-articles-report.js",
     "build:quickapp-webview": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p quickapp-webview && node scripts/generate-articles-report.js",
     "build:quickapp-webview-huawei": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p quickapp-webview-huawei && node scripts/generate-articles-report.js",
     "build:quickapp-webview-union": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p quickapp-webview-union && node scripts/generate-articles-report.js",
     "postinstall": "node scripts/patch-uni-sourcemap.mjs",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "check:size:mp-weixin": "node scripts/dist/check-mp-weixin-size.mjs --dist dist/build/mp-weixin --limitBytes 1572864 --warnBytes 1415577"
   },
   "keywords": [],
   "author": "",

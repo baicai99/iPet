@@ -4,7 +4,8 @@
             <u-loading-page :loading="loading"></u-loading-page>
 
             <view v-if="article" class="content-wrapper">
-                <image v-if="article.cover" :src="article.cover" class="cover-image" mode="aspectFill"></image>
+                <image v-if="article.cover" :src="resolveArticleCoverUrl(article.cover)" class="cover-image"
+                    mode="aspectFill"></image>
                 <view class="article-header">
                     <text class="title">{{ article.title }}</text>
                     <view class="meta">
@@ -29,6 +30,7 @@ import { getArticleDetail } from '@/services/articleService'
 import { formatDate } from '@/utils/common/formatHelper'
 import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'
 import type { ArticleWithContent } from '@/modules/articles/domain/types'
+import { resolveArticleCoverUrl } from '@/modules/articles/services/resolveArticleCoverUrl'
 
 const loading = ref(true)
 const article = ref<ArticleWithContent | null>(null)

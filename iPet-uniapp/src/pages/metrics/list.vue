@@ -23,7 +23,7 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import MetricItemCard from '@/components/business/health/MetricItemCard.vue'
-import { useMetricList } from '@/composables/useMetricList'
+import { useMetricList } from './composables/useMetricList'
 import PinyinMatch from 'pinyin-match'
 
 const { groupedSections, refresh } = useMetricList()

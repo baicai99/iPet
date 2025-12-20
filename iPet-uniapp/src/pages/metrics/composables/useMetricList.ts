@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useHealthStore } from '@/stores/healthStore'
 import { getAllMetricKeys } from '@/data/metricMetadata'
 import { useMetricProcessor } from '@/composables/useMetricProcessor'
-import { SECTION_META, determineTimeSection } from '@/utils/common/timeGrouper'
+import { SECTION_META, determineTimeSection } from '@/pages/metrics/utils/timeGrouper'
 
 export function useMetricList() {
     const healthStore = useHealthStore()
