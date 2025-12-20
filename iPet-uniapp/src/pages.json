@@ -243,14 +243,14 @@
 			{
 				"pagePath": "pages/summary/summary",
 				"text": "摘要",
-				"iconPath": "static/tabbar/like.png",
-				"selectedIconPath": "static/tabbar/likefill.png"
+				"iconPath": "static/tabs/like.png",
+				"selectedIconPath": "static/tabs/likefill.png"
 			},
 			{
 				"pagePath": "pages/my/my",
 				"text": "我的",
-				"iconPath": "static/tabbar/my.png",
-				"selectedIconPath": "static/tabbar/myfill.png"
+				"iconPath": "static/tabs/my.png",
+				"selectedIconPath": "static/tabs/myfill.png"
 			}
 		]
 	},

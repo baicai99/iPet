@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getArticleDetail } from '@/services/articleService'
+import { getArticleDetail } from './services/articleService'
 import { formatDate } from '@/utils/common/formatHelper'
 import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'
 import type { ArticleWithContent } from '@/modules/articles/domain/types'

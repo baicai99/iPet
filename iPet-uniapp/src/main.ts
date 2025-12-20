@@ -10,7 +10,7 @@ import { initGlobalErrorHandler } from '@/utils/performance/performanceMonitor'
 import { createSSRApp } from 'vue'
 import * as Pinia from 'pinia'
 import { createPersistedState } from 'pinia-plugin-persistedstate'
-import uviewPlus from 'uview-plus'
+// uview-plus is handled by easycom in pages.json for tree-shaking
 
 export function createApp() {
   const app = createSSRApp(App)
@@ -23,7 +23,6 @@ export function createApp() {
   }))
   app.use(pinia)
   app.use(i18n)
-  app.use(uviewPlus)
 
   // Initialize permission interceptors
   initPermission()

@@ -2,7 +2,7 @@
   <view class="page-container">
     <view class="about-page">
       <view class="logo-section">
-        <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
+        <image class="logo" :src="'/static/logo.png'" mode="aspectFit"></image>
         <text class="app-name">iPet</text>
         <text class="version">Version 0.0.1</text>
       </view>
