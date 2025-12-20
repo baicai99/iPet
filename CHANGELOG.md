@@ -11,6 +11,8 @@
 - 前端（uni-app）：CI 增加微信小程序“主包”体积校验（不含分包），主包必须 `< 1.5MB`（90% 阈值 `1.35MB` 预警）。
 - 前端（uni-app）：为满足主包预算，mp-weixin 构建后将文章封面图从 `static/images/articles` 归并到 `pages/articles` 分包目录，并在文章封面渲染时对 mp-weixin 平台做路径兼容映射。
 - 文档：新增 `iPet-uniapp/docs/performance/package-size.md`，并同步修正前端性能/工程化/安全相关文档中的包体阈值描述。
+- 前端（uni-app）：微信小程序启用组件按需注入（`lazyCodeLoading=requiredComponents`），降低启动注入耗时与运行时内存占用（启用后需回归页面渲染/交互）。
+- 文档：新增 `iPet-uniapp/docs/performance/lazy-code-loading.md`，落档按需注入配置位置、约束与回归要点。
 
 ## v2025.12.19 (2025-12-19)
 
