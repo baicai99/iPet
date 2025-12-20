@@ -62,6 +62,7 @@ export interface RequestConfig<T = any> {
 
 const pendingTasks = new Map<string, UniApp.RequestTask>()
 const inflightRequests = new Map<string, Promise<any>>()
+const abortControllers = new Map<string, { id: string; cancel: () => void }>()
 const failedRequestQueue: Array<{
     resolve: (value: unknown) => void;
     reject: (reason?: any) => void;
@@ -72,6 +73,30 @@ let refreshPromise: Promise<TokenRefreshResult | null> | null = null
 let forcingLogout = false
 
 const OFFLINE_QUEUE_KEY = 'offline_request_queue'
+
+const RETRY_POLICY = {
+    maxRetries: 3,
+    retryableStatus: new Set([408, 429, 500, 502, 503, 504]),
+    maxDelayMs: 30000
+}
+
+const getRetryDelayMs = (attempt: number): number => {
+    return Math.min(1000 * Math.pow(2, attempt), RETRY_POLICY.maxDelayMs)
+}
+
+const hasIdempotencyKey = (header: Record<string, any>): boolean => {
+    return Object.keys(header).some(key => key.toLowerCase() === 'x-idempotency-key')
+}
+
+const canRetryMethod = (method: string, header: Record<string, any>): boolean => {
+    if (['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'].includes(method)) {
+        return true
+    }
+    if (method === 'POST') {
+        return hasIdempotencyKey(header)
+    }
+    return false
+}
 
 interface OfflineRequest {
     id: string;
@@ -160,6 +185,19 @@ const clearAbort = (key?: string, task?: UniApp.RequestTask | null) => {
     const stored = pendingTasks.get(key)
     if (!stored || (task && stored !== task)) return
     pendingTasks.delete(key)
+}
+
+const cancelByAbortKey = (key: string) => {
+    const existingController = abortControllers.get(key)
+    if (existingController) {
+        existingController.cancel()
+        abortControllers.delete(key)
+    }
+    const existingTask = pendingTasks.get(key)
+    if (existingTask) {
+        existingTask.abort()
+        pendingTasks.delete(key)
+    }
 }
 
 const resolveExpiresAt = (expiresIn?: number): number | null => {
@@ -370,10 +408,9 @@ const handleError = (status: number, data: any, skipToast = false): AppError => 
 }
 
 const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Promise<T> => {
-    const requestStartTime = Date.now()
-
     // Mock mode: completely bypass network, use mock handlers
     if (APP_CONFIG.USE_MOCK) {
+        const requestStartTime = Date.now()
         if (config.showLoading) {
             showGlobalLoading(config.loadingText)
         }
@@ -399,123 +436,217 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
         header['Authorization'] = `Bearer ${token}`
     }
 
-    if (config.showLoading) {
-        showGlobalLoading(config.loadingText)
-    }
-
-    const isGet = (config.method || 'GET').toUpperCase() === 'GET'
+    const method = (config.method || 'GET').toUpperCase()
+    const isGet = method === 'GET'
     const dedupKey = isGet ? `${config.url}?${JSON.stringify(config.data || {})}` : null
 
     if (dedupKey && inflightRequests.has(dedupKey)) {
         return inflightRequests.get(dedupKey) as Promise<T>
     }
 
-    const promise = new Promise<T>((resolve, reject) => {
-        const requestTask = uni.request({
-            url: BASE_URL + config.url,
-            method: config.method || 'GET',
-            data: config.data,
-            header,
-            timeout: config.timeout,
-            success: async (res) => {
-                const duration = Date.now() - requestStartTime
-                const { statusCode, data } = res
-                const isSuccess = statusCode >= 200 && statusCode < 300
-                const isNotModified = statusCode === 304
+    if (config.abortKey) {
+        cancelByAbortKey(config.abortKey)
+    }
 
-                // 记录 API 耗时
-                performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, statusCode)
+    let loadingActive = false
+    if (config.showLoading) {
+        showGlobalLoading(config.loadingText)
+        loadingActive = true
+    }
 
-                if (config.rawResponse) {
-                    if (isSuccess || isNotModified) {
-                        resolve(res as any as T)
+    const abortControllerId = config.abortKey
+        ? `abort_${Date.now()}_${Math.random().toString(36).slice(2)}`
+        : null
+
+    const corePromise = new Promise<T>((resolve, reject) => {
+        let settled = false
+        let retryCount = 0
+        let currentTask: UniApp.RequestTask | null = null
+        let retryTimer: ReturnType<typeof setTimeout> | null = null
+
+        const canRetry = canRetryMethod(method, header)
+
+        const cleanupRetryTimer = () => {
+            if (retryTimer) {
+                clearTimeout(retryTimer)
+                retryTimer = null
+            }
+        }
+
+        const finish = (fn: () => void) => {
+            if (settled) return
+            settled = true
+            cleanupRetryTimer()
+            fn()
+        }
+
+        const cancel = () => {
+            finish(() => {
+                try {
+                    currentTask?.abort()
+                } catch (e) {
+                    /* ignore */
+                }
+                reject(new AppError(ErrorCode.ABORTED))
+            })
+        }
+
+        if (config.abortKey && abortControllerId) {
+            abortControllers.set(config.abortKey, { id: abortControllerId, cancel })
+        }
+
+        const scheduleRetry = () => {
+            const delay = getRetryDelayMs(retryCount)
+            retryCount += 1
+            cleanupRetryTimer()
+            retryTimer = setTimeout(() => {
+                attemptRequest()
+            }, delay)
+        }
+
+        const attemptRequest = () => {
+            if (settled) return
+            const requestStartTime = Date.now()
+
+            let requestTask: UniApp.RequestTask | null = null
+            requestTask = uni.request({
+                url: BASE_URL + config.url,
+                method: config.method || 'GET',
+                data: config.data,
+                header,
+                timeout: config.timeout,
+                success: async (res) => {
+                    if (settled) return
+
+                    const duration = Date.now() - requestStartTime
+                    const { statusCode, data } = res
+                    const isSuccess = statusCode >= 200 && statusCode < 300
+                    const isNotModified = statusCode === 304
+
+                    performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, statusCode)
+
+                    if (config.rawResponse) {
+                        if (isSuccess || isNotModified) {
+                            finish(() => resolve(res as any as T))
+                            return
+                        }
+                    } else if (isSuccess || isNotModified) {
+                        finish(() => resolve(data as T))
                         return
                     }
-                } else if (isSuccess) {
-                    resolve(data as T)
-                    return
-                } else if (isNotModified) {
-                    resolve(data as T)
-                    return
-                } else if (statusCode === 401 && !config.__retry && !config.skipAuthRefresh) {
-                    queueFailedRequest({
-                        ...config,
-                        header: {
-                            ...config.header
-                        },
-                        __retry: true,
-                        showLoading: false
-                    }, resolve, reject)
-                    triggerTokenRefresh()
-                        .catch(() => {
-                            /* handled in triggerTokenRefresh */
-                        })
-                    return
-                } else {
+
+                    if (statusCode === 401 && !config.__retry && !config.skipAuthRefresh) {
+                        if (loadingActive) {
+                            hideGlobalLoading()
+                            loadingActive = false
+                        }
+                        queueFailedRequest({
+                            ...config,
+                            header: {
+                                ...config.header
+                            },
+                            __retry: true,
+                            showLoading: false
+                        }, resolve, reject)
+                        triggerTokenRefresh()
+                            .catch(() => {
+                                /* handled in triggerTokenRefresh */
+                            })
+                        return
+                    }
+
+                    if (canRetry && RETRY_POLICY.retryableStatus.has(statusCode) && retryCount < RETRY_POLICY.maxRetries) {
+                        scheduleRetry()
+                        return
+                    }
+
                     const error = handleError(statusCode, data, config.skipErrorHandle)
-                    reject(error)
-                }
-            },
-            fail: (err) => {
-                const duration = Date.now() - requestStartTime
-                const errMsg = err?.errMsg ?? ''
+                    finish(() => reject(error))
+                },
+                fail: (err) => {
+                    if (settled) return
 
-                // 记录失败的 API 调用（status 0 表示网络失败）
-                performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, 0)
+                    const duration = Date.now() - requestStartTime
+                    const errMsg = err?.errMsg ?? ''
 
-                if (errMsg.includes('request:fail') || errMsg.includes('timeout')) {
-                    const method = (config.method || 'GET').toUpperCase()
+                    performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, 0)
 
-                    // 只有写操作加入离线队列
-                    if (method !== 'GET') {
-                        addToOfflineQueue(config)
-                        const error = new AppError(ErrorCode.OFFLINE, '网络不可用，已保存到离线队列')
+                    if (errMsg === 'request:fail abort') {
+                        finish(() => reject(new AppError(ErrorCode.ABORTED)))
+                        return
+                    }
+
+                    const isNetworkOrTimeout = errMsg.includes('request:fail') || errMsg.includes('timeout')
+                    if (isNetworkOrTimeout && canRetry && retryCount < RETRY_POLICY.maxRetries) {
+                        scheduleRetry()
+                        return
+                    }
+
+                    if (isNetworkOrTimeout) {
+                        // 只有写操作加入离线队列
+                        if (method !== 'GET') {
+                            addToOfflineQueue(config)
+                            const error = new AppError(ErrorCode.OFFLINE, '网络不可用，已保存到离线队列')
+                            if (!config.skipErrorHandle) {
+                                showError(error)
+                            }
+                            finish(() => reject({ ...err, isOffline: true, appError: error }))
+                            return
+                        }
+
+                        // GET 请求显示网络错误
+                        const error = errMsg.includes('timeout')
+                            ? new AppError(ErrorCode.TIMEOUT)
+                            : new AppError(ErrorCode.NETWORK_ERROR)
                         if (!config.skipErrorHandle) {
                             showError(error)
                         }
-                        reject({ ...err, isOffline: true, appError: error })
+                        finish(() => reject(error))
                         return
                     }
 
-                    // GET 请求显示网络错误
-                    const error = errMsg.includes('timeout')
-                        ? new AppError(ErrorCode.TIMEOUT)
-                        : new AppError(ErrorCode.NETWORK_ERROR)
-                    if (!config.skipErrorHandle) {
-                        showError(error)
-                    }
-                    reject(error)
-                } else if (errMsg !== 'request:fail abort') {
                     const error = new AppError(ErrorCode.NETWORK_ERROR, 'Network Error')
                     if (!config.skipErrorHandle) {
                         showError(error)
                     }
-                    reject(error)
-                } else {
-                    // 请求被取消，静默处理
-                    reject(new AppError(ErrorCode.ABORTED))
+                    finish(() => reject(error))
+                },
+                complete: () => {
+                    clearAbort(config.abortKey, requestTask)
                 }
-            },
-            complete: () => {
-                if (config.showLoading) {
-                    hideGlobalLoading()
-                }
-                clearAbort(config.abortKey, requestTask)
-            }
-        })
+            })
 
-        if (config.abortKey) {
-            registerAbort(config.abortKey, requestTask)
+            if (requestTask) {
+                currentTask = requestTask
+                if (config.abortKey) {
+                    registerAbort(config.abortKey, requestTask)
+                }
+            }
+        }
+
+        attemptRequest()
+    })
+
+    const promise = corePromise.finally(() => {
+        if (loadingActive) {
+            hideGlobalLoading()
+        }
+        if (config.abortKey && abortControllerId) {
+            const stored = abortControllers.get(config.abortKey)
+            if (stored?.id === abortControllerId) {
+                abortControllers.delete(config.abortKey)
+            }
         }
     })
 
     if (dedupKey) {
         inflightRequests.set(dedupKey, promise)
-        promise.finally(() => {
+        const cleanup = () => {
             if (inflightRequests.get(dedupKey) === promise) {
                 inflightRequests.delete(dedupKey)
             }
-        })
+        }
+        promise.then(cleanup, cleanup)
     }
 
     return promise

@@ -29,16 +29,12 @@
                             <view class="species-grid">
                                 <view class="species-card" :class="{ 'selected': modelValue.type === 'dog' }"
                                     @click="updateType('dog')">
-                                    <svg class="icon species-icon" aria-hidden="true">
-                                        <use xlink:href="#icon-bianmu"></use>
-                                    </svg>
+                                    <text class="iconfont species-icon">{{ ICONFONT_UNICODE.petDog }}</text>
                                     <text class="species-name">狗狗</text>
                                 </view>
                                 <view class="species-card" :class="{ 'selected': modelValue.type === 'cat' }"
                                     @click="updateType('cat')">
-                                    <svg class="icon species-icon" aria-hidden="true">
-                                        <use xlink:href="#icon-xianluomao"></use>
-                                    </svg>
+                                    <text class="iconfont species-icon">{{ ICONFONT_UNICODE.petCat }}</text>
                                     <text class="species-name">猫猫</text>
                                 </view>
                             </view>
@@ -241,6 +237,7 @@ import { ref, computed } from 'vue'
 import { DOG_BREEDS, CAT_BREEDS, OTHER_BREEDS } from '@/config/petBreeds'
 import PinyinMatch from 'pinyin-match'
 import AvatarUploader from './AvatarUploader.vue'
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 interface PetProfile {
     avatar: string;

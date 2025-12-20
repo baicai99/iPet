@@ -36,7 +36,7 @@
 
             <!-- ✅ 趋势区块不使用 AppSectionState，直接展示内容 -->
             <!-- TrendHintCard 自己负责空状态展示，无需外层 loading/empty 状态管理 -->
-            <view class="trends-section" :style="{ minHeight: trendsMinHeight }">
+            <view class="trends-section">
                 <!-- State 1: Has Trends - Show TrendCard list -->
                 <template v-if="changedMetricKeys.length > 0">
                     <TrendCard v-for="key in changedMetricKeys.slice(0, 3)" :key="key" :metricKey="key"
@@ -60,7 +60,7 @@
             </view>
 
             <!-- ✅ 文章区块不使用 AppSectionState，直接展示内容 -->
-            <view class="articles-section" style="min-height: 300rpx;">
+            <view class="articles-section">
                 <!-- State 1: Has Articles - Show ArticleCard list -->
                 <template v-if="articles.length > 0">
                     <view class="articles-list">
@@ -106,6 +106,7 @@ import type { ArticleManifestItem } from '@/modules/articles/domain/types'
 import healthCacheService from '@/services/healthCacheService'  // ✅ NEW: 同步读取缓存
 import { useSectionState } from '@/composables/useSectionState'  // ✅ NEW: 分区状态机
 import { getTrendStatus } from '@/domain/trend/getTrendStatus'  // ✅ FIX: Import trend status detection
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 const { t } = useI18n()
 
@@ -171,15 +172,6 @@ const pinnedMinHeight = computed(() => {
     return `${totalHeight}rpx`
 })
 
-/**
- * ✅ Dynamic min-height for trends section
- * - Has trends (3 cards): 732rpx = 220*3 + 24*2 (gaps)
- * - No change (1 card): 264rpx = 240 (card height) + 24 (gap reserve)
- */
-const trendsMinHeight = computed(() => {
-    return changedMetricKeys.value.length > 0 ? '732rpx' : '264rpx'
-})
-
 const articles = computed<ArticleManifestItem[]>(() => articleStore.getLatestArticles(3))
 
 /**
@@ -219,7 +211,7 @@ const trendStatusHint = computed(() => {
 
 // Helper functions for TrendCard props
 const getMetricTitle = (key: string) => METRIC_METADATA[key as MetricKey]?.title || key
-const getMetricIcon = (key: string) => METRIC_METADATA[key as MetricKey]?.icon || 'chart-bar'
+const getMetricIcon = (key: string) => METRIC_METADATA[key as MetricKey]?.iconUnicode || ICONFONT_UNICODE.file
 const getMetricUnit = (key: string) => METRIC_METADATA[key as MetricKey]?.displayUnit || METRIC_METADATA[key as MetricKey]?.unit || ''
 const getMetricColor = (key: string) => {
     const category = METRIC_METADATA[key as MetricKey]?.category || 'default'

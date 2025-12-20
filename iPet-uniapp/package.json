@@ -42,6 +42,7 @@
     "build:quickapp-webview": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p quickapp-webview && node scripts/generate-articles-report.js",
     "build:quickapp-webview-huawei": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p quickapp-webview-huawei && node scripts/generate-articles-report.js",
     "build:quickapp-webview-union": "npm run articles:prepare && node scripts/optimize-images.js && uni build -p quickapp-webview-union && node scripts/generate-articles-report.js",
+    "postinstall": "node scripts/patch-uni-sourcemap.mjs",
     "type-check": "vue-tsc --noEmit"
   },
   "keywords": [],
@@ -83,6 +84,8 @@
     "typescript": "^5.9.3",
     "vite": "5.2.8",
     "vite-plugin-mock": "^3.0.2",
+    "vitest": "^1.6.1",
+    "@vitest/coverage-v8": "^1.6.1",
     "vue-tsc": "^3.1.5"
   },
   "lint-staged": {

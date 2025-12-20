@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UnauthorizedException, NotFoundException, Query } from '@nestjs/common';
 import { PetsService } from './pets.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/jwt-auth.guard';
+import { parsePagination } from '../utils/pagination';
 
 @Controller('pets')
 @UseGuards(JwtAuthGuard)
@@ -20,12 +21,17 @@ export class PetsController {
     }
 
     @Get()
-    findAll(@Req() req: AuthenticatedRequest) {
+    findAll(
+        @Req() req: AuthenticatedRequest,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
         const uid = req.user?.uid;
         if (!uid) throw new UnauthorizedException('User ID missing');
         const userId = req.user?.uid;
         if (!userId) throw new NotFoundException('User ID not found');
-        return this.petsService.findAll(userId);
+        const pagination = parsePagination({ page, limit }, { defaultLimit: 50, maxLimit: 200 });
+        return this.petsService.findAll(userId, pagination);
     }
 
     @Get(':id')

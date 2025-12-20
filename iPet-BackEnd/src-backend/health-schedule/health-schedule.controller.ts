@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Delete, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Query, Request } from '@nestjs/common';
 import { HealthScheduleService } from './health-schedule.service';
 import { CreateHealthScheduleDto } from './dto/create-health-schedule.dto';
+import { parsePagination } from '../utils/pagination';
 // Assuming AuthGuard exists, if likely strict NestJS setup. But checking other controllers (health.controller not viewed but health.service implied checks user).
 // I will assume there is some Auth mechanism, usually via @Request() req.user.id.
 // Since I don't know the exact AuthGuard import, I will mock the user extraction or assume standard request structure.
@@ -19,8 +20,15 @@ export class HealthScheduleController {
     }
 
     @Get(':petId')
-    findAll(@Request() req, @Param('petId') petId: string) {
-        return this.healthScheduleService.findAll(req.user?.id, petId);
+    findAll(
+        @Request() req,
+        @Param('petId') petId: string,
+        @Query('type') type?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        const pagination = parsePagination({ page, limit }, { defaultLimit: 50, maxLimit: 200 });
+        return this.healthScheduleService.findAll(req.user?.id, petId, type, pagination);
     }
 
     @Delete(':id')

@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { normalizeEmail } from '../utils/sanitizers';
 import { LoginDto } from './dto/login.dto';
 import { UpgradeDto } from './dto/upgrade.dto';
+import { LoginProtectionService } from './login-protection.service';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly loginProtection: LoginProtectionService,
   ) {
     const secret = this.configService.get<string>('jwtSecret');
     if (!secret) {
@@ -49,22 +51,27 @@ export class AuthService {
 
   async login(dto: LoginDto, ip: string) {
     const normalizedEmail = normalizeEmail(dto.email);
+    await this.loginProtection.assertNotLocked(normalizedEmail, ip);
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
     if (!user) {
+      await this.loginProtection.recordFailure(normalizedEmail, ip);
       throw new NotFoundException('该账号未注册');
     }
 
     if (!user.passwordHash) {
+      await this.loginProtection.recordFailure(normalizedEmail, ip);
       throw new UnauthorizedException('该账号未设置密码');
     }
 
     if (!(await compare(dto.password, user.passwordHash))) {
+      await this.loginProtection.recordFailure(normalizedEmail, ip);
       throw new UnauthorizedException('密码错误');
     }
 
+    await this.loginProtection.reset(normalizedEmail, ip);
     return this.generateToken(user);
   }
 

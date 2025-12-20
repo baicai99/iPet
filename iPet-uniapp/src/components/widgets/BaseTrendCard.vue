@@ -22,9 +22,7 @@
         <view class="header">
           <view class="header-left">
             <view class="icon-wrapper" :style="{ backgroundColor: themeBg, color: primaryColor }">
-              <svg class="icon" aria-hidden="true" style="font-size: 18px">
-                <use :xlink:href="'#' + icon"></use>
-              </svg>
+              <text class="iconfont" style="font-size: 18px">{{ icon }}</text>
             </view>
             <text class="title">{{ title }}</text>
           </view>
@@ -127,6 +125,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { TOKENS } from '@/config/theme'
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 // ============================================================================
 // Props
@@ -170,7 +169,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   title: '',
   mainTitle: '',
-  icon: 'chart-bar',
+  icon: ICONFONT_UNICODE.file,
   unit: '',
   primaryColor: '#ff453a',
   themeBg: '#fff7ed',

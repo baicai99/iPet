@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateHealthScheduleDto } from './dto/create-health-schedule.dto';
+import type { PaginationResult } from '../utils/pagination';
 
 @Injectable()
 export class HealthScheduleService {
@@ -37,7 +38,7 @@ export class HealthScheduleService {
         });
     }
 
-    async findAll(userId: string, petId: string, type?: string) {
+    async findAll(userId: string, petId: string, type: string | undefined, pagination: PaginationResult) {
         // Verify pet ownership
         const pet = await this.prisma.pet.findFirst({
             where: { id: petId, userId, deleted: false },
@@ -57,7 +58,9 @@ export class HealthScheduleService {
         // Return sorted by date asc (nearest first)
         return this.prisma.healthSchedule.findMany({
             where,
-            orderBy: { date: 'asc' }
+            orderBy: { date: 'asc' },
+            skip: pagination.skip,
+            take: pagination.take,
         });
     }
 

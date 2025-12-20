@@ -35,6 +35,22 @@ export default () => ({
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   databaseUrl: process.env.DATABASE_URL || defaultDbUrl,
   dataRoot: getDataRoot(),
-
+  redisUrl: process.env.REDIS_URL,
+  cache: {
+    namespace: process.env.CACHE_NAMESPACE || 'ipet',
+    defaultTtlMs: parseInt(process.env.CACHE_DEFAULT_TTL_MS || '60000', 10),
+  },
+  auth: {
+    loginProtection: {
+      maxFailures: parseInt(process.env.AUTH_LOGIN_MAX_FAILURES || '5', 10),
+      failureWindowMs: parseInt(process.env.AUTH_LOGIN_FAIL_WINDOW_MS || String(60 * 60 * 1000), 10),
+      cooldownMs: parseInt(process.env.AUTH_LOGIN_COOLDOWN_MS || String(10 * 60 * 1000), 10),
+    },
+  },
+  observability: {
+    prismaSlowQueryMs: parseInt(process.env.OBS_PRISMA_SLOW_QUERY_MS || '100', 10),
+    httpMetricsMaxSamples: parseInt(process.env.OBS_HTTP_METRICS_MAX_SAMPLES || '500', 10),
+    metricsToken: process.env.OBS_METRICS_TOKEN,
+  },
 
 });

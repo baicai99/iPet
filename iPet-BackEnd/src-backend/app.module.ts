@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -21,6 +21,10 @@ import { GuestCleanupService } from './guest/guest-cleanup.service';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { UploadsModule } from './uploads/uploads.module';
 import { ensureDataSubdir } from './config/data-paths';
+import { Keyv } from 'keyv';
+import { createKeyv as createKeyvRedis } from '@keyv/redis';
+import { ObservabilityModule } from './observability/observability.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -38,10 +42,30 @@ import { ensureDataSubdir } from './config/data-paths';
         limit: 100,
       },
     ]),
-    CacheModule.register({
+    CacheModule.registerAsync({
       isGlobal: true,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const namespace = configService.get<string>('cache.namespace', 'ipet');
+        const defaultTtlMs = configService.get<number>('cache.defaultTtlMs', 60000);
+        const redisUrl = configService.get<string>('redisUrl');
+
+        const stores = [new Keyv({ namespace, ttl: defaultTtlMs })];
+        if (redisUrl) {
+          stores.push(createKeyvRedis(redisUrl, { namespace }));
+        }
+
+        return {
+          namespace,
+          ttl: defaultTtlMs,
+          stores,
+          nonBlocking: true,
+        };
+      },
     }),
     PrismaModule,
+    MetricsModule,
+    ObservabilityModule,
     UsersModule,
     AuthModule,
     UploadsModule,

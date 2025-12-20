@@ -5,6 +5,7 @@ import { UpdatePetDto } from './dto/update-pet.dto';
 import { StorageService } from '../storage/storage.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Pet } from '@shared/types/pet';
+import type { PaginationResult } from '../utils/pagination';
 
 @Injectable()
 export class PetsService {
@@ -33,9 +34,12 @@ export class PetsService {
         });
     }
 
-    async findAll(userId: string): Promise<Pet[]> {
+    async findAll(userId: string, pagination: PaginationResult): Promise<Pet[]> {
         const pets = await this.prisma.pet.findMany({
             where: { userId, deleted: false },
+            orderBy: { updatedAt: 'desc' },
+            skip: pagination.skip,
+            take: pagination.take,
         });
         return pets.map(pet => ({
             ...pet,

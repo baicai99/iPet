@@ -1,13 +1,19 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { ArticleService } from './article.service';
+import { parsePagination } from '../utils/pagination';
 
 @Controller('articles')
 export class ArticleController {
     constructor(private readonly articleService: ArticleService) { }
 
     @Get()
-    findAll(@Query('category') category?: string) {
-        return this.articleService.findAll(category);
+    findAll(
+        @Query('category') category?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        const pagination = parsePagination({ page, limit }, { defaultLimit: 20, maxLimit: 100 });
+        return this.articleService.findAll(category, pagination);
     }
 
     @Get(':id')

@@ -5,9 +5,7 @@
         <view class="header">
             <view class="header-left">
                 <view class="icon-wrapper" :style="{ backgroundColor: themeBg, color: colors.primary }">
-                    <svg class="icon" aria-hidden="true" style="font-size: 18px">
-                        <use :xlink:href="'#' + icon"></use>
-                    </svg>
+                    <text class="iconfont" style="font-size: 18px">{{ icon }}</text>
                 </view>
                 <text class="title">{{ title }}</text>
             </view>
@@ -103,6 +101,12 @@ import { computed } from 'vue'
 import { useTrendCard, type TrendCardConfig } from '@/composables/useTrendCard'
 import { getMetricSentiment, getDirectionText } from '@/config/trendCopywriting'
 import { GRAY_SCALE, TOKENS } from '@/config/theme'
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
+import {
+    TREND_MIN_DATA_POINTS,
+    TREND_THRESHOLD_PERCENT,
+    TREND_WINDOW_SIZE
+} from '@/domain/trend/trendConstants'
 
 // ============================================================================
 // Props
@@ -122,7 +126,7 @@ const props = defineProps({
     /** Icon name */
     icon: {
         type: String,
-        default: 'chart-bar'
+        default: ICONFONT_UNICODE.file
     },
     /** Unit display */
     unit: {
@@ -147,17 +151,17 @@ const props = defineProps({
     /** Minimum data points (default: 20) */
     minDataPoints: {
         type: Number,
-        default: 20
+        default: TREND_MIN_DATA_POINTS
     },
     /** Maximum bars to display (default: 40) */
     maxBars: {
         type: Number,
-        default: 40
+        default: TREND_WINDOW_SIZE
     },
-    /** Threshold percent for trend detection (default: 5) */
+    /** Threshold percent for trend detection (aligned with domain layer: 30%) */
     thresholdPercent: {
         type: Number,
-        default: 5
+        default: TREND_THRESHOLD_PERCENT
     },
     /** Stable mode: show single line instead of two */
     isStable: {
@@ -309,7 +313,8 @@ const trendBadgeText = computed(() => {
 // ============================================================================
 
 const formatNumber = (num: number) => {
-    return num.toLocaleString()
+    if (!Number.isFinite(num)) return '--'
+    return num.toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
 // ============================================================================

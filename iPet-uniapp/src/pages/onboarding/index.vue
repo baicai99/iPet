@@ -53,12 +53,9 @@
                             <image v-if="petData.avatar" :src="petData.avatar" class="card-avatar-img"
                                 mode="aspectFill" />
                             <block v-else>
-                                <svg v-if="petData.type === 'cat'" class="icon species-icon-card" aria-hidden="true">
-                                    <use xlink:href="#icon-xianluomao"></use>
-                                </svg>
-                                <svg v-else class="icon species-icon-card" aria-hidden="true">
-                                    <use xlink:href="#icon-bianmu"></use>
-                                </svg>
+                                <text class="iconfont species-icon-card">
+                                    {{ petData.type === 'cat' ? ICONFONT_UNICODE.petCat : ICONFONT_UNICODE.petDog }}
+                                </text>
                             </block>
                         </view>
                         <view class="card-info">
@@ -112,6 +109,7 @@ import { updateUserProfile } from '@/services/userService';
 import { healthService } from '@/services/health.service';
 import { usePetCommands } from '@/composables/usePetCommands';
 import { emitDataChanged } from '@/services/syncEvents';
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont';
 
 const userStore = useUserStore();
 const petCommands = usePetCommands();

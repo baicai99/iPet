@@ -1,9 +1,16 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import type { Cache } from 'cache-manager';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateHealthRecordDto } from './dto/create-health-record.dto';
 import { UpdateHealthRecordDto } from './dto/update-health-record.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { HealthRecord } from '@shared/types/health';
+import { CACHE_TTL_MS } from '../common/cache/cache.constants';
+import { cacheKeys } from '../common/cache/cache.keys';
+import { ttlWithJitter } from '../common/cache/cache.utils';
+import type { PaginationResult } from '../utils/pagination';
 
 @Injectable()
 export class HealthService implements OnModuleInit {
@@ -11,9 +18,31 @@ export class HealthService implements OnModuleInit {
     private schemaReady = false;
     private schemaPromise?: Promise<void>;
 
+    private static readonly MATERIALIZED_BUCKETS = ['day', 'week', 'month'] as const;
+
     constructor(
         private prisma: PrismaService,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
+
+    private async getHealthCacheVersion(petId: string): Promise<number> {
+        const key = cacheKeys.health.version(petId);
+        const cached = await this.cacheManager.get(key);
+        const version = typeof cached === 'number' && Number.isFinite(cached) && cached > 0 ? cached : undefined;
+        if (version) return version;
+
+        const initial = 1;
+        await this.cacheManager.set(key, initial, CACHE_TTL_MS.healthVersion);
+        return initial;
+    }
+
+    private async bumpHealthCacheVersion(petId: string): Promise<number> {
+        const key = cacheKeys.health.version(petId);
+        const current = await this.getHealthCacheVersion(petId);
+        const next = current + 1;
+        await this.cacheManager.set(key, next, CACHE_TTL_MS.healthVersion);
+        return next;
+    }
 
     async onModuleInit(): Promise<void> {
         try {
@@ -41,55 +70,50 @@ export class HealthService implements OnModuleInit {
                 },
             });
 
+            await this.bumpHealthCacheVersion(createHealthRecordDto.petId);
             return result;
         });
     }
 
-    async findAll(userId: string, petId?: string, page?: number, limit?: number, type?: string): Promise<HealthRecord[]> {
+    async findAll(
+        userId: string,
+        petId: string | undefined,
+        pagination: PaginationResult,
+        type?: string,
+    ): Promise<HealthRecord[]> {
         return this.guardSchema(async () => {
-            console.log('[HealthService] findAll called with:', { userId, petId, page, limit, type });
-
-            const where: any = {
-                pet: { userId },
-                deleted: false,
-            };
+            // When petId is provided, verify ownership once, then query by (petId, type, deleted, date)
+            // so Postgres can use the covering index: (petId, type, deleted, date DESC)
             if (petId) {
-                where.petId = petId;
+                const pet = await this.prisma.pet.findFirst({
+                    where: { id: petId, userId, deleted: false },
+                    select: { id: true },
+                });
+                if (!pet) {
+                    throw new NotFoundException('Pet not found or does not belong to user');
+                }
             }
+
+            const where: any = petId
+                ? { petId, deleted: false }
+                : { pet: { userId }, deleted: false };
+
             if (type) {
                 where.type = type;
             }
 
-            const query: any = {
+            const records = await this.prisma.healthRecord.findMany({
                 where,
                 orderBy: { date: 'desc' },
-            };
+                skip: pagination.skip,
+                take: pagination.take,
+            });
 
-            // Improved pagination validation
-            if (page !== undefined && limit !== undefined) {
-                const p = Number(page);
-                const l = Number(limit);
-                if (!isNaN(p) && !isNaN(l) && p > 0 && l > 0) {
-                    query.skip = (p - 1) * l;
-                    query.take = l;
-                }
-            }
-
-            console.log('[HealthService] Executing query:', JSON.stringify(query, null, 2));
-
-            try {
-                const records = await this.prisma.healthRecord.findMany(query);
-                console.log('[HealthService] Query returned', records.length, 'records');
-                return records.map(record => ({
-                    ...record,
-                    updatedAt: record.updatedAt ? record.updatedAt.getTime() : Date.now(),
-                    metadata: (record.metadata || undefined) as Record<string, any> | undefined,
-                }));
-            } catch (error) {
-                console.error('[HealthService] Error in findAll:', error);
-                console.error('[HealthService] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
-                throw error;
-            }
+            return records.map(record => ({
+                ...record,
+                updatedAt: record.updatedAt ? record.updatedAt.getTime() : Date.now(),
+                metadata: (record.metadata || undefined) as Record<string, any> | undefined,
+            }));
         });
     }
 
@@ -110,6 +134,11 @@ export class HealthService implements OnModuleInit {
             if (!pet) {
                 throw new NotFoundException('Pet not found or does not belong to user');
             }
+
+            const version = await this.getHealthCacheVersion(petId);
+            const cacheKey = cacheKeys.health.summary(petId, version);
+            const cached = await this.cacheManager.get(cacheKey);
+            if (cached) return cached;
 
             // ====================================================================
             // STEP 1: Batch Query - Fetch all required keys and records
@@ -250,11 +279,19 @@ export class HealthService implements OnModuleInit {
             // STEP 6: Return Result
             // ====================================================================
 
-            return {
+            const result = {
                 pinnedMetrics,
                 trends,
                 dailySummaries
             };
+
+            await this.cacheManager.set(
+                cacheKey,
+                result,
+                ttlWithJitter(CACHE_TTL_MS.healthSummary),
+            );
+
+            return result;
         });
     }
 
@@ -288,6 +325,11 @@ export class HealthService implements OnModuleInit {
             if (!pet) {
                 throw new NotFoundException('Pet not found or does not belong to user');
             }
+
+            const version = await this.getHealthCacheVersion(petId);
+            const cacheKey = cacheKeys.health.series(petId, metricKey, range, bucket, version);
+            const cached = await this.cacheManager.get(cacheKey);
+            if (cached) return cached;
 
             // ====================================================================
             // STEP 1: Determine time range cutoff
@@ -328,7 +370,60 @@ export class HealthService implements OnModuleInit {
             }
 
             // ====================================================================
-            // STEP 2: Fetch records from database
+            // STEP 2: Materialized bucket fast-path (day/week/month)
+            // ====================================================================
+
+            const materializedBucket = this.asMaterializedBucket(bucket);
+            if (materializedBucket) {
+                const series = await this.getMaterializedMetricSeries({
+                    petId,
+                    metricKey,
+                    bucket: materializedBucket,
+                    version,
+                    cutoffDate,
+                });
+
+                const values = series.map(d => d.value).filter(v => v !== null && v !== undefined);
+                const stats = {
+                    avg: values.length > 0
+                        ? values.reduce((sum, v) => sum + v, 0) / values.length
+                        : null,
+                    min: values.length > 0
+                        ? Math.min(...values)
+                        : null,
+                    max: values.length > 0
+                        ? Math.max(...values)
+                        : null,
+                    count: values.length
+                };
+
+                const result = {
+                    series,
+                    stats,
+                    meta: {
+                        metricKey,
+                        range,
+                        bucket,
+                        cutoffDate: cutoffDate.toISOString(),
+                        recordCount: series.length,
+                        aggregatedCount: series.length,
+                        source: 'materialized_bucket',
+                        materializedBucket,
+                        version,
+                    }
+                };
+
+                await this.cacheManager.set(
+                    cacheKey,
+                    result,
+                    ttlWithJitter(CACHE_TTL_MS.healthSeries),
+                );
+
+                return result;
+            }
+
+            // ====================================================================
+            // STEP 3: Fetch records from database
             // ====================================================================
 
             // ✅ OPTIMIZED: Use select to reduce data transfer
@@ -359,7 +454,7 @@ export class HealthService implements OnModuleInit {
             const filteredRecords = records;
 
             // ====================================================================
-            // STEP 3: Server-side aggregation
+            // STEP 4: Server-side aggregation
             // ====================================================================
 
             let aggregatedData: any[];
@@ -420,7 +515,7 @@ export class HealthService implements OnModuleInit {
             }
 
             // ====================================================================
-            // STEP 4: Calculate statistics
+            // STEP 5: Calculate statistics
             // ====================================================================
 
             const values = aggregatedData.map(d => d.value).filter(v => v !== null && v !== undefined);
@@ -438,10 +533,10 @@ export class HealthService implements OnModuleInit {
             };
 
             // ====================================================================
-            // STEP 5: Return result
+            // STEP 6: Return result
             // ====================================================================
 
-            return {
+            const result = {
                 series: aggregatedData,
                 stats,
                 meta: {
@@ -453,7 +548,209 @@ export class HealthService implements OnModuleInit {
                     aggregatedCount: aggregatedData.length
                 }
             };
+
+            await this.cacheManager.set(
+                cacheKey,
+                result,
+                ttlWithJitter(CACHE_TTL_MS.healthSeries),
+            );
+
+            return result;
         });
+    }
+
+    private asMaterializedBucket(bucket: string): 'day' | 'week' | 'month' | null {
+        return (HealthService.MATERIALIZED_BUCKETS as readonly string[]).includes(bucket) ? (bucket as any) : null;
+    }
+
+    private getBucketKey(dateIso: string, bucket: 'day' | 'week' | 'month'): string {
+        const date = new Date(dateIso);
+        if (!Number.isFinite(date.getTime())) {
+            return dateIso.slice(0, 10);
+        }
+
+        switch (bucket) {
+            case 'day':
+                return date.toISOString().split('T')[0];
+            case 'week': {
+                const weekStart = new Date(date);
+                const day = weekStart.getDay();
+                const diff = (day === 0 ? -6 : 1) - day; // Monday
+                weekStart.setDate(weekStart.getDate() + diff);
+                weekStart.setHours(0, 0, 0, 0);
+                return weekStart.toISOString().split('T')[0];
+            }
+            case 'month':
+                return date.toISOString().slice(0, 7);
+            default:
+                return date.toISOString().split('T')[0];
+        }
+    }
+
+    private getBucketCutoffKey(cutoffDate: Date, bucket: 'day' | 'week' | 'month'): string {
+        if (bucket === 'month') {
+            return cutoffDate.toISOString().slice(0, 7);
+        }
+        if (bucket === 'week') {
+            const weekStart = new Date(cutoffDate);
+            const day = weekStart.getDay();
+            const diff = (day === 0 ? -6 : 1) - day; // Monday
+            weekStart.setDate(weekStart.getDate() + diff);
+            weekStart.setHours(0, 0, 0, 0);
+            return weekStart.toISOString().split('T')[0];
+        }
+        return cutoffDate.toISOString().split('T')[0];
+    }
+
+    private getMaterializeStartDateForBucket(bucket: 'day' | 'week' | 'month'): Date {
+        const now = new Date();
+        if (bucket === 'month') {
+            const start = new Date(now);
+            start.setMonth(start.getMonth() - 24);
+            start.setHours(0, 0, 0, 0);
+            return start;
+        }
+        const start = new Date(now);
+        start.setDate(start.getDate() - 400);
+        start.setHours(0, 0, 0, 0);
+        return start;
+    }
+
+    private async getMaterializedMetricSeries(params: {
+        petId: string;
+        metricKey: string;
+        bucket: 'day' | 'week' | 'month';
+        version: number;
+        cutoffDate: Date;
+    }): Promise<Array<{ value: number; date: string; timestamp: number }>> {
+        const cutoffKey = this.getBucketCutoffKey(params.cutoffDate, params.bucket);
+
+        const rows = await this.prisma.$queryRaw<{ value: number; date: string; timestamp: bigint | number; bucketKey: string }[]>`
+            SELECT "value","date","timestamp","bucketKey"
+            FROM "HealthMetricBucket"
+            WHERE "petId" = ${params.petId}
+              AND "metricKey" = ${params.metricKey}
+              AND "bucket" = ${params.bucket}
+              AND "version" = ${params.version}
+              AND "bucketKey" >= ${cutoffKey}
+            ORDER BY "bucketKey" ASC;
+        `;
+
+        if (rows.length === 0) {
+            await this.rebuildMaterializedMetricBucket({
+                petId: params.petId,
+                metricKey: params.metricKey,
+                bucket: params.bucket,
+                version: params.version,
+            });
+
+            const refreshed = await this.prisma.$queryRaw<{ value: number; date: string; timestamp: bigint | number; bucketKey: string }[]>`
+                SELECT "value","date","timestamp","bucketKey"
+                FROM "HealthMetricBucket"
+                WHERE "petId" = ${params.petId}
+                  AND "metricKey" = ${params.metricKey}
+                  AND "bucket" = ${params.bucket}
+                  AND "version" = ${params.version}
+                  AND "bucketKey" >= ${cutoffKey}
+                ORDER BY "bucketKey" ASC;
+            `;
+
+            return refreshed.map(r => ({
+                value: Number(r.value),
+                date: r.date,
+                timestamp: Number(r.timestamp),
+            }));
+        }
+
+        return rows.map(r => ({
+            value: Number(r.value),
+            date: r.date,
+            timestamp: Number(r.timestamp),
+        }));
+    }
+
+    private async rebuildMaterializedMetricBucket(params: {
+        petId: string;
+        metricKey: string;
+        bucket: 'day' | 'week' | 'month';
+        version: number;
+    }): Promise<number> {
+        const startDate = this.getMaterializeStartDateForBucket(params.bucket);
+        const records = await this.prisma.healthRecord.findMany({
+            where: {
+                petId: params.petId,
+                type: params.metricKey,
+                deleted: false,
+                date: { gte: startDate.toISOString() }
+            },
+            select: { value: true, date: true },
+            orderBy: { date: 'asc' }
+        });
+
+        const buckets = new Map<string, { value: number; date: string; timestamp: number }>();
+        for (const record of records) {
+            const bucketKey = this.getBucketKey(record.date, params.bucket);
+            const recordTime = new Date(record.date).getTime();
+            const existing = buckets.get(bucketKey);
+            if (!existing || recordTime > existing.timestamp) {
+                buckets.set(bucketKey, { value: record.value, date: record.date, timestamp: recordTime });
+            }
+        }
+
+        const rows = Array.from(buckets.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([bucketKey, value]) => ({
+                id: uuidv4(),
+                petId: params.petId,
+                metricKey: params.metricKey,
+                bucket: params.bucket,
+                bucketKey,
+                value: value.value,
+                date: value.date,
+                timestamp: value.timestamp,
+                version: params.version,
+            }));
+
+        await this.prisma.$transaction(async (tx) => {
+            const minKeepVersion = Math.max(1, params.version - 1);
+            await tx.$executeRaw`
+                DELETE FROM "HealthMetricBucket"
+                WHERE "petId" = ${params.petId}
+                  AND "metricKey" = ${params.metricKey}
+                  AND "bucket" = ${params.bucket}
+                  AND "version" < ${minKeepVersion};
+            `;
+
+            await tx.$executeRaw`
+                DELETE FROM "HealthMetricBucket"
+                WHERE "petId" = ${params.petId}
+                  AND "metricKey" = ${params.metricKey}
+                  AND "bucket" = ${params.bucket}
+                  AND "version" = ${params.version};
+            `;
+
+            if (rows.length === 0) return;
+
+            const valuesSql = Prisma.join(rows.map(r => Prisma.sql`(
+                ${r.id},
+                ${r.petId},
+                ${r.metricKey},
+                ${r.bucket},
+                ${r.bucketKey},
+                ${r.value},
+                ${r.date},
+                ${r.timestamp},
+                ${r.version}
+            )`));
+
+            await tx.$executeRaw(Prisma.sql`
+                INSERT INTO "HealthMetricBucket"
+                    ("id","petId","metricKey","bucket","bucketKey","value","date","timestamp","version")
+                VALUES ${valuesSql};
+            `);
+        });
+
+        return rows.length;
     }
 
     async findOne(id: string, userId: string): Promise<HealthRecord> {
@@ -474,26 +771,31 @@ export class HealthService implements OnModuleInit {
 
     async update(id: string, userId: string, updateHealthRecordDto: UpdateHealthRecordDto) {
         return this.guardSchema(async () => {
-            await this.findOne(id, userId);
+            const existing = await this.findOne(id, userId);
 
             const result = await this.prisma.healthRecord.update({
                 where: { id },
                 data: updateHealthRecordDto,
             });
 
+            await this.bumpHealthCacheVersion(existing.petId);
+            if (updateHealthRecordDto.petId && updateHealthRecordDto.petId !== existing.petId) {
+                await this.bumpHealthCacheVersion(updateHealthRecordDto.petId);
+            }
             return result;
         });
     }
 
     async remove(id: string, userId: string) {
         return this.guardSchema(async () => {
-            await this.findOne(id, userId);
+            const existing = await this.findOne(id, userId);
 
             const result = await this.prisma.healthRecord.update({
                 where: { id },
                 data: { deleted: true },
             });
 
+            await this.bumpHealthCacheVersion(existing.petId);
             return result;
         });
     }
@@ -535,6 +837,7 @@ export class HealthService implements OnModuleInit {
                 });
             }
 
+            await this.bumpHealthCacheVersion(petId);
             return { success: true };
         });
     }
@@ -604,6 +907,14 @@ export class HealthService implements OnModuleInit {
             await this.createPinnedMetricTable();
         }
 
+        const hasMetricBucketTable = await this.tableExists('HealthMetricBucket');
+        if (!hasMetricBucketTable) {
+            this.logger.warn('[HealthService] HealthMetricBucket table missing. Creating automatically...');
+            await this.createHealthMetricBucketTable();
+        } else {
+            await this.ensureHealthMetricBucketColumns();
+        }
+
         await this.ensureHealthIndexes();
     }
 
@@ -670,6 +981,41 @@ export class HealthService implements OnModuleInit {
         `);
     }
 
+    private async createHealthMetricBucketTable(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "HealthMetricBucket" (
+                "id" TEXT NOT NULL,
+                "petId" TEXT NOT NULL,
+                "metricKey" TEXT NOT NULL,
+                "bucket" TEXT NOT NULL,
+                "bucketKey" TEXT NOT NULL,
+                "value" DOUBLE PRECISION NOT NULL,
+                "date" TEXT NOT NULL,
+                "timestamp" BIGINT NOT NULL,
+                "version" INTEGER NOT NULL DEFAULT 1,
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "HealthMetricBucket_pkey" PRIMARY KEY ("id"),
+                CONSTRAINT "HealthMetricBucket_petId_fkey"
+                    FOREIGN KEY ("petId") REFERENCES "Pet"("id")
+                    ON DELETE CASCADE ON UPDATE CASCADE
+            );
+        `);
+    }
+
+    private async ensureHealthMetricBucketColumns(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            ALTER TABLE "HealthMetricBucket"
+                ADD COLUMN IF NOT EXISTS "metricKey" TEXT,
+                ADD COLUMN IF NOT EXISTS "bucket" TEXT,
+                ADD COLUMN IF NOT EXISTS "bucketKey" TEXT,
+                ADD COLUMN IF NOT EXISTS "value" DOUBLE PRECISION,
+                ADD COLUMN IF NOT EXISTS "date" TEXT,
+                ADD COLUMN IF NOT EXISTS "timestamp" BIGINT,
+                ADD COLUMN IF NOT EXISTS "version" INTEGER NOT NULL DEFAULT 1,
+                ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+        `);
+    }
+
     private async ensureHealthIndexes(): Promise<void> {
         // ============================================================
         // HealthRecord Indexes
@@ -700,6 +1046,20 @@ export class HealthService implements OnModuleInit {
         await this.prisma.$executeRawUnsafe(`
             CREATE UNIQUE INDEX IF NOT EXISTS "PinnedMetric_petId_metricKey_key"
             ON "PinnedMetric"("petId","metricKey");
+        `);
+
+        // ============================================================
+        // HealthMetricBucket Indexes (materialized buckets)
+        // ============================================================
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE UNIQUE INDEX IF NOT EXISTS "uniq_health_metric_bucket"
+            ON "HealthMetricBucket"("petId","metricKey","bucket","bucketKey","version");
+        `);
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "idx_health_metric_bucket_lookup"
+            ON "HealthMetricBucket"("petId","metricKey","bucket","version","bucketKey");
         `);
 
         // ============================================================

@@ -5,7 +5,7 @@
  * - 20-data threshold check
  * - Daily → Weekly auto-progression
  * - Max 40 bars limiting
- * - Trend threshold filtering (5% default)
+ * - Trend threshold filtering (30% default)
  * - Smart copywriting generation
  */
 
@@ -13,6 +13,12 @@ import { computed, ref, type Ref, type ComputedRef } from 'vue'
 import { useHealthStore } from '@/stores/healthStore'
 import type { HealthRecord } from '@shared/types/health'
 import { getTrendCopywriting, type TrendSentiment } from '@/config/trendCopywriting'
+import {
+    TREND_MIN_DATA_POINTS,
+    TREND_THRESHOLD_PERCENT,
+    TREND_WINDOW_SIZE,
+    TREND_WEEKS_FOR_WEEKLY_MODE
+} from '@/domain/trend/trendConstants'
 
 // ============================================================================
 // Types
@@ -28,7 +34,7 @@ export interface TrendCardConfig {
     subjectName: string
     /** Sentiment: is "up" good or bad? */
     sentiment: TrendSentiment
-    /** Threshold percentage for trend detection (default: 5) */
+    /** Threshold percentage for trend detection (default: 30) */
     thresholdPercent?: number
     /** Minimum data points required (default: 20) */
     minDataPoints?: number
@@ -67,10 +73,11 @@ export interface TrendCardResult {
 // Constants
 // ============================================================================
 
-const DEFAULT_MIN_DATA_POINTS = 20
-const DEFAULT_MAX_BARS = 40
-const DEFAULT_THRESHOLD_PERCENT = 5
-const WEEKS_FOR_WEEKLY_MODE = 20
+// 保持默认值与 Domain 层一致，避免口径漂移
+const DEFAULT_MIN_DATA_POINTS = TREND_MIN_DATA_POINTS
+const DEFAULT_MAX_BARS = TREND_WINDOW_SIZE
+const DEFAULT_THRESHOLD_PERCENT = TREND_THRESHOLD_PERCENT
+const WEEKS_FOR_WEEKLY_MODE = TREND_WEEKS_FOR_WEEKLY_MODE
 
 // ============================================================================
 // Helper Functions
@@ -142,7 +149,7 @@ function aggregateValues(values: number[], method: 'sum' | 'avg' = 'sum'): numbe
 function calcAverage(values: number[]): number {
     const valid = values.filter(v => typeof v === 'number' && !Number.isNaN(v))
     if (!valid.length) return 0
-    return Number((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1))
+    return valid.reduce((a, b) => a + b, 0) / valid.length
 }
 
 // ============================================================================
@@ -261,7 +268,7 @@ export function useTrendCard(config: TrendCardConfig): TrendCardResult {
     })
 
     const hasSignificantChange = computed(() => {
-        return Math.abs(changePercent.value) >= thresholdPercent
+        return Math.abs(changePercent.value) > thresholdPercent  // 使用 > 而非 >=，与 domain 层保持一致
     })
 
     const trendDirection = computed<TrendDirection>(() => {

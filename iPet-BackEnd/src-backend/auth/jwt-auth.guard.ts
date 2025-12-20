@@ -42,8 +42,13 @@ export class JwtAuthGuard implements CanActivate {
       '/auth/logout',
     ];
     const openGetPrefixes = ['/articles'];
+    const openGetEndpoints = ['/metrics', '/observability/http-metrics'];
 
     if (request.method === 'POST' && openPostEndpoints.some((endpoint) => requestPath.endsWith(endpoint))) {
+      return true;
+    }
+
+    if (request.method === 'GET' && openGetEndpoints.some((endpoint) => requestPath.endsWith(endpoint))) {
       return true;
     }
 

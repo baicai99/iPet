@@ -1,44 +1,118 @@
-# Repository Guidelines
+# Agent 工作规范报告
 
-## Project Structure & Module Organization
-- `iPet-BackEnd/`: NestJS API (source in `src-backend/`, Prisma in `prisma/`).
-- `iPet-uniapp/`: UniApp (Vue 3) client (source in `src/`, build/scripts in `scripts/`, docs in `docs/`).
-- `shared/`: shared TypeScript types/validation (imported as `@shared/...`).
-- `iPetData/`: local runtime data (uploads/sync/backups); not committed.
+## 一、报告背景
 
-## Build, Test, and Development Commands
-Backend (from `iPet-BackEnd/`):
+随着项目规模扩大与协作复杂度提升，Agent 在执行任务、定义规范、开发 Feature 以及维护文档过程中的一致性和可追溯性变得尤为关键。本报告旨在明确 Agent 的标准工作规范，降低信息不对称风险，确保项目在持续迭代中保持可维护性与透明度。
 
-```bash
-npm install
-cp .env.example .env
-npm run prisma:generate && npm run prisma:push
-npm run start:dev
-```
+---
 
-- `npm run lint` / `npm run format`: run ESLint (with `--fix`) and Prettier.
-- `npm run build` + `npm run start:prod`: compile to `dist/` and run the production entrypoint.
-- `npm run pack`: create `deploy.zip` (also bundles `shared/`).
+## 二、目标与原则
 
-Client (from `iPet-uniapp/`):
-- `npm install`
-- `npm run dev:h5` or `npm run dev:mp-weixin`: run locally for target platform.
-- `npm run build:h5` (or other `build:*`): produce a release build.
-- `npm run type-check`: run `vue-tsc` (required before PRs).
+### 2.1 规范目标
 
-## Coding Style & Naming Conventions
-- TypeScript throughout. Prefer small, module-scoped files and explicit DTO/types.
-- Use 2-space indentation and let formatters handle layout (avoid manual alignment).
-- Backend formatting/linting: Prettier (`iPet-BackEnd/.prettierrc`) + ESLint (`iPet-BackEnd/eslint.config.mjs`). Don’t edit generated `dist/`.
-- Nest naming: `*.module.ts`, `*.controller.ts`, `*.service.ts`, DTOs in `dto/*.dto.ts`.
+* 保证所有任务变更具备**明确记录与版本归属**
+* 确保规范与文档具备**可追溯、可校验、可修正**的特性
+* 降低因文档滞后或不一致导致的**决策与实现偏差**
 
-## Testing Guidelines
-- Backend: no unit/e2e suite wired yet; use `iPet-BackEnd/verify_fix.sh` for quick API smoke checks.
-- Client: utility tests live under `iPet-uniapp/src/**/__tests__` (Vitest config in `iPet-uniapp/vitest.config.ts`); run at minimum `npm run type-check`.
+### 2.2 核心原则
 
-## Commit & Pull Request Guidelines
-- Follow Conventional Commits seen in history: `feat:`, `fix:`, `refactor:`, `style:`, `test:`.
-- PRs: include purpose, testing steps, and any config/migration notes. For UI changes, add screenshots/screen recordings.
+* **记录优先于实现**：任何可感知变更都应有记录
+* **文档不等于事实**：文档需要持续校验与纠错
+* **规范即资产**：规范本身也是需要维护的产物
 
-## Security & Configuration Tips
-- Never commit secrets (`.env`, JWT/DB/SMTP credentials). Update `.env.example` when introducing new required variables.
+---
+
+## 三、任务与版本管理规范
+
+### 3.1 Changelog 更新规则
+
+* 每次任务结束后，**必须**在 Changelog 中追加更新记录
+* 同一自然日内的所有变更，**统一使用同一个版本号**
+* 版本号仅在跨日期或阶段性里程碑时递增
+
+### 3.2 Changelog 记录要求
+
+* 明确说明本次任务的：
+
+  * 变更范围
+  * 影响模块
+  * 是否涉及规范或行为变更
+
+---
+
+## 四、规范定义与文档维护
+
+### 4.1 新规范的落档要求
+
+* 每次定义、补充或修订规范时，**必须**在 iPet-uniapp/docs 目录中：
+
+  * 新增或更新对应的 Markdown 文件
+  * 明确标注适用范围与生效背景
+
+### 4.2 文档结构要求
+
+* 规范文档需至少包含：
+
+  * 规范背景
+  * 适用对象
+  * 约束规则
+  * 示例（如适用）
+
+---
+
+## 五、Feature 开发参考规范
+
+### 5.1 Docs 作为参考而非唯一依据
+
+* 在设计与实现新 Feature 时：
+
+  * **优先参考**现有 Docs 中的相关规范与设计说明
+  * 不得在未查阅 Docs 的情况下直接定义行为或接口
+
+### 5.2 交叉验证要求
+
+* 需通过以下方式验证 Docs 的真实性与时效性：
+
+  * 对照实际代码实现
+  * 对照最新 Changelog 记录
+  * 对照当前运行行为
+
+---
+
+## 六、文档滞后与纠错机制
+
+### 6.1 滞后性声明
+
+* 所有 Docs 默认视为：
+
+  * **可能存在滞后**
+  * **不保证完全正确**
+
+### 6.2 纠错责任
+
+* 在发现 Docs 与实际行为不一致时：
+
+  * **必须第一时间修正文档**
+  * 同步在 Changelog 中记录文档修正行为
+
+---
+
+## 七、风险与约束
+
+| 风险点  | 描述           | 应对方式          |
+| ---- | ------------ | ------------- |
+| 文档滞后 | 实现已变更但文档未更新  | 强制交叉验证 + 纠错记录 |
+| 版本混乱 | 同日多版本号       | 单日版本锁定        |
+| 隐性规范 | 规范只存在于口头或代码中 | 强制 Docs 落档    |
+
+---
+
+## 八、结论
+
+本规范强调：
+
+* **变更必须可追溯**
+* **文档必须可质疑**
+* **错误必须被修正并记录**
+
+Agent 不仅是执行者，更是规范与知识体系的维护者。本报告自发布之日起，作为 Agent 的基础工作准则长期生效。

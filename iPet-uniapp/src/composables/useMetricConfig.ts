@@ -11,6 +11,7 @@
 import { getMetricMetadata, type MetricMetadata } from '@/data/metricMetadata'
 import { getThemeColor, getMetricIcon } from '@/utils/business/uiMapper'
 import type { ThemeColor } from '@/types/ui'
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 export interface MetricStaticConfig {
     key: string
@@ -47,7 +48,7 @@ export function getMetricStaticConfig(key: string): MetricStaticConfig | null {
     const visualizationOptions = metadata.visualization?.options
 
     const theme = getThemeColor(metadata.category)
-    const iconName = metadata.icon || getMetricIcon(metadata.title, metadata.category)
+    const iconName = metadata.iconUnicode || getMetricIcon(metadata.title, metadata.category) || ICONFONT_UNICODE.file
 
     const isWide = WIDE_VISUALIZATION_TYPES.includes(visualizationType)
     const chartHeight = (typeof visualizationOptions?.height === 'string' ? visualizationOptions.height : null) || '80rpx'

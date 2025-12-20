@@ -6,10 +6,9 @@
                 <template v-if="pets.length === 0">
                     <view :class="['scroll-item', scrollItemClass, 'empty-card']">
                         <view class="icon-wrapper" :class="themeStyles.iconWrapperClass">
-                            <svg class="icon" aria-hidden="true"
-                                :style="{ fontSize: '24px', color: themeStyles.iconColor }">
-                                <use xlink:href="#icon-rate-icon5"></use>
-                            </svg>
+                            <text class="iconfont" :style="{ fontSize: '24px', color: themeStyles.iconColor }">
+                                {{ ICONFONT_UNICODE.petDefault }}
+                            </text>
                         </view>
                         <view class="text-content">
                             <text class="empty-title" :class="themeStyles.textClass">还没有宠物</text>
@@ -31,9 +30,9 @@
                                 <image v-if="pet.avatar" :src="getAvatar(pet.avatar)" class="avatar-image"
                                     mode="aspectFill" lazy-load="true" />
                                 <view v-else class="avatar-placeholder">
-                                    <svg class="icon" aria-hidden="true" style="font-size: 24px; color: #9ca3af;">
-                                        <use xlink:href="#icon-rate-icon5"></use>
-                                    </svg>
+                                    <text class="iconfont" style="font-size: 24px; color: #9ca3af;">
+                                        {{ ICONFONT_UNICODE.petDefault }}
+                                    </text>
                                 </view>
                             </view>
                         </view>
@@ -69,6 +68,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { formatPetAge } from '@/utils/common/formatHelper'
 import { useImageCacheStore } from '@/stores/imageCacheStore'
 import type { Pet } from '@shared/types/pet'
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 type SelectorMode = 'edit' | 'select'
 

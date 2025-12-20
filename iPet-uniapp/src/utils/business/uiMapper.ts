@@ -1,4 +1,6 @@
 // React-style color palette
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
+
 export const COLORS: Record<string, { bg: string, hex: string }> = {
     orange: { bg: '#fff7ed', hex: '#f97316' }, // orange-50, orange-500
     emerald: { bg: '#ecfdf5', hex: '#10b981' }, // emerald-50, emerald-500
@@ -26,14 +28,12 @@ export const CATEGORY_COLOR_MAP: Record<string, string> = {
 
 // Icon mapping
 export const ICON_MAP: Record<string, string> = {
-    '体重': 'grid',
-    '肩高': 'arrow-up',
-    '体温': 'heart',
-    '今日步数': 'map',
-    '睡眠时长': 'moon',
-    '今日饭量': 'bag',
-    '今日喝水': 'plus', // Approximation
-    '默认': 'grid'
+    '体重': ICONFONT_UNICODE.weight,
+    '肩高': ICONFONT_UNICODE.shoulderHeight,
+    '体温': ICONFONT_UNICODE.bodyTemp,
+    '今日饭量': ICONFONT_UNICODE.meal,
+    '今日喝水': ICONFONT_UNICODE.water,
+    '默认': ICONFONT_UNICODE.file
 }
 
 /**
@@ -59,10 +59,9 @@ export const getMetricIcon = (title: string, category: string) => {
         if (title && title.includes(key)) return ICON_MAP[key]
     }
     // Fallback based on category
-    if (category === 'activity') return 'map'
-    if (category === 'sleep') return 'moon'
-    if (category === 'nutritionIntake') return 'bag'
-    if (category === 'vitalSigns') return 'heart'
+    if (category === 'activity') return ICONFONT_UNICODE.walkDuration
+    if (category === 'nutritionIntake') return ICONFONT_UNICODE.meal
+    if (category === 'vitalSigns') return ICONFONT_UNICODE.bodyTemp
 
-    return 'grid'
+    return ICONFONT_UNICODE.file
 }

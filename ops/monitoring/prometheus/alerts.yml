@@ -1,0 +1,40 @@
+groups:
+  - name: ipet-backend
+    rules:
+      - alert: IPetBackendHighErrorRate
+        expr: |
+          (
+            sum(rate(ipet_http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(ipet_http_requests_total[5m]))
+          ) > 0.001
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "iPet backend 5xx error rate > 0.1% (5m)"
+          description: "Error rate is {{ $value }} over the last 5 minutes."
+
+      - alert: IPetBackendHighLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(ipet_http_request_duration_ms_bucket[5m])) by (le)
+          ) > 200
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "iPet backend P95 latency > 200ms (5m)"
+          description: "P95 latency is {{ $value }}ms over the last 5 minutes."
+
+      - alert: IPetBackendSlowQueriesDetected
+        expr: |
+          increase(ipet_db_slow_queries_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warn
+        annotations:
+          summary: "iPet backend slow queries detected"
+          description: "Slow queries observed in the last 5 minutes."
+

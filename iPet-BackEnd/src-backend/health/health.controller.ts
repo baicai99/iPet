@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, NotFoundException } from '@nestjs/common';
 import { HealthService } from './health.service';
 import { CreateHealthRecordDto } from './dto/create-health-record.dto';
 import { UpdateHealthRecordDto } from './dto/update-health-record.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/jwt-auth.guard';
+import { parsePagination } from '../utils/pagination';
 
 import { TogglePinDto } from './dto/toggle-pin.dto';
 
@@ -38,50 +39,21 @@ export class HealthController {
         @Query('limit') limit?: string,
         @Query('type') type?: string
     ) {
-        try {
-            const uid = req.user?.uid;
-            if (!uid) throw new Error('User ID missing');
-            const userId = req.user?.uid;
-            if (!userId) throw new NotFoundException('User ID not found');
+        const uid = req.user?.uid;
+        if (!uid) throw new Error('User ID missing');
+        const userId = req.user?.uid;
+        if (!userId) throw new NotFoundException('User ID not found');
 
-            console.log('[HealthController] findAll called with:', { petId, page, limit, type, userId });
+        const sanitizedPetId = petId?.trim() || undefined;
+        const sanitizedType = type?.trim() || undefined;
+        const pagination = parsePagination({ page, limit }, { defaultLimit: 50, maxLimit: 200 });
 
-            // ✅ Improved parameter sanitization
-            const sanitizedPetId = petId?.trim() || undefined;
-            const sanitizedType = type?.trim() || undefined;
-
-            // ✅ Handle numeric parameters: empty string or invalid → undefined, invalid → 400
-            let sanitizedPage: number | undefined;
-            let sanitizedLimit: number | undefined;
-
-            if (page !== undefined && page !== '') {
-                const parsed = parseInt(page, 10);
-                if (isNaN(parsed) || parsed <= 0) {
-                    throw new BadRequestException('Invalid page parameter');
-                }
-                sanitizedPage = parsed;
-            }
-
-            if (limit !== undefined && limit !== '') {
-                const parsed = parseInt(limit, 10);
-                if (isNaN(parsed) || parsed <= 0) {
-                    throw new BadRequestException('Invalid limit parameter');
-                }
-                sanitizedLimit = parsed;
-            }
-
-            console.log('[HealthController] Sanitized params:', {
-                sanitizedPetId,
-                sanitizedPage,
-                sanitizedLimit,
-                sanitizedType
-            });
-
-            return this.healthService.findAll(userId, sanitizedPetId, sanitizedPage, sanitizedLimit, sanitizedType);
-        } catch (error) {
-            console.error('[HealthController] Error in findAll:', error);
-            throw error;
-        }
+        return this.healthService.findAll(
+            userId,
+            sanitizedPetId,
+            pagination,
+            sanitizedType,
+        );
     }
 
     @Get('summary')

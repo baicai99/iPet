@@ -1,4 +1,237 @@
+## 0.0.6 (2025-12-20)
+
+### 构建修复
+- [x] **修复 `uni:sourcemap` 偶发崩溃**
+  - 根因：上游插件在部分输出为 asset 时，假设 `outputChunk.code` 恒为 string，导致 `Cannot read properties of undefined (reading 'replace')`
+  - 修复：新增 `postinstall` 脚本 `scripts/patch-uni-sourcemap.mjs`，为 `outputChunk.code/source` 增加兜底判断，避免构建期崩溃
+  - 文档：新增 `docs/dev/dependency-patches.md` 落档依赖补丁机制与约束
+
+### 文档更新
+- [x] **新增后端可观测性分析文档**
+  - 新增 `docs/BACKEND/可观测性分析.md`: iPet-Backend 可观测性全面分析与改进方案
+    - **可观测性目标**: "线上问题 10 分钟内定位到模块/接口/SQL" 的能力现状评估与改进路径
+    - **日志系统分析**:
+      - 当前实现: 混用 console.log 和 NestJS Logger,日志格式不统一
+      - 存在问题: 无 traceId/requestId 追踪、缺少敏感信息脱敏、日志级别不规范
+      - 改进方案: 结构化 JSON 日志、RequestId 中间件、日志拦截器、敏感信息 脱敏工具
+    - **监控指标分析**:
+      - 请求耗时监控: 无运行时监控（仅代码注释中的性能优化记录），建议 PerformanceInterceptor + Prometheus
+      - 数据库耗时监控: Prisma 支持但未启用查询日志，建议 Prisma middleware + 慢查询告警
+      - 错误率统计: 缺少全局 ExceptionFilter,建议 GlobalExceptionFilter + 错误计数器
+      - 队列堆积监控: 无消息队列，GuestCleanupService 使用 setInterval
+      - 磁盘空间监控: 无监控机制，建议 DiskMonitorService + Cron 定时检查
+    - **告警策略与阈值**:
+      - 当前状态: 无告警系统、无健康检查端点
+      - 建议阈值: API P95 延迟 (500ms/1000ms)、错误率 (1%/5%)、数据库慢查询 (100ms/1000ms)、磁盘使用率 (75%/90%)、内存使用率 (80%/95%)
+      - 告警渠道: Prometheus AlertManager + 钉钉/飞书/邮件/短信
+    - **看板设计**:
+      - 最小可用看板: API 性能监控、数据库性能、系统资源、业务指标
+      - 关键指标: http_request_total、http_request_duration_ms、db_query_duration_ms、error_total 等
+      - 可视化方案: Prometheus + Grafana + AlertManager 技术栈
+    - **实施建议**:
+      - 短期优化 (1-2 周): 健康检查端点、统一日志格式、RequestId 中间件、Prisma 查询日志
+      - 中期建设 (1-2 月): Prometheus 集成、Grafana 看板、基础告警
+      - 长期演进 (3-6 月): OpenTelemetry 分布式追踪、ELK/Loki 日志聚合、SLO/SLA 体系
+    - **技术选型建议**:
+      - 日志聚合: Loki + Grafana (推荐) vs ELK Stack vs CloudWatch Logs
+      - 链路追踪: OpenTelemetry + Jaeger (推荐) vs Zipkin vs AWS X-Ray
+      - 指标收集: Prometheus + Grafana (推荐) vs InfluxDB + Grafana vs Datadog
+      -告警系统: AlertManager (初期) → PagerDuty (成熟期)
+    - **可观测性成熟度评分**: 总分 2/10 (初级阶段)
+      - 日志系统: 3/10 (有基础日志但格式不统一)
+      - 链路追踪: 0/10 (完全缺失)
+      - 指标监控: 1/10 (仅代码注释)
+      - 告警系统: 0/10 (完全缺失)
+      - 可视化: 0/10 (无监控看板)
+  - 文档特色:
+    - 基于实际代码分析 (HealthService、GuestCleanupService、StorageService、PrismaService 等)
+    - 15+ 代码改进示例 (RequestId 中间件、LoggingInterceptor、Prometheus 集成等)
+    - 完整的 3 级实施路线图 (短期/中期/长期)
+    - 技术选型对比矩阵 (优劣势/适用场景)
+    - Mermaid 可视化实施流程图
+    - 行级代码链接 (精确定位到具体实现)
+  - 影响: 提供后端可观测性建设的完整指南,帮助开发团队建立日志、监控、告警和看板体系,实现"10 分钟定位问题"的目标
+
+
+- [x] **新增后端工程化与质量保障文档**
+  - 新增 `docs/backend/工程化与质量保障.md`: iPet-Backend 工程化实践与质量保障完整指南
+    - **工程化成熟度评估**: 6 个维度评分（项目结构 5/5、编码规范 4/5、测试体系 1/5、CI/CD 2/5）
+    - **项目结构与编码规范**: NestJS 标准架构、模块组织原则、分层设计、改进建议
+    - **Lint/Format 约定**: ESLint + Prettier + TypeScript 配置分析、规则集说明、自动化工具链
+    - **测试策略**: 当前缺失分析、推荐测试金字塔（单元 80% + 集成 15% + E2E 5%）、Jest + Supertest 方案、数据工厂 + Prisma Mock 示例、Pact.js 契约测试
+    - **CI/CD 流程**: 当前手动部署分析、GitHub Actions / GitLab CI 推荐方案（5 阶段流水线）、Prisma Migration 策略、蓝绿部署 + 健康检查
+    - **ADR 管理**: ADR 模板与流程、现有决策补录（NestJS / Prisma / JWT 认证）
+    - **技术债清单**: 11 项后端技术债（P1: 4 项 / P2: 4 项 / P3: 3 项），涵盖测试、CI/CD、监控、类型安全等
+    - **质量保障流程**: Code Review 清单、发布检查清单、工具链推荐（开发/质量/运维三类）
+    - **最佳实践**: NestJS / Prisma / TypeScript 最佳实践代码示例
+    - **改进路线图**: 5 个阶段实施计划（基础设施加固 → 测试体系 → CI/CD → 监控 → 性能优化）
+  - 文档特色
+    - 11 项可落地的后端技术债（P1-P3 分级）
+    - 完整的 CI/CD 流水线配置示例（GitHub Actions + Dockerfile + 蓝绿部署）
+    - 6 个 NestJS/Prisma/TypeScript 最佳实践代码示例
+    - 测试覆盖率路线图（30% → 50% → 70%）与质量门禁配置
+    - ADR 模板与 3 个核心架构决策补录
+  - 影响: 提供后端工程化加固的完整路线图，帮助团队建立测试体系、CI/CD 流程、质量门禁，提升代码质量和发布效率
+
+- [x] **新增后端性能与容量分析文档**
+
+  - 新增 `docs/backend/性能与容量分析.md`: iPet-Backend 系统性能优化与容量规划完整指南
+    - **核心链路性能指标**: 关键接口P95/P99目标、已实施优化案例（Health Summary 89%提升、Metric Series服务端聚合）、潜在瓶颈、慢查询监控
+    - **缓存策略**: 当前状态分析、推荐分层架构、高价值缓存目标、击穿/雪崩防护、监控指标
+    - **聚合计算策略**: 服务端vs DB vs预计算对比、优化建议（90%性能提升）、预计算设计
+    - **容量模型**: 数据量增长预估、存储分层、归档策略、QPS评估、扩容方案、压测脚本
+    - **优化路线图**: P0-P3分级（立即执行/1个月/3个月/长期规划）
+    - 影响: 为性能调优和容量扩容提供完整指导，识别瓶颈、优化策略、规划容量
+
+- [x] **新增后端稳定性与容错分析文档**
+  - 新增 `docs/BACKEND/稳定性与容错分析.md`: iPet-Backend 系统稳定性与容错机制全面分析
+    - **失败模式分析**:
+      - 数据库连接失败：缺少重试机制、连接池配置未显式声明、无健康检查端点
+      - 磁盘满/IO 慢：文件删除失败不阻塞（正确设计）、缺少磁盘空间检查和 IO 超时控制
+      - 定时任务重入：单实例防重入已实现（running 标志）、缺少多实例并发保护
+      - 多实例并发：限流仅基于内存（多实例无法全局限流）、缺少分布式锁、缺少乐观锁
+    - **重试/超时/熔断机制**:
+      - 重试机制：全局缺失，仅 GuestCleanup 有手动补偿
+      - 超时机制：HTTP 和数据库超时均未显式配置
+      - 熔断机制：全局缺失，StorageService 文件删除失败不抛异常（被动"熔断"）
+    - **最终一致性方案**:
+      - 文件删除与 DB 事务分离：设计正确（文件删除在事务外），但存在不一致风险
+      - 用户账户删除：先删除文件 → 后删除 DB，可能导致文件丢失或泄漏
+      - 改进方案：补偿型清理（先删 DB 后删文件 + 失败队列）、预删除标记（异步清理）
+    - **任务调度与幂等**:
+      - GuestCleanup 幂等性：基于 lastActiveAt 时间窗口（天然幂等）+ running 标志（单实例防重入）
+      - 多实例并发处理：两种方案（分布式锁 Redis、按用户 ID 分片）
+    - **容错能力评分**: 10 个维度评分（总评 3/5 星），关键短板：重试、超时、熔断、多实例并发控制
+    - **改进优先级**: P0-P2 三级共 9 项改进建议（数据库连接重试、HTTP 超时、分布式锁、通用重试装饰器等）
+    - **实施路线图**: 三阶段实施计划（基础防护 1-2 周 → 完善机制 2-3 周 → 优化提升 1 个月）
+  - 文档特色:
+    - 6 个核心容错机制深度剖析（代码示例 + 风险识别 + 改进建议）
+    - 容错能力评分矩阵（现状/评分/备注）
+    - 15+ 代码改进示例（连接重试、超时中间件、熔断器、分布式锁等）
+    - 代码文件链接（行级精确定位）
+    - 监控与可观测性建议（结构化指标日志）
+  - 影响: 提供后端系统稳定性加固的完整路线图，帮助开发团队识别容错短板、制定改进优先级、落地实施
+
+- [x] **新增后端安全与合规分析文档**
+
+  - 新增 `docs/BACKEND/安全与合规.md`: iPet-Backend 系统安全分析与风险控制方案
+    - **认证 (Authentication)**:
+      - JWT 生命周期与刷新机制分析（30天有效期、Token 刷新策略）
+      - 风险识别：accessToken/refreshToken 未分离、无撤销机制、无轮换策略
+      - 控制项 AUTH-C01-C04：双 Token 机制、Token 黑名单、Secret 强度验证、Secret 轮换方案
+    - **鉴权 (Authorization)**:
+      - 当前鉴权模型分析（全局 Guard、白名单机制、资源级 userId 匹配）
+      - 风险识别：白名单硬编码、路径匹配绕过漏洞、缺乏 RBAC/ABAC、Guest 权限边界不清
+      - 控制项 AUTHZ-C01-C04：路径匹配修复、装饰器路由管理、资源所有权验证管道、Guest 权限边界
+    - **上传安全**:
+      - 文件上传实现分析（类型白名单、日期隔离路径、CUID2 文件名）
+      - 风险识别：仅依赖 MIME 类型、缺少文件大小限制、无病毒扫描、路径遍历风险
+      - 控制项 UPLOAD-C01-C04：文件魔数验证、文件大小限制、路径遍历防护、病毒扫描集成
+    - **敏感信息管理**:
+      - 日志脱敏：混用 Logger 和 console.log 的风险
+      - 配置管理：.env 文件保护、JWT_SECRET 强制要求、密钥管理服务
+      - 密码存储：bcrypt (cost=12) 已符合最佳实践
+      - 控制项 LOG-C01-C02：日志脱敏工具、移除调试 console.log
+      - 控制项 CONFIG-C01-C02：Git 预提交检查、云密钥管理服务
+    - **综合风险矩阵**: 8 个核心控制项的优先级、实施难度、预期收益评估
+    - **实施路线图**: Phase 1-3 分阶段实施计划（关键风险修复 → 重要优化 → 长期规划）
+    - **监控与审计建议**: 关键指标、审计日志、告警规则
+  - 文档特色:
+    - 22 个可落地控制项（P0-P3 分级）
+    - 每个控制项包含：优先级、实施方案、代码示例、验证标准
+    - 完整的风险矩阵和实施路线图
+    - 代码文件链接（行级精确定位）
+    - 参考 OWASP Top 10、RFC 8725、CWE-22 等标准
+  - 影响: 提供后端系统安全加固的完整路线图，帮助开发团队识别风险、制定优先级、落地实施
+
+
+- [x] **新增后端接口契约文档**
+  - 新增 `docs/BACKEND/接口契约.md`: iPet-Backend API 接口契约完整规范
+    - REST 路由清单: 9 大模块共 40+ 接口详细定义（认证、用户、宠物、健康记录、健康计划、文章、洞察、系统配置、上传）
+    - 请求/响应结构规范: 分页、排序、过滤、时间格式、空值约定
+    - 错误码体系: HTTP 状态码 + NestJS 异常映射,包含错误响应示例
+    - 认证与授权: JWT 令牌机制（30天有效期）、游客会话策略、权限验证规则
+    - 版本策略: 当前版本状态、未来版本规划、兼容性原则、灰度发布策略
+    - 幂等性与一致性: 幂等接口识别、幂等键建议方案、事务边界、乐观锁实现
+    - 限流与安全: 端点级限流配置（基于 @nestjs/throttler）、CORS 策略、反重放攻击建议
+    - 性能优化: 数据库索引清单、批量查询替代 N+1、服务端聚合
+    - 维护建议: 统一响应格式、业务错误码、幂等键支持、OpenAPI 集成、日志追踪
+  - 架构特色总结:
+    - 清晰的 RESTful 设计、完善的认证机制、合理的限流策略
+    - 性能优化措施（索引、批量查询、服务端聚合）
+    - 软删除设计、级联删除、乐观锁并发控制
+  - 文档特色:
+    - 完整的路由表格（方法、路径、认证、限流、功能）
+    - 请求/响应示例（JSON 格式）
+    - ER 图（Mermaid 可视化）
+    - 环境变量配置清单、维护流程与责任定义
+  - 影响: 提供前后端协作的"唯一真相",帮助前端开发理解 API 契约、后端维护者同步文档、测试人员编写用例
+
+- [x] **新增后端业务域分析文档**
+  - 新增 `docs/BACKEND/业务域与边界分析.md`: iPet-BackEnd 系统架构与业务域完整分析
+    - 业务域划分: 5 个核心业务域（认证与授权、宠物管理、健康追踪、内容管理、基础设施）
+    - 模块职责边界: 11 个核心模块的详细职责定义（auth, pets, health, health-schedule, article, users, insight, uploads, storage, system-config, guest）
+    - 核心用例与业务流程: 6 个关键用例的 Mermaid 序列图（游客会话、账号升级、Token刷新、健康数据追踪、文件上传等）
+    - 依赖关系: 模块依赖图、表依赖 ER 图、服务间调用关系表
+    - 领域模型与约束: 数据不变量、校验规则、权限规则、性能约束、数据一致性保证
+    - 风险与改进建议: 当前限制、技术债、扩展性建议
+  - 架构优势总结:
+    - 清晰的模块边界、成熟的技术栈（NestJS + Prisma）
+    - 性能优化（批量查询、索引优化、服务端聚合）
+    - 游客友好（低门槛体验、平滑升级）
+    - JWT Stateless 认证、软删除设计、客户端生成 ID、级联删除
+  - 文档特色:
+    - 7 个 Mermaid 可视化图表（架构图、序列图、依赖图、ER 图）
+    - 清晰的职责边界对比表格
+    - 代码示例（DTO 验证、事务使用）
+    - 实用的性能指标、索引清单、改进建议
+  - 影响: 提供后端系统全面视图,帮助开发人员理解业务边界、架构师规划重构、管理者评估风险
+
+---
+
+## 更新日志
+
+## 2025-12-20
+
+### 📚 文档更新
+- **新增**: 后端数据设计文档 (`docs/BACKEND/数据设计.md`)
+  - 实体关系图(ERD)与 8 个核心数据模型
+  - 字段语义、类型规范、时间字段策略(DateTime vs String)
+  - 索引策略:覆盖索引、部分索引、查询驱动的索引设计
+  - 事务边界与最终一致性决策矩阵
+  - 软删除 / 级联删除 / 乐观锁实现细节
+  - Prisma Migration 迁移规范与回滚策略
+  - 备份/恢复/归档策略及 HealthRecord 冷热数据分层建议
+  - 数据治理、容量规划、性能监控指标
+  - 已知技术债与优化路线图
+
 ## 0.0.5 (2025-12-19)
+
+### Backend
+- [x] **补齐分页/查询形态（防止大数据量全量拉取）**
+  - `GET /health` / `GET /pets` / `GET /articles` / `GET /health-schedules/:petId` 统一启用分页（默认值 + 最大值限制）
+  - `GET /health`：当传 `petId`（并在需要时传 `type`）时，查询形态对齐覆盖索引 `(petId, type, deleted, date DESC)`，降低大数据量扫描风险
+  - `GET /articles`：列表不再返回正文 `content`，避免列表场景传输过大
+  - 文档同步：更新 `docs/backend/接口契约.md` 的分页参数与说明
+
+### Frontend Performance
+- [x] **HealthStore：实体层 shallowRef + 替换引用更新**
+  - 写入/删除/清理路径统一用替换引用，避免深层响应式与漏更新风险
+- [x] **趋势检测：O(N) 扫描优化为 O(k)**
+  - `refreshTrendDetection` 优先走 `metricIndex[key] -> recordIds[]`，避免每次按 key 全量筛 records
+- [x] **趋势检测：数据量 > 100 自动切 Worker（默认启用）**
+  - 新增 `WorkerExecutor` + `trendDetection.worker.ts`，Worker 不可用/失败时自动降级主线程
+- [x] **refreshTrendDetection：Debounce 合并**
+  - 短时间内多次触发合并为一次批量计算，降低重复计算
+- [x] **缓存失效按文档执行**
+  - 切宠物：全量失效 + 重新拉取
+  - 写入/更新/删除：精准失效（仅清该指标 cache）
+
+### Frontend Network
+- [x] **request.ts：补齐指数退避重试（按契约）**
+  - `src/utils/common/request.ts`：可重试状态码（408/429/500/502/503/504）与网络/超时失败，最多重试 3 次（1s/2s/4s）
+  - 行为约束：默认仅对幂等方法启用；POST 仅在携带 `X-Idempotency-Key` 时允许重试，避免重复写入风险
+  - 工具链：补充 `vitest` devDependency，用于运行/维护工具函数单测
 
 ### Bug Fixes
 - [x] **趋势卡片显示与趋势判定问题修复**
@@ -6,8 +239,15 @@
     - 更新 `src/domain/trend/detectSignificantChanges.ts`: 将默认阈值从 30% 调整为 20%
     - 更新相关文档注释，确保代码与文档一致性
     - 影响：趋势检测更敏感，能够捕捉到更多有意义的变化（20%-30% 区间的变化现在会被识别为趋势）
-    - ⚠️ **重要提示**：首次使用时需要刷新数据以应用新阈值
-      - 方法1：下拉刷新Summary页面
+  - **修复趋势分组 Bug：无趋势卡片错误归类到"有趋势变化"分区**
+    - **根本原因**: Domain 层 (`detectSignificantChanges.ts`) 始终按**日**聚合，而 TrendCard 层 (`useTrendCard.ts`) 在数据 ≥20 周时自动切换到**周**聚合。不同聚合粒度导致计算出的变化百分比不一致。
+    - 修复方案:
+      - 更新 `src/domain/trend/detectSignificantChanges.ts`: 新增 `getWeekNumber()` 和 `aggregateByWeek()` 函数，实现自动视图切换逻辑（与 TrendCard 一致）
+      - 更新 `src/composables/useTrendCard.ts`: 将默认阈值从 5% 改为 20%，比较运算符从 `>=` 改为 `>`
+      - 更新 `src/components/widgets/TrendCard.vue`: 将 `thresholdPercent` prop 默认值从 5 改为 20
+    - 影响：Domain 层和 TrendCard 层现在使用完全相同的聚合逻辑和阈值，确保分区归类与卡片显示一致
+    - ⚠️ **重要提示**：首次使用时需要刷新数据以应用新算法
+      - 方法1：下拉刷新 Summary 页面
       - 方法2：切换宠物后再切换回来
       - 方法3：退出登录后重新登录
   - 增强趋势页面视觉区分度
@@ -16,6 +256,53 @@
     - 新增计数徽章显示每个分区的指标数量
     - 新增渐变背景和彩色边框提升视觉对比度
     - 影响：用户能够更快速地识别和区分不同类型的趋势数据
+
+- [x] **趋势 View 趋势分区阈值修复（仅 >30% 才算趋势变化）**
+  - 业务规则：仅当前后对比差值 **> 30%** 时，才认定为"有趋势变化"（严格 `>`）
+  - 修复方案：
+    - 新增 `src/domain/trend/trendConstants.ts`：统一阈值/窗口/数据点等默认参数，避免 Domain/UI 口径漂移
+    - 更新 `src/domain/trend/detectSignificantChanges.ts`：默认阈值调整为 30%
+    - 更新 `src/composables/useTrendCard.ts` + `src/components/widgets/TrendCard.vue`：默认阈值同步为 30%，并将均值显示格式统一为最多 1 位小数
+    - 更新 `docs/frontend/产品与业务层.md`：补充趋势阈值口径与配置参数
+  - 影响：趋势 View 与 Summary View 中复用的趋势分区判断口径统一，变化幅度 ≤ 30% 不再误归入"有趋势变化"
+
+- [x] **Summary View：趋势区块移除强制 min-height**
+  - 更新 `src/pages/summary/summary.vue`：去除 trends section 的 `min-height` 绑定与相关 computed，避免不必要的留白与布局约束
+
+- [x] **Summary View：简化趋势区块标题**
+  - 更新 `src/pages/summary/summary.vue`：移除 trends section 的额外 header 容器，仅保留单一文字标题
+
+- [x] **Summary View：回滚趋势区块标题简化**
+  - 更新 `src/pages/summary/summary.vue`：恢复为 `section-header` 包裹标题的结构（避免与其它 section 标题样式/结构不一致）
+
+- [x] **趋势 View：简化趋势分区标题**
+  - 更新 `src/pages/trends/trends.vue`：移除分区标题中的图标/徽章等复杂结构，仅保留文字标题
+
+- [x] **Iconfont 图标引用统一为 Unicode**
+  - 变更范围：健康指标卡片/趋势卡片/关联指标等 Iconfont 图标渲染
+  - 影响模块：
+    - `src/App.vue`：全局引入 `src/static/icon/iconfont.css`
+    - `src/data/metricMetadata.ts`：新增 `iconUnicode` 字段，并补齐各指标的 Unicode 映射
+    - `src/components/widgets/TrendCard.vue` + `src/components/widgets/BaseTrendCard.vue`：移除 SVG symbol 方式，改为 Unicode 渲染
+    - `src/components/business/health/MetricItemCard.vue` + `src/pages/metrics/detail.vue`：指标卡片与关联指标图标改为 Unicode 渲染
+  - 行为变更：项目内不再依赖 `iconfont.js`/`<svg><use /></svg>` 的 symbol 引用方式
+  - 规范文档：新增 `docs/iconfont/Unicode.md`
+
+- [x] **Tabbar 图标切换为 Iconfont Unicode（like / my）**
+  - 变更范围：Tabbar 图标渲染从 PNG 切换为 Iconfont Unicode
+  - 影响模块：
+    - `src/pages.json`：使用原生 `tabBar.iconfontSrc` + `list[].iconfont`
+    - `src/utils/ui/iconfont.ts`：补齐 tabbar Unicode 映射
+  - 行为变更：tabbar 不再使用 `static/tabbar/*.png`，也不再使用 `custom-tab-bar`
+  - 规范文档：更新 `docs/iconfont/Unicode.md`
+  - 修复：切换为 uni-app 原生 tabBar iconfont 配置，避免自定义 tabbar 不显示
+
+- [x] **Tabbar 图标回退为 PNG**
+  - 变更范围：Tabbar 图标恢复使用 `src/static/tabbar/*.png`
+  - 影响模块：`src/pages.json`（移除 `tabBar.iconfontSrc` / `list[].iconfont`，恢复 `iconPath/selectedIconPath`）
+  - 行为变更：`pages.json` 不再引用字体文件作为 tabbar 图标来源
+  - 文档更新：`docs/iconfont/Unicode.md` 同步说明 tabbar 当前使用 PNG
+  - 修复：更新 tabbar 图片路径为 `static/tabbar/like.png` / `static/tabbar/likefill.png` / `static/tabbar/my.png` / `static/tabbar/myfill.png`
 
 ### 工程化
 - [x] **TD-008: 数据库索引未优化** - 添加关键数据库索引，防止数据量增长后的性能问题

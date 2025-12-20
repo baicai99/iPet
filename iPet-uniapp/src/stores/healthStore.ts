@@ -200,7 +200,7 @@ export const useHealthStore = defineStore('health', () => {
      */
     function refreshTrendDetection(
         changedTypes?: string[],
-        dataSnapshot?: { ids: string[], entities: Record<string, HealthRecord> }
+        dataSnapshot?: { ids: string[], entities: Record<string, HealthRecord>, metricIndex?: Record<string, string[]> }
     ) {
         // 添加到待刷新队列
         if (changedTypes) {
@@ -211,7 +211,7 @@ export const useHealthStore = defineStore('health', () => {
             getAllMetricKeys().forEach(key => pendingRefreshMetrics.add(key))
         }
 
-        // Debounce：合并同一 microtask 内的多次调用
+        // Debounce：合并短时间内的多次调用
         if (refreshTimer !== null) {
             return // 已有待执行的任务
         }
@@ -226,7 +226,8 @@ export const useHealthStore = defineStore('health', () => {
             // ✅ 使用快照或创建当前状态的快照（避免响应式访问）
             const snapshot = dataSnapshot || {
                 ids: [...ids.value],
-                entities: { ...entities.value }
+                entities: { ...entities.value },
+                metricIndex: { ...metricIndex.value }
             }
 
             // ✅ 使用 markRaw 确保结果对象不被响应式追踪
@@ -234,11 +235,12 @@ export const useHealthStore = defineStore('health', () => {
 
             for (const key of metricsToUpdate) {
                 // ✅ 从快照获取历史记录（纯数据访问,无响应式依赖）
-                const recordIds = snapshot.ids.filter(id => {
-                    const record = snapshot.entities[id]
-                    return record && record.type === key && !record.deleted
-                })
-                const records = recordIds.map(id => snapshot.entities[id]).filter(Boolean)
+                const recordIds = snapshot.metricIndex?.[key]
+                    ?? snapshot.ids.filter(id => {
+                        const record = snapshot.entities[id]
+                        return record && record.type === key && !record.deleted
+                    })
+                const records = recordIds.map(id => snapshot.entities[id]).filter(r => r && !r.deleted)
 
                 // 转换为 domain 层格式（纯数据）
                 const metricRecords: MetricRecord[] = records.map(r => ({
@@ -257,7 +259,7 @@ export const useHealthStore = defineStore('health', () => {
 
             // 更新结果（触发 UI 更新）
             metricTrendMap.value = results
-        }, 0) as unknown as number
+        }, 50) as unknown as number
     }
 
     /**
@@ -341,22 +343,35 @@ export const useHealthStore = defineStore('health', () => {
     /** 更新指标索引（新增记录时） */
     function updateMetricIndex(record: HealthRecord) {
         if (!record.type || record.deleted) return
-        const list = metricIndex.value[record.type] || []
-        if (!list.includes(record.id)) {
-            metricIndex.value[record.type] = [record.id, ...list]
+        const current = metricIndex.value
+        const list = current[record.type] || []
+        if (list.includes(record.id)) return
+        metricIndex.value = {
+            ...current,
+            [record.type]: [record.id, ...list]
         }
     }
 
     /** 从索引移除记录 */
     function removeFromMetricIndex(id: string, type?: string) {
-        if (type && metricIndex.value[type]) {
-            metricIndex.value[type] = metricIndex.value[type].filter(rid => rid !== id)
-        } else {
-            // 如果不知道类型，遍历所有索引
-            Object.keys(metricIndex.value).forEach(key => {
-                metricIndex.value[key] = metricIndex.value[key].filter(rid => rid !== id)
-            })
+        const current = metricIndex.value
+
+        if (type) {
+            const list = current[type]
+            if (!list) return
+            metricIndex.value = {
+                ...current,
+                [type]: list.filter(rid => rid !== id)
+            }
+            return
         }
+
+        // 如果不知道 type：遍历所有索引并移除
+        const next: Record<string, string[]> = {}
+        for (const key of Object.keys(current)) {
+            next[key] = current[key].filter(rid => rid !== id)
+        }
+        metricIndex.value = next
     }
 
     /** 生成 Series 缓存键 */
@@ -460,6 +475,26 @@ export const useHealthStore = defineStore('health', () => {
             loading.value = true
 
             try {
+                // ✅ 切宠物：全量失效 + 重新拉取（按文档执行）
+                if (isPetChanged) {
+                    ids.value = []
+                    entities.value = {}
+                    metricIndex.value = {}
+                    seriesCache.value = {}
+                    trendCache.value = markRaw(new Map())
+                    metricTrendMap.value = markRaw({})
+
+                    pendingRefreshMetrics = new Set()
+                    if (refreshTimer !== null) {
+                        clearTimeout(refreshTimer)
+                        refreshTimer = null
+                    }
+
+                    resetSummarySnapshot()
+                    healthCacheService.clear()
+                    healthCacheServiceV2.invalidatePet(petId)
+                }
+
                 await fetchHealthRecords(petId)
                 await refreshSummary(petId)
 
@@ -591,9 +626,11 @@ export const useHealthStore = defineStore('health', () => {
         const tempId = optimisticRecord.tempId
 
         // 2. 立即更新状态（乐观更新）
-        entities.value[tempId] = optimisticRecord
+        entities.value = { ...entities.value, [tempId]: optimisticRecord }
         ids.value = [tempId, ...ids.value]
         applyPinnedMetricOptimisticUpdate(record)
+        updateMetricIndex(optimisticRecord)
+        invalidateSeriesCache(optimisticRecord.type)
 
         // 3. 调用 Service 执行创建
         const result = await healthRecordService.createRecord(record)
@@ -612,9 +649,9 @@ export const useHealthStore = defineStore('health', () => {
             }
 
             resortIds()
+            buildMetricIndex()
 
-            // 更新索引和缓存
-            updateMetricIndex(result.serverRecord)
+            // 更新缓存
             invalidateSeriesCache(result.serverRecord.type)
 
             // ✅ NEW: V2 精准失效 - 只失效相关 metric
@@ -640,6 +677,7 @@ export const useHealthStore = defineStore('health', () => {
             delete newEntities[tempId]
             entities.value = newEntities
             ids.value = ids.value.filter(id => id !== tempId)
+            removeFromMetricIndex(tempId, optimisticRecord.type)
             error.value = result.error?.message || 'Failed to add record'
             throw result.error
         }
@@ -652,6 +690,7 @@ export const useHealthStore = defineStore('health', () => {
         loading.value = true
         error.value = null
 
+        const previous = entities.value[id]
         try {
             const result = await healthRecordService.updateRecord(id, payload)
 
@@ -662,15 +701,33 @@ export const useHealthStore = defineStore('health', () => {
                     [id]: result.record
                 }
                 resortIds()
+                buildMetricIndex()
+
+                // 趋势刷新：type 变更/删除时需同时刷新旧指标
+                const refreshTypes = new Set<string>()
+                if (previous?.type) refreshTypes.add(previous.type)
+                if (result.record.type) refreshTypes.add(result.record.type)
 
                 // ✅ NEW: V2 精准失效
                 if (result.record.petId) {
                     healthCacheServiceV2.invalidateMetric(result.record.petId, result.record.type)
                     console.log(`[Store] V2 cache invalidated (update): ${result.record.type}`)
+
+                    // type 变更时：旧指标也需要精准失效
+                    if (previous?.type && previous.type !== result.record.type) {
+                        healthCacheServiceV2.invalidateMetric(result.record.petId, previous.type)
+                        console.log(`[Store] V2 cache invalidated (update, prev): ${previous.type}`)
+                    }
+                }
+
+                // Series 缓存精准失效（type 变更时同时失效旧指标）
+                invalidateSeriesCache(result.record.type)
+                if (previous?.type && previous.type !== result.record.type) {
+                    invalidateSeriesCache(previous.type)
                 }
 
                 // 🔧 手动触发趋势检测（只刷新相关指标）
-                refreshTrendDetection([result.record.type])
+                refreshTrendDetection(Array.from(refreshTypes))
 
                 return result.record
             } else {
@@ -703,6 +760,9 @@ export const useHealthStore = defineStore('health', () => {
                 entities.value = newEntities
                 ids.value = ids.value.filter(recordId => recordId !== id)
 
+                buildMetricIndex()
+                if (deletedRecord?.type) invalidateSeriesCache(deletedRecord.type)
+
                 // ✅ NEW: V2 精准失效
                 if (deletedRecord?.petId && deletedRecord?.type) {
                     healthCacheServiceV2.invalidateMetric(deletedRecord.petId, deletedRecord.type)
@@ -731,13 +791,18 @@ export const useHealthStore = defineStore('health', () => {
      * 按宠物 ID 删除所有记录（本地）
      */
     function removeRecordsByPetId(petId: string) {
-        const toRemoveIds = ids.value.filter(id =>
-            String(entities.value[id].petId) === String(petId)
-        )
-        toRemoveIds.forEach(id => delete entities.value[id])
-        ids.value = ids.value.filter(id =>
-            String(entities.value[id]?.petId) !== String(petId)
-        )
+        const toRemoveIds = ids.value.filter(id => String(entities.value[id]?.petId) === String(petId))
+        if (toRemoveIds.length === 0) return
+
+        const newEntities = { ...entities.value }
+        toRemoveIds.forEach(id => delete newEntities[id])
+        entities.value = newEntities
+        ids.value = ids.value.filter(id => String(newEntities[id]?.petId) !== String(petId))
+
+        buildMetricIndex()
+        invalidateSeriesCache()
+        trendCache.value = markRaw(new Map())
+        metricTrendMap.value = markRaw({})
     }
 
     /**

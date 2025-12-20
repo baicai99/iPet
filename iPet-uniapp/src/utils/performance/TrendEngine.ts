@@ -12,6 +12,7 @@
  */
 
 import { MainThreadExecutor } from './MainThreadExecutor'
+import { WorkerExecutor } from './WorkerExecutor'
 import type { TrendExecutor, TrendExecutorResult } from './TrendExecutor'
 import type { MetricRecord } from '@/domain/trend/detectSignificantChanges'
 
@@ -37,10 +38,10 @@ class TrendEngineInstance {
         // 初始化主线程执行器（总是可用）
         this.mainThreadExecutor = new MainThreadExecutor()
 
-        // Phase 2: WorkerExecutor 初始化
-        // if (this.config.preferWorker) {
-        //     this.workerExecutor = new WorkerExecutor()
-        // }
+        // WorkerExecutor 初始化（按需启用，且内部会自行判断平台可用性）
+        if (this.config.preferWorker) {
+            this.workerExecutor = new WorkerExecutor()
+        }
     }
 
     /**
@@ -119,6 +120,6 @@ class TrendEngineInstance {
  * - workerThreshold: 100（为 Phase 2 预留）
  */
 export const TrendEngine = new TrendEngineInstance({
-    preferWorker: false,
+    preferWorker: true,
     workerThreshold: 100
 })

@@ -4,9 +4,7 @@
         <view class="header">
             <view class="title-section">
                 <view class="icon-wrapper" :style="{ backgroundColor: themeBg, color: themeColor }">
-                    <svg class="icon" aria-hidden="true" style="font-size: 18px">
-                        <use :xlink:href="'#' + iconName"></use>
-                    </svg>
+                    <text class="iconfont" style="font-size: 18px">{{ iconName }}</text>
                 </view>
                 <text class="title">{{ title }}</text>
             </view>
@@ -53,6 +51,7 @@ import MiniRangeSlider from '@/components/widgets/charts/MiniRangeSlider.vue'
 import MiniStatus from '@/components/widgets/charts/MiniStatus.vue'
 import MiniTimeline from '@/components/widgets/charts/MiniTimeline.vue'
 import MiniStatusGrid from '@/components/widgets/charts/MiniStatusGrid.vue'
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 const props = defineProps({
     config: {
@@ -66,7 +65,7 @@ const props = defineProps({
     tag: { type: String, default: '' },
     themeColor: { type: String, default: '#f97316' },
     themeBg: { type: String, default: '#fff7ed' },
-    iconName: { type: String, default: 'grid' },
+    iconName: { type: String, default: ICONFONT_UNICODE.file },
     chartComponent: { type: Object, default: null },
     chartProps: { type: Object, default: () => ({}) },
     chartHeight: { type: String, default: '80rpx' },

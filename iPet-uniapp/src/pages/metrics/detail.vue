@@ -37,7 +37,7 @@
                 <view class="info-card" v-for="metric in formattedRelatedMetrics" :key="metric.key"
                     @click="navigateToMetric(metric.key)">
                     <view class="card-icon" :style="{ backgroundColor: metric.color.bg }">
-                        <u-icon :name="metric.icon" :color="metric.color.hex" size="20"></u-icon>
+                        <text class="iconfont" :style="{ color: metric.color.hex, fontSize: '20px' }">{{ metric.icon }}</text>
                     </view>
                     <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
                             }}</text>
@@ -116,6 +116,7 @@ import { useUnitConverter } from '@/composables/useUnitConverter'
 import { getMetricMetadata } from '@/data/metricMetadata'
 import { STRINGS } from '@/locale/zh-Hans'
 import { COLORS, CATEGORY_COLOR_MAP } from '@/config/theme'
+import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 // ============================================================================
 // State from Composable
@@ -320,20 +321,12 @@ async function fetchRelatedMetrics() {
                 unit: meta.displayUnit || meta.unit || '',
                 baseUnit: meta.unit || '',
                 color: COLORS[colorKey],
-                icon: getIconName(meta.title)
+                icon: meta.iconUnicode || ICONFONT_UNICODE.file
             }
         })
     } else {
         relatedMetricsData.value = []
     }
-}
-
-function getIconName(title) {
-    if (title?.includes('体重')) return 'grid'
-    if (title?.includes('体温')) return 'heart'
-    if (title?.includes('睡眠')) return 'moon'
-    if (title?.includes('饭')) return 'bag'
-    return 'grid'
 }
 
 function viewHistory() {
