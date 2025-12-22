@@ -133,7 +133,7 @@ export function useMetricSeriesData(): UseMetricSeriesDataReturn {
         // 设置默认时间范围
         const meta = getMetricMetadata(key as MetricKey)
         if (meta?.timeDisplay?.detailDefaultTab) {
-            activeRange.value = meta.timeDisplay.detailDefaultTab
+            activeRange.value = meta.timeDisplay.detailDefaultTab as string
         } else if (meta?.interactionMode === 'task') {
             activeRange.value = 'today'
         } else {

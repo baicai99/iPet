@@ -125,7 +125,9 @@ const { component: detailChartComponent, props: detailChartProps } = useChartAda
 // Extract component name for conditional rendering
 const detailChartComponentName = computed(() => {
     if (!detailChartComponent.value) return ''
-    return detailChartComponent.value.__name || detailChartComponent.value.name || ''
+    // Type assertion needed because useChartAdapter returns a generic Component type
+    const comp = detailChartComponent.value as unknown as { __name?: string; name?: string }
+    return comp.__name || comp.name || ''
 })
 </script>
 

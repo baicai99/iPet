@@ -5,9 +5,18 @@
  */
 
 import {
-    HEALTH_CACHE_SCHEMA_VERSION,
-    type CacheEntry
+    HEALTH_CACHE_SCHEMA_VERSION
 } from '@shared/types/health'
+
+/**
+ * 本地缓存条目类型（独立于 CacheManager 和 @shared/types/health）
+ */
+interface HealthCacheEntry<T> {
+    data: T
+    version: number
+    createdAt: number
+    expiresAt: number
+}
 
 /**
  * Metric Series 缓存 TTL 配置
@@ -51,8 +60,7 @@ async function cacheMetricSeries(
     const key = buildSeriesKey(petId, metricKey, range)
     const ttl = SERIES_TTL_CONFIG[range] || 60 * 1000
 
-    const entry: CacheEntry<typeof data> = {
-        key: key as any,
+    const entry: HealthCacheEntry<typeof data> = {
         data,
         version: HEALTH_CACHE_SCHEMA_VERSION,
         createdAt: Date.now(),
@@ -80,7 +88,7 @@ async function getMetricSeries(
     const storageKey = `${CACHE_PREFIX}${key}`
 
     try {
-        const entry = uni.getStorageSync(storageKey) as CacheEntry<any> | null
+        const entry = uni.getStorageSync(storageKey) as HealthCacheEntry<any> | null
 
         if (!entry) {
             console.log(`[Cache] Miss: ${key}`)

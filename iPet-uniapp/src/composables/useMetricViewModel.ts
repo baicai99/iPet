@@ -165,9 +165,10 @@ export function useMetricViewModel(
             }
         }
 
-        const points = series.value.points
-        const labels = points.map(p => formatLabel(p.ts, meta.tickFormat))
-        const values = points.map(p => p.value)
+        // 过滤掉 null 值的点，确保 values 是 number[] 而非 (number | null)[]
+        const validPoints = series.value.points.filter((p): p is { ts: number; value: number } => p.value !== null)
+        const labels = validPoints.map(p => formatLabel(p.ts, meta.tickFormat))
+        const values = validPoints.map(p => p.value)
 
         return {
             labels,
@@ -197,8 +198,13 @@ export function useMetricViewModel(
         }
 
         const points = series.value.points
-        const lastPoint = points[points.length - 1]
-        const values = points.map(p => p.value)
+        // 过滤掉 null 值，确保 values 是 number[]
+        const validPoints = points.filter((p): p is { ts: number; value: number } => p.value !== null)
+        if (validPoints.length === 0) {
+            return defaultData
+        }
+        const lastPoint = validPoints[validPoints.length - 1]
+        const values = validPoints.map(p => p.value)
         const trend = calculateTrend(values)
 
         return {

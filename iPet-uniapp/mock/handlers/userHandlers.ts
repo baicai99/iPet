@@ -58,7 +58,7 @@ export const deleteAccountMock = (config: RequestConfig) => {
         // Fallback for testing if no login happened in this session, assume default user
         const defaultUser = userState.users.find(u => u.email === 'test@example.com')
         if (defaultUser) {
-            userState.currentUserId = defaultUser.id
+            ; (userState as { currentUserId: number | null }).currentUserId = defaultUser.id
         } else {
             return {
                 code: 401,

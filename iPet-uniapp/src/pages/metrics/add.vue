@@ -44,31 +44,31 @@
                             </view>
                         </view>
 
-                        <view v-if="isTaskMode && formConfig && formConfig.options?.length > 0" class="form-group">
-                            <text class="label">{{ formConfig.multiSelect ? '选择方式（可多选）' : '选择类型' }}</text>
+                        <view v-if="isTaskMode && formConfigOptions.length > 0" class="form-group">
+                            <text class="label">{{ formConfig?.multiSelect ? '选择方式（可多选）' : '选择类型' }}</text>
                             <!-- Tips for Deworming Schedule -->
                             <view v-if="isScheduleMode && metricKey === 'deworming'" class="tips-box">
                                 <u-icon name="info-circle" size="14" color="#f59e0b"></u-icon>
                                 <text class="tips-text">体内和体外驱虫周期不同，请分别创建计划。</text>
                             </view>
                             <view class="tag-group">
-                                <view v-for="method in formConfig.options" :key="method.value" class="tag-item"
-                                    :class="{ active: selectedMethods.includes(method.value) }"
-                                    @click="toggleMethod(method.value)">
+                                <view v-for="method in formConfigOptions" :key="String(method.value)" class="tag-item"
+                                    :class="{ active: selectedMethods.includes(String(method.value)) }"
+                                    @click="toggleMethod(String(method.value))">
                                     <text>{{ method.label }}</text>
-                                    <u-icon v-if="selectedMethods.includes(method.value)" name="checkmark"
+                                    <u-icon v-if="selectedMethods.includes(String(method.value))" name="checkmark"
                                         color="#ffffff" size="12"></u-icon>
                                 </view>
                             </view>
                         </view>
 
                         <!-- Stool Status Tag Selection (PRD: 7-tag single select) -->
-                        <view v-if="isStatusTagMode && formConfig && formConfig.options?.length > 0" class="form-group">
+                        <view v-if="isStatusTagMode && formConfigOptions.length > 0" class="form-group">
                             <text class="label">排泄状态</text>
                             <view class="stool-tag-grid">
-                                <view v-for="option in formConfig.options" :key="option.value" class="stool-tag-item"
+                                <view v-for="option in formConfigOptions" :key="String(option.value)" class="stool-tag-item"
                                     :class="{ active: selectedStoolStatus === option.value }"
-                                    @click="selectStoolStatus(option.value)">
+                                    @click="selectStoolStatus(option.value as number)">
                                     <text>{{ option.label }}</text>
                                 </view>
                             </view>
@@ -90,7 +90,7 @@
                         </view>
 
                         <!-- Fallback/Placeholder for task-mode events without options -->
-                        <view v-if="isTaskMode && (!formConfig || !formConfig.options?.length)" class="form-group">
+                        <view v-if="isTaskMode && formConfigOptions.length === 0" class="form-group">
                             <text class="label">记录一次</text>
                             <view class="tag-group">
                                 <view class="tag-item active">
@@ -260,7 +260,7 @@ import dayjs from 'dayjs'
 import { useHealthStore } from '@/stores/healthStore'
 import { usePetStore } from '@/stores/petStore'
 import { emitDataChanged } from '@/services/syncEvents'
-import { getMetricMetadata, type MetricMetadata } from '@/data/metricMetadata'
+import { getMetricMetadata, type MetricMetadata, type MetricEnumOption, type MetricKey } from '@/data/metricMetadata'
 import { useUnitConverter } from '@/composables/useUnitConverter'
 
 // Setup Stores & Utils
@@ -295,7 +295,7 @@ const pickerTimeValue = ref(dayjs().format('HH:mm'))
 
 // Computed Metadata
 const metricMeta = computed<MetricMetadata>(() => getMetricMetadata(metricKey.value) || {
-    key: metricKey.value,
+    key: metricKey.value as MetricKey,
     title: metricKey.value,
     category: 'otherData',
     valueType: 'number'
@@ -328,6 +328,13 @@ const isTaskMode = computed(() => {
 })
 
 const formConfig = computed(() => metricMeta.value.formConfig)
+
+// Typed form config options for template access
+const formConfigOptions = computed<MetricEnumOption[]>(() => {
+    const config = formConfig.value
+    if (!config || !config.options) return []
+    return config.options as MetricEnumOption[]
+})
 
 // Stool status tag mode detection
 const isStatusTagMode = computed(() => {

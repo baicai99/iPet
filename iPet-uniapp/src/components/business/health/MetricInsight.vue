@@ -29,7 +29,7 @@ const fetchInsight = async () => {
     let remoteSuggestion = ''
     try {
         const insight = await insightService.getInsight(props.metricKey)
-        remoteSuggestion = insight?.suggestion || ''
+        remoteSuggestion = insight?.content || ''
     } catch (err) {
         console.warn('Failed to fetch remote insight', err)
     }

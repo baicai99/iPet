@@ -242,14 +242,14 @@ class CacheManagerInstance {
         return Date.now() - entry.timestamp > entry.ttl
     }
 
-    private getFromStorage(fullKey: string): CacheEntry | null {
+    private getFromStorage(fullKey: string): CacheEntry | undefined {
         try {
             const str = uni.getStorageSync(fullKey)
-            if (!str) return null
+            if (!str) return undefined
             return JSON.parse(str) as CacheEntry
         } catch (e) {
             console.warn(`[CacheManager] Failed to read from storage: ${fullKey}`, e)
-            return null
+            return undefined
         }
     }
 

@@ -139,20 +139,6 @@ const pinnedState = useSectionState()   // 置顶指标独立状态
 const trendsState = useSectionState()   // 趋势独立状态
 const articlesState = useSectionState() // 文章独立状态
 
-// 🐛 DEBUG: Watch state transitions
-watch(() => pinnedState.state.value, (newState) => {
-    console.log('[DEBUG] pinnedState changed:', newState,
-        'shouldShowData:', pinnedState.shouldShowData.value)
-})
-watch(() => trendsState.state.value, (newState) => {
-    console.log('[DEBUG] trendsState changed:', newState,
-        'shouldShowData:', trendsState.shouldShowData.value)
-})
-watch(() => articlesState.state.value, (newState) => {
-    console.log('[DEBUG] articlesState changed:', newState,
-        'shouldShowData:', articlesState.shouldShowData.value)
-})
-
 // ✅ 保留轻量刷新态（所有 section 共用）
 const isBackgroundRefreshing = ref(false)
 
@@ -221,42 +207,6 @@ const trendStatusHint = computed(() => {
     const trendMap = healthStore.metricTrendMap as unknown as { value: Record<string, any> }
     return getTrendStatus(trendMap.value, totalDays)
 })
-
-// 🔍 DIAGNOSTIC: Watch trend data changes
-watch(() => (healthStore.metricTrendMap as unknown as { value: Record<string, any> }).value, (newVal) => {
-    console.log('[DIAG] metricTrendMap keys:', Object.keys(newVal ?? {}))
-    console.log('[DIAG] metricTrendMap:', newVal)
-}, { immediate: true })
-
-watch(() => changedMetricKeys.value, (newVal) => {
-    console.log('[DIAG] changedMetricKeys:', newVal)
-    console.log('[DIAG] changedMetricKeys.length:', newVal.length)
-}, { immediate: true })
-
-watch(() => trendStatusHint.value, (newVal) => {
-    console.log('[DIAG] trendStatusHint:', newVal)
-    console.log('[DIAG] Status:', newVal.status)
-    console.log('[DIAG] Message:', newVal.message)
-}, { immediate: true })
-
-// 🔍 DIAGNOSTIC: Watch specific metric (weight example)
-watch(() => {
-    const trendMap = (healthStore.metricTrendMap as unknown as { value: Record<string, any> }).value
-    return trendMap?.['weight']
-}, (newVal) => {
-    if (newVal) {
-        console.log('[DIAG] weight trend:', {
-            hasSignificantChange: newVal.hasSignificantChange,
-            direction: newVal.direction,
-            dataPoints: newVal.dataPoints,
-            changePercent: newVal.changePercent,
-            previousAvg: newVal.previousAvg,
-            recentAvg: newVal.recentAvg
-        })
-    } else {
-        console.log('[DIAG] weight trend: NOT FOUND')
-    }
-}, { immediate: true })
 
 // Helper functions for TrendCard props
 const getMetricTitle = (key: string) => METRIC_METADATA[key as MetricKey]?.title || key
@@ -330,19 +280,6 @@ onMounted(() => {
             rawPinnedMetrics.value = cachedSnapshot.pinnedMetrics || []
             trends.value = cachedSnapshot.trends || []
             dailySummaries.value = cachedSnapshot.dailySummaries || {}
-            console.log('[Summary] 📸 Cache applied synchronously:', {
-                tasks: tasks.value.length,
-                pinnedMetrics: rawPinnedMetrics.value.length,
-                trends: trends.value.length
-            })
-
-            // 🔍 DIAGNOSTIC: Log health records and sampling days
-            console.log('[DIAG] Total records:', healthStore.healthRecords.length)
-            console.log('[DIAG] Records by type:', healthStore.metricIndex.value)
-            const totalDays = healthStore.getTotalRecordDays()
-            console.log('[DIAG] Total record days:', totalDays)
-            console.log('[DIAG] Minimum required:', 20)
-            console.log('[DIAG] Has enough days:', totalDays >= 20)
         }
     }
 
@@ -362,26 +299,19 @@ onMounted(() => {
         if (hasCacheData) {
             // ✅ 后台刷新有缓存：显示轻量刷新 indicator
             isBackgroundRefreshing.value = true
-            console.log('[Summary] 🔄 Background refresh with cache (lightweight indicator)')
         }
 
         try {
             // ============================================================================
             // ✅ Wave 1: 置顶指标（最高优先级，立即加载）
             // ============================================================================
-            console.log('[Summary] 🌊 Wave 1: Loading pinned metrics (immediate)')
-            console.log('[DEBUG] pinnedState before Wave 1:', pinnedState.state.value)
-
             await healthStore.ensureDataLoaded(selectedPetId.value)
 
             // ✅ Wait for Vue reactivity to settle before transitioning state
             await nextTick()
 
             const hasPinnedData = rawPinnedMetrics.value.length > 0
-            console.log('[DEBUG] hasPinnedData:', hasPinnedData, 'rawPinnedMetrics:', rawPinnedMetrics.value.length)
             pinnedState.loadSuccess({ hasData: hasPinnedData })
-            console.log('[DEBUG] pinnedState after loadSuccess:', pinnedState.state.value)
-            console.log('[Summary] ✅ Wave 1 complete: Pinned metrics ready')
 
             // ✅ Save summary snapshot to cache after successful load
             healthCacheService.setSummarySnapshot({
@@ -390,7 +320,6 @@ onMounted(() => {
                 trends: trends.value,
                 dailySummaries: dailySummaries.value
             })
-            console.log('[Summary] 💾 Summary snapshot saved to cache')
 
             // ============================================================================
             // ✅ Wave 2: 趋势数据（次优先级，延迟 100ms）
@@ -398,9 +327,6 @@ onMounted(() => {
             // 否则会导致 pinnedMetrics 重新赋值 → 组件重新渲染 → 闪烁!
             // ============================================================================
             setTimeout(async () => {
-                console.log('[Summary] 🌊 Wave 2: Loading trends (delayed 100ms)')
-                console.log('[DEBUG] trendsState before Wave 2:', trendsState.state.value)
-
                 try {
                     if (!selectedPetId.value) return
 
@@ -411,11 +337,8 @@ onMounted(() => {
                     // trends 数据已经在 Wave 1 的 ensureDataLoaded 中加载了
                     // await nextTick()  // 不再需要,因为没有异步加载
 
-                    // 趋势区块的「无数据」由内部 HintCard 负责展示，这里不进入 empty（避免出现“暂无数据/立即添加”空态）
-                    console.log('[DEBUG] trends:', trends.value.length)
+                    // 趋势区块的「无数据」由内部 HintCard 负责展示，这里不进入 empty（避免出现"暂无数据/立即添加"空态）
                     trendsState.loadSuccess({ hasData: true })
-                    console.log('[DEBUG] trendsState after loadSuccess:', trendsState.state.value)
-                    console.log('[Summary] ✅ Wave 2 complete: Trends ready')
                 } catch (error) {
                     console.warn('[Summary] Wave 2 failed:', error)
                     trendsState.loadError(error as Error)
@@ -426,15 +349,9 @@ onMounted(() => {
             // ✅ Wave 3: 文章推荐（低优先级，延迟 500ms）
             // ============================================================================
             setTimeout(() => {
-                console.log('[Summary] 🌊 Wave 3: Loading articles (delayed 500ms)')
-                console.log('[DEBUG] articlesState before Wave 3:', articlesState.state.value)
-
                 try {
                     const hasArticlesData = articleStore.getLatestArticles(3).length > 0
-                    console.log('[DEBUG] hasArticlesData:', hasArticlesData, 'articles:', articleStore.getLatestArticles(3).length)
                     articlesState.loadSuccess({ hasData: hasArticlesData })
-                    console.log('[DEBUG] articlesState after loadSuccess:', articlesState.state.value)
-                    console.log('[Summary] ✅ Wave 3 complete: Articles ready')
                 } catch (error) {
                     console.warn('[Summary] Wave 3 failed:', error)
                     articlesState.loadError(error as Error)
@@ -531,7 +448,6 @@ watch(selectedPetId, async (newPetId, oldPetId) => {
     }
 
     hasLoadedInitialSummary = true
-    console.log('[Summary] 🔄 Pet switched:', oldPetId, '→', newPetId)
 
     // 1. Cancel old requests
     cancelPendingRequests()
@@ -560,12 +476,6 @@ watch(selectedPetId, async (newPetId, oldPetId) => {
         pinnedState.loadSuccess({ hasData: hasPinnedData })
         trendsState.loadSuccess({ hasData: true })
         articlesState.loadSuccess({ hasData: hasArticlesData })
-
-        console.log('[Summary] ✅ Pet data loaded:', {
-            pinned: hasPinnedData,
-            trends: trends.value.length,
-            articles: hasArticlesData
-        })
 
         // 5. Save new cache
         healthCacheService.setSummarySnapshot({

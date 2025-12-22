@@ -141,6 +141,7 @@ export class AuthService {
   }
 
   // 修改重点：手动验证 Token，不再依赖 Guard，确保持有旧凭证能换取新凭证
+  // 🔒 安全加固：添加最大刷新窗口限制（7天），防止过期 token 被无限期滥用
   async refreshToken(token: string) {
     try {
       // Allow expired tokens to be verified for refresh purposes
@@ -148,7 +149,19 @@ export class AuthService {
         uid: string;
         email?: string | null;
         isGuest?: boolean;
+        exp?: number; // JWT 自动生成的过期时间戳（秒）
       };
+
+      // 🔒 安全检查：限制刷新窗口为过期后最多 7 天
+      const MAX_REFRESH_WINDOW_SECONDS = 7 * 24 * 60 * 60; // 7天
+      if (payload.exp) {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const expiredForSeconds = nowSeconds - payload.exp;
+        // 如果 token 已过期超出刷新窗口，拒绝刷新
+        if (expiredForSeconds > MAX_REFRESH_WINDOW_SECONDS) {
+          throw new UnauthorizedException('Refresh token has exceeded the maximum refresh window');
+        }
+      }
 
       const newPayload = {
         uid: payload.uid,
@@ -165,6 +178,10 @@ export class AuthService {
         refreshToken: accessToken // 滚动更新刷新凭证
       };
     } catch (error) {
+      // 保留自定义的 UnauthorizedException，避免被覆盖
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
