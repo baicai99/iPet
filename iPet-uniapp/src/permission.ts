@@ -1,4 +1,5 @@
 import { useUserStore } from '@/stores/userStore'
+import { IS_MOCK_MODE } from '@/utils/config'
 
 type RouteAuthLevel = 'public' | 'guest' | 'user'
 
@@ -113,7 +114,7 @@ const handleUnauthorized = (reason = 'missing-token', url: string) => {
 
 const hasPermission = (url: string) => {
     // Mock mode: skip all auth checks
-    if (import.meta.env.VITE_USE_MOCK === 'true') {
+    if (IS_MOCK_MODE) {
         return { allowed: true }
     }
 

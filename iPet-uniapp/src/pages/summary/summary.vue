@@ -43,7 +43,17 @@
                         :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
                         :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :themeBg="getMetricBg(key)" />
                 </template>
-                <!-- State 2: No Trends - Show hint card (insufficient data OR stable) -->
+                <!-- State 2: All Stable - Show stable status card -->
+                <TrendStatusCard 
+                    v-else-if="trendStatusHint.status === 'all-stable'"
+                    icon="checkmark-circle"
+                    iconColor="#10b981"
+                    iconBgColor="#d1fae5"
+                    title="所有指标处于平稳状态"
+                    subtitle="当前暂无趋势变化，继续保持吧！"
+                    navigate-to="/pages/trends/trends"
+                />
+                <!-- State 3: Insufficient Data - Show sampling hint -->
                 <TrendHintCard v-else :message="trendStatusHint.message" navigate-to="/pages/trends/trends" />
             </view>
 
@@ -90,6 +100,7 @@ import PetSelectorBar from '@/components/profile/PetSelectorBar.vue'
 import PinnedMetricsWidget from '@/components/widgets/PinnedMetricsWidget.vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
 import TrendHintCard from '@/components/widgets/TrendHintCard.vue'  // ✅ UPDATED: Use generic hint card
+import TrendStatusCard from '@/components/widgets/TrendStatusCard.vue'  // ✅ NEW: Stable status card
 import ArticleCard from '@/components/business/social/ArticleCard.vue'
 import AppSectionState from '@/components/common/AppSectionState.vue'  // ✅ NEW: 统一状态组件
 import { usePetViewModel } from '@/composables/usePetViewModel'
@@ -206,8 +217,46 @@ const changedMetricKeys = computed(() => healthStore.getChangedMetricKeys())
  */
 const trendStatusHint = computed(() => {
     const totalDays = healthStore.getTotalRecordDays()
-    return getTrendStatus(healthStore.metricTrendMap, totalDays)
+    // Type assertion needed because Pinia doesn't correctly infer shallowRef types
+    const trendMap = healthStore.metricTrendMap as unknown as { value: Record<string, any> }
+    return getTrendStatus(trendMap.value, totalDays)
 })
+
+// 🔍 DIAGNOSTIC: Watch trend data changes
+watch(() => (healthStore.metricTrendMap as unknown as { value: Record<string, any> }).value, (newVal) => {
+    console.log('[DIAG] metricTrendMap keys:', Object.keys(newVal ?? {}))
+    console.log('[DIAG] metricTrendMap:', newVal)
+}, { immediate: true })
+
+watch(() => changedMetricKeys.value, (newVal) => {
+    console.log('[DIAG] changedMetricKeys:', newVal)
+    console.log('[DIAG] changedMetricKeys.length:', newVal.length)
+}, { immediate: true })
+
+watch(() => trendStatusHint.value, (newVal) => {
+    console.log('[DIAG] trendStatusHint:', newVal)
+    console.log('[DIAG] Status:', newVal.status)
+    console.log('[DIAG] Message:', newVal.message)
+}, { immediate: true })
+
+// 🔍 DIAGNOSTIC: Watch specific metric (weight example)
+watch(() => {
+    const trendMap = (healthStore.metricTrendMap as unknown as { value: Record<string, any> }).value
+    return trendMap?.['weight']
+}, (newVal) => {
+    if (newVal) {
+        console.log('[DIAG] weight trend:', {
+            hasSignificantChange: newVal.hasSignificantChange,
+            direction: newVal.direction,
+            dataPoints: newVal.dataPoints,
+            changePercent: newVal.changePercent,
+            previousAvg: newVal.previousAvg,
+            recentAvg: newVal.recentAvg
+        })
+    } else {
+        console.log('[DIAG] weight trend: NOT FOUND')
+    }
+}, { immediate: true })
 
 // Helper functions for TrendCard props
 const getMetricTitle = (key: string) => METRIC_METADATA[key as MetricKey]?.title || key
@@ -286,6 +335,14 @@ onMounted(() => {
                 pinnedMetrics: rawPinnedMetrics.value.length,
                 trends: trends.value.length
             })
+
+            // 🔍 DIAGNOSTIC: Log health records and sampling days
+            console.log('[DIAG] Total records:', healthStore.healthRecords.length)
+            console.log('[DIAG] Records by type:', healthStore.metricIndex.value)
+            const totalDays = healthStore.getTotalRecordDays()
+            console.log('[DIAG] Total record days:', totalDays)
+            console.log('[DIAG] Minimum required:', 20)
+            console.log('[DIAG] Has enough days:', totalDays >= 20)
         }
     }
 
@@ -463,58 +520,66 @@ onHide(() => {
 // ============================================================================
 
 // ✅ ACTIVE WATCH: Load new pet data when switching
+let hasLoadedInitialSummary = false
 watch(selectedPetId, async (newPetId, oldPetId) => {
-    if (oldPetId && newPetId !== oldPetId && newPetId) {
-        console.log('[Summary] 🔄 Pet switched:', oldPetId, '→', newPetId)
-
-        // 1. Cancel old requests
-        cancelPendingRequests()
-
-        // 2. Reset section states to loading (no cache on switch)
-        pinnedState.startLoading({ hasCache: false })
-        trendsState.startLoading({ hasCache: false })
-        articlesState.startLoading({ hasCache: false })
-
-        // 3. Clear existing data to prevent showing stale content
-        rawPinnedMetrics.value = []
-        trends.value = []
-        tasks.value = []
-        dailySummaries.value = {}
-
-        // 4. Load data for new pet
-        try {
-            await healthStore.ensureDataLoaded(newPetId)
-            await nextTick()
-
-            // Update section states based on loaded data
-            const hasPinnedData = rawPinnedMetrics.value.length > 0
-            // 趋势区块不使用 empty 状态，避免显示“暂无数据/立即添加”
-            const hasArticlesData = articles.value.length > 0
-
-            pinnedState.loadSuccess({ hasData: hasPinnedData })
-            trendsState.loadSuccess({ hasData: true })
-            articlesState.loadSuccess({ hasData: hasArticlesData })
-
-            console.log('[Summary] ✅ Pet data loaded:', {
-                pinned: hasPinnedData,
-                trends: trends.value.length,
-                articles: hasArticlesData
-            })
-
-            // 5. Save new cache
-            healthCacheService.setSummarySnapshot({
-                tasks: tasks.value,
-                pinnedMetrics: rawPinnedMetrics.value,
-                trends: trends.value,
-                dailySummaries: dailySummaries.value
-            })
-        } catch (error) {
-            console.error('[Summary] ❌ Failed to load pet data:', error)
-            pinnedState.loadError(error as Error)
-            trendsState.loadError(error as Error)
-        }
+    if (!newPetId) {
+        return
     }
-})
+
+    if (hasLoadedInitialSummary && newPetId === oldPetId) {
+        return
+    }
+
+    hasLoadedInitialSummary = true
+    console.log('[Summary] 🔄 Pet switched:', oldPetId, '→', newPetId)
+
+    // 1. Cancel old requests
+    cancelPendingRequests()
+
+    // 2. Reset section states to loading (no cache on switch)
+    pinnedState.startLoading({ hasCache: false })
+    trendsState.startLoading({ hasCache: false })
+    articlesState.startLoading({ hasCache: false })
+
+    // 3. Clear existing data to prevent showing stale content
+    rawPinnedMetrics.value = []
+    trends.value = []
+    tasks.value = []
+    dailySummaries.value = {}
+
+    // 4. Load data for new pet
+    try {
+        await healthStore.ensureDataLoaded(newPetId)
+        await nextTick()
+
+        // Update section states based on loaded data
+        const hasPinnedData = rawPinnedMetrics.value.length > 0
+        // 趋势区块不使用 empty 状态，避免显示“暂无数据/立即添加”
+        const hasArticlesData = articles.value.length > 0
+
+        pinnedState.loadSuccess({ hasData: hasPinnedData })
+        trendsState.loadSuccess({ hasData: true })
+        articlesState.loadSuccess({ hasData: hasArticlesData })
+
+        console.log('[Summary] ✅ Pet data loaded:', {
+            pinned: hasPinnedData,
+            trends: trends.value.length,
+            articles: hasArticlesData
+        })
+
+        // 5. Save new cache
+        healthCacheService.setSummarySnapshot({
+            tasks: tasks.value,
+            pinnedMetrics: rawPinnedMetrics.value,
+            trends: trends.value,
+            dailySummaries: dailySummaries.value
+        })
+    } catch (error) {
+        console.error('[Summary] ❌ Failed to load pet data:', error)
+        pinnedState.loadError(error as Error)
+        trendsState.loadError(error as Error)
+    }
+}, { immediate: true })
 
 onPullDownRefresh(async () => {
     try {

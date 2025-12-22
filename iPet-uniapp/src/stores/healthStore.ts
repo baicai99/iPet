@@ -202,6 +202,7 @@ export const useHealthStore = defineStore('health', () => {
         changedTypes?: string[],
         dataSnapshot?: { ids: string[], entities: Record<string, HealthRecord>, metricIndex?: Record<string, string[]> }
     ) {
+        console.log('[refreshTrendDetection] Called with:', { changedTypes, hasSnapshot: !!dataSnapshot })
         // 添加到待刷新队列
         if (changedTypes) {
             changedTypes.forEach(type => pendingRefreshMetrics.add(type))
@@ -210,6 +211,7 @@ export const useHealthStore = defineStore('health', () => {
             pendingRefreshMetrics.clear()
             getAllMetricKeys().forEach(key => pendingRefreshMetrics.add(key))
         }
+        console.log('[refreshTrendDetection] Pending metrics:', Array.from(pendingRefreshMetrics))
 
         // Debounce：合并短时间内的多次调用
         if (refreshTimer !== null) {
@@ -219,9 +221,11 @@ export const useHealthStore = defineStore('health', () => {
         refreshTimer = setTimeout(async () => {
             refreshTimer = null
 
+            console.log('[refreshTrendDetection] Executing after debounce')
             // 执行趋势检测
             const metricsToUpdate = Array.from(pendingRefreshMetrics)
             pendingRefreshMetrics.clear()
+            console.log('[refreshTrendDetection] Metrics to update:', metricsToUpdate)
 
             // ✅ 使用快照或创建当前状态的快照（避免响应式访问）
             const snapshot = dataSnapshot || {
@@ -229,6 +233,11 @@ export const useHealthStore = defineStore('health', () => {
                 entities: { ...entities.value },
                 metricIndex: { ...metricIndex.value }
             }
+            console.log('[refreshTrendDetection] Snapshot:', {
+                idsCount: snapshot.ids.length,
+                entityCount: Object.keys(snapshot.entities).length,
+                indexKeys: Object.keys(snapshot.metricIndex ?? {})
+            })
 
             // ✅ 使用 markRaw 确保结果对象不被响应式追踪
             const results = markRaw({ ...metricTrendMap.value })
@@ -252,13 +261,27 @@ export const useHealthStore = defineStore('health', () => {
                 // 数据量 >100 自动切换到 Worker
                 const { hash, result } = await TrendEngine.run(key, metricRecords)
 
+                // 🔍 DIAGNOSTIC: Log first few metrics in detail
+                if (['weight', 'step_count', 'meal'].includes(key)) {
+                    console.log(`[refreshTrendDetection] ${key} detailed result:`, {
+                        hasSignificantChange: result.hasSignificantChange,
+                        changePercent: result.changePercent,
+                        direction: result.direction,
+                        dataPoints: result.dataPoints,
+                        previousAvg: result.previousAvg,
+                        recentAvg: result.recentAvg
+                    })
+                }
+
                 // 更新结果（使用 markRaw 标记为非响应式）
                 results[key] = markRaw(result)
                 trendCache.value.set(key, { hash, result: markRaw(result) })
             }
 
             // 更新结果（触发 UI 更新）
+            console.log('[refreshTrendDetection] Final results:', Object.keys(results))
             metricTrendMap.value = results
+            console.log('[refreshTrendDetection] Updated metricTrendMap, keys:', Object.keys(metricTrendMap.value))
         }, 50) as unknown as number
     }
 
@@ -291,6 +314,32 @@ export const useHealthStore = defineStore('health', () => {
         if (!result) return 'unknown'
         if (result.dataPoints < 20) return 'insufficient'
         return result.hasSignificantChange ? 'changed' : 'stable'
+    }
+
+    /**
+     * ✅ 获取数据充足（≥20天）且稳定的指标键列表
+     * 用于 Trends View 的"无趋势变化"区块
+     * 
+     * @returns 数据充足但无显著变化的指标键数组
+     */
+    function getStableMetricsWithSufficientData(): string[] {
+        return Object.entries(metricTrendMap.value)
+            .filter(([_, analysis]) =>
+                analysis.dataPoints >= 20 && !analysis.hasSignificantChange
+            )
+            .map(([key, _]) => key)
+    }
+
+    /**
+     * ✅ 获取数据不足（<20天）的指标键列表
+     * 用于提示用户"正在采集样本中"
+     * 
+     * @returns 数据不足的指标键数组
+     */
+    function getMetricsWithInsufficientData(): string[] {
+        return Object.entries(metricTrendMap.value)
+            .filter(([_, analysis]) => analysis.dataPoints < 20)
+            .map(([key, _]) => key)
     }
 
     /**
@@ -815,6 +864,11 @@ export const useHealthStore = defineStore('health', () => {
             pinnedMetrics.value = processPinnedMetrics(snapshot?.pinnedMetrics)
             trends.value = processTrendMetrics(snapshot?.trends)
             dailySummaries.value = snapshot?.dailySummaries || {}
+
+            // ✅ FIX: 触发趋势检测，填充 metricTrendMap（用于趋势卡片渲染）
+            console.log('[refreshSummary] Calling refreshTrendDetection()')
+            refreshTrendDetection()
+            console.log('[refreshSummary] refreshTrendDetection() called')
         } catch (err) {
             console.error('Failed to refresh summary', err)
             tasks.value = []
@@ -1008,6 +1062,8 @@ export const useHealthStore = defineStore('health', () => {
         refreshTrendDetection,       // ✅ 暴露手动刷新函数
         getChangedMetricKeys,
         getStableMetricKeys,
+        getStableMetricsWithSufficientData,  // ✅ 数据充足且稳定的指标
+        getMetricsWithInsufficientData,      // ✅ 数据不足的指标
         getMetricTrendStatus,
         getTotalRecordDays,          // ✅ 获取历史记录总天数
 

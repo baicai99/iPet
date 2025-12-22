@@ -7,7 +7,7 @@ import { usePreferenceStore } from '@/stores/preferenceStore'
 import { getUserProfile } from '@/services/userService'
 import { refreshAuthToken } from '@/services/authService'
 import { useAppStore } from '@/stores/appStore'
-import { APP_CONFIG } from '@/utils/config'
+import { IS_MOCK_MODE } from '@/utils/config'
 
 const TOKEN_VALIDATION_BUFFER = 30 * 1000
 
@@ -69,7 +69,7 @@ const performInit = async () => {
 
     try {
         // Mock mode: bypass auth and directly load data
-        if (APP_CONFIG.USE_MOCK) {
+        if (IS_MOCK_MODE) {
             console.log('[initAuth] Mock mode detected, bypassing auth')
             userStore.setToken('mock-access-token', Date.now() + 24 * 60 * 60 * 1000)
 

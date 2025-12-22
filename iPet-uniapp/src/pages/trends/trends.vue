@@ -3,18 +3,42 @@
         <view class="trends-page">
             <view class="content">
                 <!-- ============================================ -->
-                <!-- Unified Hint Card (shown when no trends) -->
+                <!-- 判断逻辑：基于「是否有任何指标满足数据要求」 -->
                 <!-- ============================================ -->
-                <TrendHintCard v-if="trendStatus.status !== 'has-trends'" :message="trendStatus.message"
-                    navigate-to="/pages/metrics/list" />
+
+                <!-- 
+                    全局空态：仅当「没有任何指标有足够数据」时显示
+                    - changedMetricKeys.length === 0 (没有趋势变化的指标)
+                    - stableMetricsWithData.length === 0 (没有稳定的指标)
+                    - 说明：所有指标都还在采集阶段
+                -->
+                <template v-if="!hasAnyMetricWithSufficientData">
+                    <TrendHintCard 
+                        :message="samplingMessage"
+                        navigate-to="/pages/metrics/list" 
+                    />
+                    
+                    <!-- 仍然显示正在采集的指标列表 -->
+                    <view v-if="insufficientDataMetrics.length > 0" class="section-container" style="margin-top: 32rpx;">
+                        <text class="section-title section-title-sampling">正在采集样本</text>
+                        <view class="sampling-hint-card">
+                            <text class="sampling-hint-text">以下指标正在采集数据中，累计 20 天后将显示趋势分析</text>
+                            <view class="sampling-tags">
+                                <text v-for="key in insufficientDataMetrics" :key="key" class="sampling-tag">
+                                    {{ getMetricTitle(key) }}
+                                </text>
+                            </view>
+                        </view>
+                    </view>
+                </template>
 
                 <!-- ============================================ -->
-                <!-- Sections (only shown when has trends) -->
+                <!-- 正常展示：有指标满足数据要求时 -->
                 <!-- ============================================ -->
                 <template v-else>
-                    <!-- Changed Metrics Section -->
-                    <view v-if="changedMetricKeys.length" class="section-container">
-                        <text class="section-title section-title-changed">有趋势变化</text>
+                    <!-- Section 1: Changed Metrics (存在趋势变化) -->
+                    <view v-if="changedMetricKeys.length > 0" class="section-container">
+                        <text class="section-title section-title-changed">存在趋势变化</text>
                         <view class="trend-grid">
                             <TrendCard v-for="key in changedMetricKeys" :key="key" :metricKey="key"
                                 :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
@@ -22,13 +46,26 @@
                         </view>
                     </view>
 
-                    <!-- Stable Metrics Section -->
-                    <view v-if="stableMetricKeys.length" class="section-container">
+                    <!-- Section 2: Stable Metrics with sufficient data (无趋势变化) -->
+                    <view v-if="stableMetricsWithData.length > 0" class="section-container">
                         <text class="section-title section-title-stable">无趋势变化</text>
                         <view class="trend-grid">
-                            <TrendCard v-for="key in stableMetricKeys" :key="key" :metricKey="key"
+                            <TrendCard v-for="key in stableMetricsWithData" :key="key" :metricKey="key"
                                 :title="getMetricTitle(key)" :icon="getMetricIcon(key)" :unit="getMetricUnit(key)"
                                 :petId="selectedPetId || ''" :primaryColor="getMetricColor(key)" :isStable="true" />
+                        </view>
+                    </view>
+
+                    <!-- Section 3: Metrics still sampling (正在采集样本) -->
+                    <view v-if="insufficientDataMetrics.length > 0" class="section-container">
+                        <text class="section-title section-title-sampling">正在采集样本</text>
+                        <view class="sampling-hint-card">
+                            <text class="sampling-hint-text">以下指标正在采集数据中，累计 20 天后将显示趋势分析</text>
+                            <view class="sampling-tags">
+                                <text v-for="key in insufficientDataMetrics" :key="key" class="sampling-tag">
+                                    {{ getMetricTitle(key) }}
+                                </text>
+                            </view>
                         </view>
                     </view>
                 </template>
@@ -45,7 +82,6 @@ import { useHealthStore } from '@/stores/healthStore'
 import { usePetViewModel } from '@/composables/usePetViewModel'
 import { METRIC_METADATA, type MetricKey } from '@/data/metricMetadata'
 import { COLORS, CATEGORY_COLOR_MAP } from '@/config/theme'
-import { getTrendStatus } from '@/domain/trend/getTrendStatus'
 import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 const healthStore = useHealthStore()
@@ -53,26 +89,38 @@ const petViewModel = usePetViewModel()
 const { selectedPetId } = petViewModel
 
 // ============================================================================
-// Trend Status Detection
-// ============================================================================
-
-/**
- * ✅ 动态判断趋势数据状态
- * - 数据不足 → 显示采样提示
- * - 全部稳定 → 显示稳定提示
- * - 有趋势 → 显示趋势卡片
- */
-const trendStatus = computed(() => {
-    const totalDays = healthStore.getTotalRecordDays()
-    return getTrendStatus(healthStore.metricTrendMap, totalDays)
-})
-
-// ============================================================================
 // Trend Detection (from Store Getters)
 // ============================================================================
 
 const changedMetricKeys = computed(() => healthStore.getChangedMetricKeys())
-const stableMetricKeys = computed(() => healthStore.getStableMetricKeys())
+
+// ✅ NEW: 获取数据充足且稳定的指标
+const stableMetricsWithData = computed(() => healthStore.getStableMetricsWithSufficientData())
+
+// ✅ NEW: 获取数据不足的指标（正在采集中）
+const insufficientDataMetrics = computed(() => healthStore.getMetricsWithInsufficientData())
+
+/**
+ * ✅ 核心判断：是否有任何指标达到数据充足状态
+ * 
+ * 判断依据：
+ * - changedMetricKeys 中的指标都有足够数据（否则不可能检测出趋势变化）
+ * - stableMetricsWithData 中的指标也有足够数据（函数定义保证）
+ * 
+ * 当此值为 true 时，应展示趋势分析结果
+ * 当此值为 false 时，说明所有指标都还在采集阶段
+ */
+const hasAnyMetricWithSufficientData = computed(() => {
+    return changedMetricKeys.value.length > 0 || stableMetricsWithData.value.length > 0
+})
+
+/**
+ * ✅ 采样阶段的提示文案
+ */
+const samplingMessage = computed(() => {
+    const totalDays = healthStore.getTotalRecordDays()
+    return `正在采集样本，累计采样 ${totalDays} 天`
+})
 
 // ============================================================================
 // Helper Functions
@@ -149,5 +197,37 @@ watch(selectedPetId, async (newPetId) => {
     display: flex;
     flex-direction: column;
     gap: 24rpx;
+}
+
+.section-title-sampling {
+    color: #6366f1;
+}
+
+.sampling-hint-card {
+    background-color: #ffffff;
+    border-radius: 32rpx;
+    padding: 32rpx;
+}
+
+.sampling-hint-text {
+    display: block;
+    font-size: 28rpx;
+    color: #64748b;
+    margin-bottom: 24rpx;
+    line-height: 1.5;
+}
+
+.sampling-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+}
+
+.sampling-tag {
+    background-color: #f1f5f9;
+    color: #475569;
+    font-size: 26rpx;
+    padding: 8rpx 20rpx;
+    border-radius: 20rpx;
 }
 </style>

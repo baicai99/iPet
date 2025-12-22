@@ -1,6 +1,7 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
 import { viteMockServe } from 'vite-plugin-mock'
+import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
 
 
@@ -8,26 +9,50 @@ import path from 'path'
 process.env.UNI_INPUT_DIR = path.resolve(__dirname, 'src')
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), '')
+    const isProduction = mode === 'production'
     return {
         plugins: [
             uni(),
             viteMockServe({
                 mockPath: 'mock',
-                enable: env.VITE_USE_MOCK === 'true',
+                enable: !isProduction,
+            }),
+            visualizer({
+                filename: 'dist/stats.html',
+                open: false,
+                gzipSize: true,
+                brotliSize: true,
             }),
         ],
         esbuild: {
             target: 'es2020'
         },
+        build: {
+            target: 'es2020',
+            minify: 'terser',
+            terserOptions: {
+                compress: {
+                    // In development mode build, keep console for debugging Mock
+                    // In production mode, drop console for smaller bundle
+                    drop_console: isProduction,
+                    drop_debugger: true,
+                    pure_funcs: isProduction ? ['console.log'] : []
+                }
+            },
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        'charts-vendor': ['@qiun/uni-ucharts']
+                    }
+                }
+            }
+        },
         resolve: {
             alias: {
                 '@': path.resolve(__dirname, 'src'),
-                '@shared': path.resolve(__dirname, '../shared')
+                '@shared': path.resolve(__dirname, '../shared'),
+                '@mock': path.resolve(__dirname, 'mock')
             },
-        },
-        optimizeDeps: {
-            include: ['uview-plus']
         },
         server: {
             fs: {

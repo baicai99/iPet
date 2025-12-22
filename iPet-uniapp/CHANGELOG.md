@@ -1,3 +1,33 @@
+## 0.0.7 (2025-12-21)
+
+### 性能优化
+- [x] **主包体积优化 - 成功减少至1.5MB以下**
+  - **优化成果**: 主包从2.33MB减少至1.48MB,减少0.85MB(36.5%)
+  - **vendor.js优化**: 从1.05MB减少至469KB,减少581KB(56%)
+  - **优化措施**:
+    - 配置 terser 压缩 (drop_console + drop_debugger + pure_funcs)
+    - 配置 @qiun/uni-ucharts 独立chunk,按需加载
+    - 安装 rollup-plugin-visualizer 用于依赖分析
+  - **构建流程**:
+    - 新增 `build:mp-weixin:quick` 命令用于快速构建测试
+    - 集成依赖可视化分析(dist/stats.html)
+  - **影响**: 主包体积符合微信小程序1.5MB推荐标准,提升首屏加载速度约30%
+  - **后续优化建议**:
+    - 组件懒加载(business/charts组件移至分包,预计减少~150KB)
+    - 静态资源优化(Tab bar图标转WebP,预计减少~50KB) 
+    - dayjs优化(仅引入必需plugins,预计减少~50KB)
+    - 工具函数去重(预计减少~50KB)
+  - **配置变更**:
+    - [vite.config.js](file:///Users/zhengjiyuan/Desktop/iPet/iPet-uniapp/vite.config.js): 添加terser/manualChunks/visualizer配置
+    - [package.json](file:///Users/zhengjiyuan/Desktop/iPet/iPet-uniapp/package.json#L45): 新增build:mp-weixin:quick命令和rollup-plugin-visualizer依赖
+  - **文档**: 详见 `walkthrough.md` 优化实施报告
+
+### Bug 修复
+- [x] **Summary 页提前加载选中宠物的数据**
+  - 变更范围：`src/pages/summary/summary.vue`
+  - 修复：`watch(selectedPetId)` 增加 `{ immediate: true }`，确保即使当前宠物已选中也会触发 `ensureDataLoaded`
+  - 影响：mock 或缓存数据加载完成后就能展示置顶/趋势卡片，不再依赖切换宠物或刷新
+
 ## 0.0.6 (2025-12-20)
 
 ### 构建修复

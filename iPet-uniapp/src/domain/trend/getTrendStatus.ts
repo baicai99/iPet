@@ -35,6 +35,10 @@ export interface TrendStatusResult {
     message: string
     /** 采样天数（仅 insufficient-data 状态） */
     samplingDays?: number
+    /** 有趋势变化的指标数量 */
+    changedCount?: number
+    /** 无趋势变化但数据充足的指标数量 */
+    stableCount?: number
 }
 
 // ============================================================================
@@ -83,6 +87,32 @@ export function getTrendStatus(
     trendMap: Record<string, TrendAnalysis>,
     totalRecordDays: number
 ): TrendStatusResult {
+    // ✅ FIX: 空值检查 - 防止 trendMap 为 undefined/null
+    if (!trendMap || typeof trendMap !== 'object') {
+        return {
+            status: 'insufficient-data',
+            message: `正在采集样本，累计采样 ${totalRecordDays} 天`,
+            samplingDays: totalRecordDays,
+            changedCount: 0,
+            stableCount: 0
+        }
+    }
+
+    // ============================================================================
+    // 计算各类指标数量
+    // ============================================================================
+    const entries = Object.values(trendMap)
+
+    // 有显著变化的指标数量
+    const changedCount = entries.filter(
+        analysis => analysis.hasSignificantChange
+    ).length
+
+    // 数据充足（>=20天）且稳定的指标数量
+    const stableCount = entries.filter(
+        analysis => analysis.dataPoints >= MIN_SAMPLING_DAYS && !analysis.hasSignificantChange
+    ).length
+
     // ============================================================================
     // 状态 A: 数据采样不足
     // ============================================================================
@@ -90,28 +120,30 @@ export function getTrendStatus(
         return {
             status: 'insufficient-data',
             message: `正在采集样本，累计采样 ${totalRecordDays} 天`,
-            samplingDays: totalRecordDays
+            samplingDays: totalRecordDays,
+            changedCount,
+            stableCount
         }
     }
 
     // ============================================================================
     // 状态 B vs C: 全部稳定 vs 有趋势变化
     // ============================================================================
-    const hasAnyTrend = Object.values(trendMap).some(
-        analysis => analysis.hasSignificantChange
-    )
-
-    if (!hasAnyTrend) {
+    if (changedCount === 0) {
         // 状态 B: 所有指标都稳定
         return {
             status: 'all-stable',
-            message: '所有指标趋于稳定'
+            message: '所有指标趋于稳定',
+            changedCount,
+            stableCount
         }
     } else {
         // 状态 C: 存在趋势变化（无需提示文案，正常渲染趋势卡片）
         return {
             status: 'has-trends',
-            message: ''
+            message: '',
+            changedCount,
+            stableCount
         }
     }
 }

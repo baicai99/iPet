@@ -3,18 +3,19 @@ import { i18n } from '@/locale'
 import { initPermission } from './permission'
 import { initAuthHandlers } from '@/services/authSetup'
 import { initGlobalErrorHandler } from '@/utils/performance/performanceMonitor'
+import { APP_CONFIG, IS_MOCK_MODE } from '@/utils/config'
 
 
 
 // #ifdef VUE3
 import { createSSRApp } from 'vue'
-import * as Pinia from 'pinia'
+import { createPinia } from 'pinia'
 import { createPersistedState } from 'pinia-plugin-persistedstate'
 // uview-plus is handled by easycom in pages.json for tree-shaking
 
 export function createApp() {
   const app = createSSRApp(App)
-  const pinia = Pinia.createPinia()
+  const pinia = createPinia()
   pinia.use(createPersistedState({
     storage: {
       getItem: uni.getStorageSync,
@@ -26,8 +27,9 @@ export function createApp() {
 
   // Initialize permission interceptors
   initPermission()
-  console.log('Current VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
-  console.log('Mock mode enabled:', import.meta.env.VITE_USE_MOCK === 'true' ? '✅ YES - Network calls are blocked' : '❌ NO')
+  console.log('Current API_BASE_URL:', APP_CONFIG.API_BASE_URL)
+  console.log('Run mode:', APP_CONFIG.RUN_MODE)
+  console.log('Mock mode enabled:', IS_MOCK_MODE ? '✅ YES - Network calls are blocked' : '❌ NO')
 
   // Initialize auth handlers
   initAuthHandlers()
@@ -36,8 +38,7 @@ export function createApp() {
   initGlobalErrorHandler(app)
 
   return {
-    app,
-    Pinia
+    app
   }
 }
 // #endif

@@ -15,6 +15,7 @@ import { getUserProfile } from '@/services/userService'
 import { createGuestSession, logoutUser, upgradeGuestAccount } from '@/services/authService'
 import { CacheManager } from '@/utils/cache/CacheManager'
 import { healthCacheService } from '@/services/healthCacheService'
+import { IS_MOCK_MODE } from '@/utils/config'
 
 const DEFAULT_STATS: UserStats = {
     daysWithPet: 0,
@@ -76,7 +77,7 @@ export const useUserStore = defineStore('user', () => {
 
     const needsOnboarding = computed(() => {
         // Mock mode: skip onboarding
-        if (import.meta.env.VITE_USE_MOCK === 'true') {
+        if (IS_MOCK_MODE) {
             return false
         }
 

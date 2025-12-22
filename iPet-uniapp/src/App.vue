@@ -10,7 +10,7 @@ onLaunch(() => {
 <style lang="scss">
 @import 'uview-plus/index.scss';
 @import '@/styles/theme-variables.scss';
-@import '@/static/icon/iconfont.css';
+@import '@/styles/iconfont/iconfont.css';
 
 /* ⚠️ 保留兼容性：.dark-theme class 仍然有效，但优先使用 [data-theme="dark"] */
 .dark-theme {

@@ -4,11 +4,12 @@
  */
 
 import { getAccessToken, setAuthToken, clearAuthToken, getRefreshToken, setRefreshToken } from '@/utils/business/authStorage'
-import { APP_CONFIG } from '@/utils/config'
-import { handleMockRequest, handleMockRefreshToken } from './mockRegistry'
+import { APP_CONFIG, USE_MOCK, USE_PREVIEW_MOCK } from '@/utils/config'
 import { AppError, ErrorCode } from '@/types/error'
 import { showError } from './errorHandler'
 import { performanceMonitor } from '@/utils/performance/performanceMonitor'
+import { handleMockRequest } from './mockRegistry'
+import { handlePreviewMockRequest } from './previewMock'
 
 const BASE_URL = APP_CONFIG.API_BASE_URL
 
@@ -210,7 +211,8 @@ const resolveExpiresAt = (expiresIn?: number): number | null => {
 
 const refreshAuthToken = async (): Promise<TokenRefreshResult | null> => {
     // Mock mode: use mock handler instead of network call
-    if (APP_CONFIG.USE_MOCK) {
+    if (USE_MOCK) {
+        const { handleMockRefreshToken } = await import('./mockRegistry')
         const mockResult = await handleMockRefreshToken()
         return {
             accessToken: mockResult.accessToken,
@@ -409,7 +411,7 @@ const handleError = (status: number, data: any, skipToast = false): AppError => 
 
 const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Promise<T> => {
     // Mock mode: completely bypass network, use mock handlers
-    if (APP_CONFIG.USE_MOCK) {
+    if (USE_MOCK) {
         const requestStartTime = Date.now()
         if (config.showLoading) {
             showGlobalLoading(config.loadingText)
@@ -423,6 +425,14 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
             if (config.showLoading) {
                 hideGlobalLoading()
             }
+        }
+    }
+
+    // Preview runtime mock (WeChat develop/trial): lightweight fallback, without bundling full mock handlers in production
+    if (!import.meta.env.PROD && USE_PREVIEW_MOCK) {
+        const previewResult = await handlePreviewMockRequest<T>(config)
+        if (previewResult !== undefined) {
+            return previewResult
         }
     }
 

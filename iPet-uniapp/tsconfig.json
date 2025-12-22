@@ -25,6 +25,9 @@
             ],
             "@shared/*": [
                 "../shared/*"
+            ],
+            "@mock/*": [
+                "mock/*"
             ]
         },
         "skipLibCheck": true,

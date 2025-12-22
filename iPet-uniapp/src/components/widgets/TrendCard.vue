@@ -97,7 +97,7 @@
 
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useTrendCard, type TrendCardConfig } from '@/composables/useTrendCard'
 import { getMetricSentiment, getDirectionText } from '@/config/trendCopywriting'
 import { GRAY_SCALE, TOKENS } from '@/config/theme'
@@ -202,6 +202,15 @@ const {
     totalDataPoints,
     maxValue
 } = useTrendCard(config)
+
+// 🔍 DIAGNOSTIC: Watch TrendCard internal state
+watch(() => hasEnoughData.value, (newVal) => {
+    console.log('[DIAG TrendCard]', props.metricKey, {
+        hasEnoughData: newVal,
+        totalDataPoints: totalDataPoints.value,
+        minDataPoints: props.minDataPoints
+    })
+}, { immediate: true })
 
 // ============================================================================
 // Colors

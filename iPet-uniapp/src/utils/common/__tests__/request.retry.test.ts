@@ -4,8 +4,9 @@ import { ErrorCode } from '@/types/error'
 vi.mock('@/utils/config', () => ({
     APP_CONFIG: {
         API_BASE_URL: 'https://example.test',
-        USE_MOCK: false
-    }
+        USE_MOCK: false,
+    },
+    USE_MOCK: false,
 }))
 
 vi.mock('@/utils/business/authStorage', () => ({
