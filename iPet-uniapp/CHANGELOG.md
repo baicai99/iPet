@@ -1,9 +1,77 @@
-## Unreleased
+## 0.0.16 (2025-12-24)
+
+### 🧩 简化前端环境配置
+- [x] 将 `.env.preview` 合并回 `.env.development`，并在 `iPet-uniapp/.env.development` 中说明开发与预览共享配置、`VITE_MOCK` 的行为提示；预览不再依赖独立文件。
+- [x] 更新 `docs/frontend/工程化与开发指南层.md`、`docs/frontend/安全与合规层.md` 与 `docs/api/接口契约层.md`，统一为开发/预览（`.env.development`）与生产（`.env.production`）两套环境的说明。
+- [x] 已删除 `.env.preview` 文件，所有运行/脚本逻辑只会依赖 `env.development` 或 `env.production`。
+
+### 🧪 Mock 模式只在显式开启时切换
+- [x] `iPet-uniapp/src/utils/common/request.ts` 现在在 `VITE_MOCK` 为真时完全绕过网络，任何缺失的 mock handler 会导致 `MockFallthroughError` 抛出，避免不经意回落到后端。
+- [x] `iPet-uniapp/src/utils/common/mockRegistry.ts` 在查不到 handler 时直接失败并列出可用路由，同时 `VITE_MOCK_STRICT` 相关分支已删去、`MockFallthroughError` 成为唯一错误信号。
+- [x] `iPet-uniapp/src/utils/config.ts` 不再暴露 `MOCK_STRICT`，并在启动日志里只打印当前数据源。
+- [x] `iPet-uniapp/docs/dev/mock-mode.md` 强调 `VITE_MOCK=true` 即完全 mock，`VITE_MOCK=false` 则使用后端，缺失 handler 不再触发 fallback。
+
+### 🧭 Dev 模式自动游客登录
+- [x] `iPet-uniapp/src/services/initAuth.ts` now auto-creates a guest session when `import.meta.env.DEV` is true and no token exists, so you can skip signing in while running `npm run dev:*` (`initAuth` still falls back to the login page if auto-login fails).
+- [x] `iPet-uniapp/src/permission.ts` treats Dev mode like Mock mode, allowing every navigation attempt to proceed without triggering the login redirect while the app is still booting.
 
 ### 📈 Summary View 趋势状态规范
-
 - [x] 将 Summary View 的趋势三态及验收标准沉淀到 `docs/performance/summary-trend-status.md`，明确状态定义、文案与判定逻辑。
 - [x] 新增 `src/domain/trend/__tests__/getTrendStatus.test.ts`，通过 Vitest 覆盖“数据不足 / 稳定 / 存在趋势”三类结果，防止未来回退。
+- [x] `src/pages/summary/summary.vue` 让稳定态卡片使用 `getTrendStatus` 返回的文案并展示“当前所有趋势趋于稳定”，避免在全稳定场景下误显示“正在采集样本...”提示。
+- [x] `src/domain/trend/getTrendStatus.ts` 将 `all-stable` 状态的提示文案同步为“当前所有趋势趋于稳定”，确保其它模块拿到的文案一致。
+
+### 🐛 Dev 模式微信小程序文章图像
+- [x] `src/modules/articles/services/articleImageAssets.ts` 引入环境感知的路径转换，只有在 release 编译后（`import.meta.env.MODE === 'production'`）时才将 `/static/images/articles/` 位置解读为 `pages/articles/images/articles/` 以匹配 MP 编译产物，Dev/preview 保持原始静态路径。
+- [x] `src/modules/articles/services/resolveArticleCoverUrl.ts` 与 `src/modules/articles/ui/ArticleContentRenderer.vue` 统一使用该助手，分别保证封面与富文本-img 的链接在微信小程序 Dev 模式下仍走 `/static/images/articles/`、在正式编译后走迁移后的 `/pages` 目录。
+
+## 0.0.15 (2025-12-23)
+
+### 🛠️ 保证开发模式下 API 指向可达服务
+- [x] `src/utils/config.ts` 将开发 fallback API 统一指向稳定的预览/生产域名，避免默认 192.168 网络仅在局域网可达的情况。
+- [x] `.env.development` 与相关文档（工程化指南 / 安全合规 / 接口契约层）同步改为使用 `https://api.zhengjiyuan.top/api`，并提醒可通过 `.env.local` 指向本地后端。
+- [x] `docs/frontend/工程化与开发指南层.md`, `docs/frontend/安全与合规层.md` 与 `docs/api/接口契约层.md` 更新文档说明，提醒开发者默认使用公开 API 并可通过 `.env.local` 指向本地。
+
+## 0.0.14 (2025-12-22)
+
+### 🔧 Mock 数据仅在 `VITE_MOCK=true` 时生效
+- [x] `src/utils/config.ts` 与 `request.ts` 现在仅依赖 `VITE_MOCK` 决定 `USE_MOCK`，默认关闭 Web Preview/H5，下沉逻辑不再根据平台或 `envVersion` 变更，并在启动时打印 `[APP_CONFIG] 🧭 当前数据源`（含开关值），方便追踪源头。
+- [x] `vite.config.js` 只在 `VITE_MOCK` 为 truthy 时启用 `vite-plugin-mock`，以同一个开关控制运行时/构建时的 mock 注入；`.env.preview` 的注释也同步更换为新开关。
+- [x] 新的 `docs/dev/mock-mode.md` 说明了统一开关、本地实测示例与生产禁用要求，确保规范文档与行为一致。
+
+## 0.0.13 (2025-12-22)
+
+### 🐛 修复 Trends View 数据充足时仍显示"采样中"的问题
+- [x] 将判断逻辑从"全局天数是否足够"改为"是否有任何指标达到数据充足状态"。
+- [x] `src/pages/trends/trends.vue` - 修复判断逻辑。
+
+## 0.0.12 (2025-12-22)
+
+### ✨ Summary View 与 Trends View 趋势展示优化
+- [x] **Summary View 改进**：当存在趋势变化时展示卡片，所有指标稳定时显示平稳提示，数据不足时显示采样进度。
+- [x] **Trends View 改进**：拆分为“存在趋势变化”、“无趋势变化”、“正在采集样本”三个明确 Section。
+- [x] **Domain/Store 层增强**：`getTrendStatus()` 返回结果增加 `changedCount` 和 `stableCount`；`healthStore` 新增相关 getters。
+- [x] **新增组件**：`TrendStatusCard.vue` 用于展示特殊状态。
+
+## 0.0.11 (2025-12-22)
+
+### 🐛 修复 Summary 页面趋势卡片不显示的问题
+- [x] 在 `refreshSummary()` 函数成功加载汇总数据后，显式调用 `refreshTrendDetection()` 确保 `metricTrendMap` 被正确填充。
+
+## 0.0.10 (2025-12-22)
+
+### 🔧 修复 HBuilderX 调试环境下 Preview Mock 认证缺失问题
+- [x] 为 `previewMock.ts` 补充缺失的认证和用户接口 (`POST /auth/guest`, `GET /users/me`)，确保 HBuilderX 调试环境游客登录正常。
+
+## 0.0.9 (2025-12-22)
+
+### 🔧 修复分包配置导致的系统性问题
+- [x] **策略 A：回退分包配置**，恢复为单包模式以快速恢复功能。
+- [x] 移除 `pages.json` 中的 `subPackages` 配置，并同步迁移页面定义。
+
+## 0.0.8 (2025-12-22)
+- [x] 修复微信小程序分包场景下动态导入失败的问题，将 mock handlers 改为静态导入。
+- [x] 修复微信小程序/开发环境中游客登录因为 mock 逻辑找不到 `handleMockRequest` 导致的异常。
 
 ## 0.0.7 (2025-12-21)
 
@@ -19,15 +87,17 @@
     - 新增 `build:mp-weixin:quick` 命令用于快速构建测试
     - 集成依赖可视化分析(dist/stats.html)
   - **影响**: 主包体积符合微信小程序1.5MB推荐标准,提升首屏加载速度约30%
-  - **后续优化建议**:
-    - 组件懒加载(business/charts组件移至分包,预计减少~150KB)
-    - 静态资源优化(Tab bar图标转WebP,预计减少~50KB) 
-    - dayjs优化(仅引入必需plugins,预计减少~50KB)
-    - 工具函数去重(预计减少~50KB)
   - **配置变更**:
     - [vite.config.js](file:///Users/zhengjiyuan/Desktop/iPet/iPet-uniapp/vite.config.js): 添加terser/manualChunks/visualizer配置
     - [package.json](file:///Users/zhengjiyuan/Desktop/iPet/iPet-uniapp/package.json#L45): 新增build:mp-weixin:quick命令和rollup-plugin-visualizer依赖
   - **文档**: 详见 `walkthrough.md` 优化实施报告
+
+### Mock 模式增强
+- [x] Mock 开关改为由运行模式控制（`mode=production` 关闭；`preview/development` 开启），与接口环境解耦，修复预览环境无法加载 mock 数据的问题。
+- [x] 为支持 HBuilderX/微信开发者工具在 `develop|trial` 环境预览时也能使用 mock，增加 `mp-weixin` 运行时 `envVersion` 判断与轻量 mock 兜底。
+- [x] 新增 `VITE_FORCE_ENABLE_MOCK` 开关用于强制在非生产构建中路由到 mock。
+- [x] 新增微信小程序预览模式命令 `dev:mp-weixin:preview` / `build:mp-weixin:preview`。
+- [x] 新增 `docs/dev/mock-mode.md` 落档 Mock 模式规范；同步修正相关文档中过时的 `VITE_USE_MOCK` 说明。
 
 ### Bug 修复
 - [x] **Summary 页提前加载选中宠物的数据**
@@ -42,6 +112,12 @@
   - 根因：上游插件在部分输出为 asset 时，假设 `outputChunk.code` 恒为 string，导致 `Cannot read properties of undefined (reading 'replace')`
   - 修复：新增 `postinstall` 脚本 `scripts/patch-uni-sourcemap.mjs`，为 `outputChunk.code/source` 增加兜底判断，避免构建期崩溃
   - 文档：新增 `docs/dev/dependency-patches.md` 落档依赖补丁机制与约束
+- [x] **Mock 系统重构**：将 `mockRegistry.ts` 的静态 import 改为动态 `await import()`，确保 mock handlers 仅在开发模式按需加载，同时解决微信小程序路径解析问题。
+- [x] **构建体积优化**：
+  - Pinia 改为具名引入 `createPinia`，避免 namespace 导入导致 tree-shaking 失效。
+  - 将 mock 处理改为编译期常量 `USE_MOCK` + 按需 `import()`，避免生产构建包含 mock handlers。
+  - 清理非运行时静态资源（iconfont demo/js/json、重复 tabbar 图标），主包体积恢复至 `< 1.5MB`。
+- [x] **后端性能优化**：为 `GET /api/health/series` 增加 `day/week/month` 物化桶表 `HealthMetricBucket`，降低峰值扫描/聚合压力。启动时自动建表/建索引；提供回填脚本。
 
 ### 文档更新
 - [x] **新增后端可观测性分析文档**
@@ -224,14 +300,7 @@
     - 实用的性能指标、索引清单、改进建议
   - 影响: 提供后端系统全面视图,帮助开发人员理解业务边界、架构师规划重构、管理者评估风险
 
----
-
-## 更新日志
-
-## 2025-12-20
-
-### 📚 文档更新
-- **新增**: 后端数据设计文档 (`docs/BACKEND/数据设计.md`)
+- [x] **新增**: 后端数据设计文档 (`docs/BACKEND/数据设计.md`)
   - 实体关系图(ERD)与 8 个核心数据模型
   - 字段语义、类型规范、时间字段策略(DateTime vs String)
   - 索引策略:覆盖索引、部分索引、查询驱动的索引设计
@@ -246,10 +315,16 @@
 
 ### Backend
 - [x] **补齐分页/查询形态（防止大数据量全量拉取）**
-  - `GET /health` / `GET /pets` / `GET /articles` / `GET /health-schedules/:petId` 统一启用分页（默认值 + 最大值限制）
-  - `GET /health`：当传 `petId`（并在需要时传 `type`）时，查询形态对齐覆盖索引 `(petId, type, deleted, date DESC)`，降低大数据量扫描风险
-  - `GET /articles`：列表不再返回正文 `content`，避免列表场景传输过大
+  - `GET /health` / `GET /pets` / `GET /articles` / `GET /health-schedules/:petId` 统一启用分页
+  - `GET /health`：查询形态对齐覆盖索引，降低大数据量扫描风险
+  - `GET /articles`：列表不再返回正文 `content`
   - 文档同步：更新 `docs/backend/接口契约.md` 的分页参数与说明
+- [x] **多级缓存与可观测性**：
+  - `CacheModule` 改为 `Keyv` L1 + 可选 Redis L2；集成热点数据缓存（文章、健康摘要等）与写入失效机制。
+  - 增加 `RequestIdMiddleware` 并在日志中注入 `requestId`；Prisma 增加慢查询识别（默认 100ms）。
+  - 新增 Prometheus exporter (`GET /api/metrics`)；增加 HTTP 性能指标采集。
+  - 实现登录失败计数与冷却保护。
+- [x] **稳定性与 CI**：新增 GitHub Actions nightly `k6` 性能回归；更新相关性能与稳定性文档。
 
 ### Frontend Performance
 - [x] **HealthStore：实体层 shallowRef + 替换引用更新**

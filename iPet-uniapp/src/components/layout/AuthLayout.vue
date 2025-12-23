@@ -40,12 +40,8 @@
 
           <!-- Guest Login -->
           <view class="guest-section">
-            <button 
-              class="guest-btn" 
-              :disabled="guestLoading || primaryLoading" 
-              @click="$emit('guest-login')"
-              hover-class="guest-btn-hover"
-            >
+            <button class="guest-btn" :disabled="guestLoading || primaryLoading" @click="$emit('guest-login')"
+              hover-class="guest-btn-hover">
               <u-icon name="account" size="20" color="#64748B"></u-icon>
               <text class="guest-text">{{ guestLoading ? '进入中...' : '游客登录 / 试用' }}</text>
             </button>
@@ -154,7 +150,6 @@ onMounted(() => {
 
 .auth-card {
   width: 100%;
-  max-width: 580rpx;
   background: #FFFFFF;
   border-radius: 32rpx;
   box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.12);

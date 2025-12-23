@@ -1,5 +1,5 @@
 import { useUserStore } from '@/stores/userStore'
-import { IS_MOCK_MODE, IS_DEV_MODE } from '@/utils/config'
+import { IS_MOCK_MODE, IS_DEV_MODE, DEV_BYPASS_AUTH } from '@/utils/config'
 
 type RouteAuthLevel = 'public' | 'guest' | 'user'
 
@@ -113,8 +113,14 @@ const handleUnauthorized = (reason = 'missing-token', url: string) => {
 }
 
 const hasPermission = (url: string) => {
-    // Mock or dev mode: skip all auth checks
-    if (IS_MOCK_MODE || IS_DEV_MODE) {
+    // Mock mode: skip all auth checks (for UI development)
+    if (IS_MOCK_MODE) {
+        return { allowed: true }
+    }
+
+    // Dev mode with explicit bypass enabled (not recommended for regular use)
+    if (IS_DEV_MODE && DEV_BYPASS_AUTH) {
+        console.warn('[Permission] ⚠️ Auth bypassed (VITE_DEV_BYPASS_AUTH=true)')
         return { allowed: true }
     }
 

@@ -1,4 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
+import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import compression from 'compression';
@@ -12,6 +13,23 @@ async function bootstrap() {
   const port = configService.get<number>('port', 3000);
   const clientOrigin = configService.get<string>('clientOrigin', 'http://localhost:5173');
   const origins = clientOrigin.split(',').map(origin => origin.trim());
+  const corsOptions: CorsOptions = {
+    origin: origins,
+    credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'If-None-Match',
+      'X-Request-Id',
+      'Origin',
+      'Accept',
+      'X-Requested-With',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    exposedHeaders: ['ETag', 'X-Request-Id'],
+    optionsSuccessStatus: 204,
+    preflightContinue: false,
+  };
 
   app.setGlobalPrefix('api');
 
@@ -24,13 +42,7 @@ async function bootstrap() {
   app.use(json({ limit: bodyLimit }));
   app.use(urlencoded({ extended: true, limit: bodyLimit }));
   app.use(compression());
-  app.enableCors({
-    origin: origins,
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'If-None-Match', 'X-Request-Id'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    exposedHeaders: ['ETag', 'X-Request-Id'],
-  });
+  app.enableCors(corsOptions);
   await app.listen(port);
 }
 bootstrap();

@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
     // Only enable runtime mock server when the shared VITE_MOCK flag is truthy
     const enableMock = isTruthy(env.VITE_MOCK)
 
+    // Proxy target: use VITE_PROXY_TARGET or default to localhost:3000 for local dev
+    const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:3000'
+    console.log(`[Vite] Proxy target: ${proxyTarget}`)
+
     return {
         plugins: [
             uni(),
@@ -68,6 +72,20 @@ export default defineConfig(({ mode }) => {
         server: {
             fs: {
                 allow: [path.resolve(__dirname), path.resolve(__dirname, '..')]
+            },
+            proxy: {
+                '/api': {
+                    target: proxyTarget,
+                    changeOrigin: true,
+                    secure: false, // Allow localhost without SSL
+                },
+                // Legacy: /users/register 后端路由不在 /api 下
+                // TODO: 后端迁移后删除此代理
+                '/users': {
+                    target: proxyTarget,
+                    changeOrigin: true,
+                    secure: false,
+                }
             }
         },
         css: {

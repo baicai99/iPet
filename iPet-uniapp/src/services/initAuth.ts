@@ -7,7 +7,7 @@ import { usePreferenceStore } from '@/stores/preferenceStore'
 import { getUserProfile } from '@/services/userService'
 import { refreshAuthToken } from '@/services/authService'
 import { useAppStore } from '@/stores/appStore'
-import { IS_MOCK_MODE, IS_DEV_MODE } from '@/utils/config'
+import { IS_MOCK_MODE, AUTH_BOOTSTRAP_MODE, APP_CONFIG } from '@/utils/config'
 
 const TOKEN_VALIDATION_BUFFER = 30 * 1000
 
@@ -67,6 +67,14 @@ const performInit = async () => {
     const userStore = useUserStore()
     const appStore = useAppStore()
 
+    // Startup diagnostics
+    console.log('[initAuth] 🚀 Starting', {
+        mode: IS_MOCK_MODE ? 'mock' : 'real',
+        bootstrap: AUTH_BOOTSTRAP_MODE,
+        apiBase: APP_CONFIG.API_BASE_URL,
+        env: import.meta.env.MODE
+    })
+
     try {
         // Mock mode: bypass auth and directly load data
         if (IS_MOCK_MODE) {
@@ -83,21 +91,27 @@ const performInit = async () => {
 
         let hydrated = hydrateTokenFromStorage(userStore)
 
-        // 1. 没有 Token，重定向到登录页
-        if (!hydrated && IS_DEV_MODE) {
-            console.log('[initAuth] Dev mode detected, auto-guest login')
+        // Bootstrap strategy: auto guest login if configured
+        if (!hydrated && AUTH_BOOTSTRAP_MODE === 'guest') {
+            console.log('[initAuth] Bootstrap=guest, attempting auto guest login')
             try {
                 await userStore.loginAsGuest()
             } catch (error) {
-                console.warn('[initAuth] Dev mode guest login failed', error)
+                console.warn('[initAuth] Guest login failed', error)
             }
             hydrated = hydrateTokenFromStorage(userStore)
         }
 
+        // No token after bootstrap attempt - redirect based on strategy
         if (!hydrated) {
-            console.log('[initAuth] No token found, redirecting to login')
             appStore.setAppReady(true)
-            // ✅ 重定向到登录页面（首次启动或登出后）
+
+            if (AUTH_BOOTSTRAP_MODE === 'none') {
+                console.log('[initAuth] Bootstrap=none, no redirect')
+                return
+            }
+
+            console.log('[initAuth] No token, redirecting to login')
             uni.reLaunch({
                 url: '/pages/login/index'
             })

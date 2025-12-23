@@ -32,7 +32,7 @@ export default () => ({
   bodyLimit: process.env.BODY_LIMIT || '20mb',
   syncDirectory,
   maxBackups: parseInt(process.env.SYNC_MAX_BACKUPS || '3', 10),
-  clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173',
   databaseUrl: process.env.DATABASE_URL || defaultDbUrl,
   dataRoot: getDataRoot(),
   redisUrl: process.env.REDIS_URL,

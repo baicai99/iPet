@@ -1,5 +1,30 @@
-const TOKEN_STORAGE_KEY = 'token'
-const TOKEN_EXPIRES_AT_KEY = 'token_expires_at'
+import { APP_CONFIG, RUN_MODE } from '@/utils/config'
+
+/**
+ * Environment-isolated storage prefix
+ * Prevents token pollution when switching between environments
+ * Format: ipet_{mode}_{api_base_hash}_
+ */
+const getStoragePrefix = (): string => {
+    // Normalize API base: remove protocol, lowercase, replace special chars
+    const baseHash = APP_CONFIG.API_BASE_URL
+        .toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/[^a-z0-9]/g, '_')
+        .slice(0, 20)
+
+    return `ipet_${RUN_MODE}_${baseHash}_`
+}
+
+const STORAGE_PREFIX = getStoragePrefix()
+const TOKEN_STORAGE_KEY = `${STORAGE_PREFIX}token`
+const TOKEN_EXPIRES_AT_KEY = `${STORAGE_PREFIX}expires`
+const REFRESH_TOKEN_KEY = `${STORAGE_PREFIX}refresh`
+
+// Log storage prefix on startup (dev only)
+if (import.meta.env.DEV) {
+    console.log('[AuthStorage] 🔑 Storage prefix:', STORAGE_PREFIX)
+}
 
 let sessionAccessToken = ''
 let persistAccessToken = true
@@ -95,15 +120,15 @@ export const clearAuthToken = (): void => {
     expiresInitialized = true
     uni.removeStorageSync(TOKEN_STORAGE_KEY)
     uni.removeStorageSync(TOKEN_EXPIRES_AT_KEY)
-    uni.removeStorageSync('refreshToken')
+    uni.removeStorageSync(REFRESH_TOKEN_KEY)
 }
 
-export const getRefreshToken = (): string => uni.getStorageSync('refreshToken') || ''
+export const getRefreshToken = (): string => uni.getStorageSync(REFRESH_TOKEN_KEY) || ''
 
 export const setRefreshToken = (token: string): void => {
     if (token) {
-        uni.setStorageSync('refreshToken', token)
+        uni.setStorageSync(REFRESH_TOKEN_KEY, token)
     } else {
-        uni.removeStorageSync('refreshToken')
+        uni.removeStorageSync(REFRESH_TOKEN_KEY)
     }
 }

@@ -1,22 +1,29 @@
 <template>
     <view class="article-content-renderer">
-        <up-markdown :content="markdownText" :show-line-number="showLineNumber"
+        <up-markdown :content="normalizedMarkdown" :show-line-number="showLineNumber"
             :preview-img="previewImg"></up-markdown>
     </view>
 </template>
 
 <script setup lang="ts">
+import { computed, toRefs } from 'vue'
+import { normalizeArticleMarkdownImageUrls } from '@/modules/articles/services/articleImageAssets'
+
 interface Props {
     markdownText?: string
     showLineNumber?: boolean
     previewImg?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     markdownText: '',
     showLineNumber: false,
     previewImg: true
 })
+
+const { markdownText, showLineNumber, previewImg } = toRefs(props)
+
+const normalizedMarkdown = computed(() => normalizeArticleMarkdownImageUrls(markdownText.value ?? ''))
 </script>
 
 <style lang="scss" scoped>
@@ -136,4 +143,3 @@ withDefaults(defineProps<Props>(), {
     }
 }
 </style>
-

@@ -191,7 +191,7 @@ export const handleMockRequest = async <T>(config: RequestConfig<T>): Promise<T>
 
         console.error(`[MockRegistry] No mock handler found for ${method} ${url}.`)
         console.log(`[MockRegistry] Available routes:`, allRoutes.map(r => `${r.method} ${r.pattern}`))
-        throw new MockFallthroughError(msg)
+        throw new MockFallthroughError()
     }
 
     const { route, params } = matchResult

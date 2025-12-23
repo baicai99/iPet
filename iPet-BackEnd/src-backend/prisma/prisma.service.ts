@@ -51,8 +51,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.$use(async (params, next) => {
       const start = process.hrtime.bigint();
       let ok = true;
+      let result: unknown;
       try {
-        return await next(params);
+        result = await next(params);
+        return result;
       } catch (error) {
         ok = false;
         throw error;
@@ -68,24 +70,23 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           isSlow,
         });
 
-        if (!isSlow) {
-          return;
+        if (isSlow) {
+          const where = (params as any)?.args?.where;
+          const whereKeys =
+            where && typeof where === 'object' && !Array.isArray(where) ? Object.keys(where) : undefined;
+
+          this.logger.warn({
+            type: 'db.slow_query',
+            requestId: getRequestId(),
+            model: params.model,
+            action: params.action,
+            durationMs: Math.round(durationMs * 100) / 100,
+            whereKeys,
+          });
         }
-
-        const where = (params as any)?.args?.where;
-        const whereKeys =
-          where && typeof where === 'object' && !Array.isArray(where) ? Object.keys(where) : undefined;
-
-        this.logger.warn({
-          type: 'db.slow_query',
-          requestId: getRequestId(),
-          model: params.model,
-          action: params.action,
-          durationMs: Math.round(durationMs * 100) / 100,
-          whereKeys,
-        });
       }
     });
+
   }
 
   async onModuleInit(): Promise<void> {

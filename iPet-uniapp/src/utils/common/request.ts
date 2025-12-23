@@ -12,6 +12,56 @@ import { handleMockRequest } from './mockRegistry'
 
 const BASE_URL = APP_CONFIG.API_BASE_URL
 
+/**
+ * Legacy Path Mapping
+ * Backend routes that are NOT under /api prefix.
+ * These paths will be resolved without the /api prefix.
+ * TODO: Remove entries after backend migrates them to /api.
+ */
+const LEGACY_PATHS = new Set([
+    '/users/register'  // Backend route: /users/register (not /api/users/register)
+])
+
+/**
+ * Normalize path for comparison
+ * - Ensure leading slash
+ * - Strip query string
+ */
+const normalizePath = (path: string): string => {
+    const withSlash = path.startsWith('/') ? path : `/${path}`
+    return withSlash.split('?')[0]
+}
+
+/**
+ * Resolve final request URL
+ * - Legacy paths: strip /api from BASE_URL
+ * - Normal paths: BASE_URL + path
+ */
+const resolveRequestUrl = (path: string): string => {
+    const normalizedForCheck = normalizePath(path)
+    const pathWithSlash = path.startsWith('/') ? path : `/${path}`
+
+    if (LEGACY_PATHS.has(normalizedForCheck)) {
+        // Legacy: remove /api suffix from BASE_URL
+        const baseWithoutApi = BASE_URL.replace(/\/api$/, '')
+        const finalUrl = baseWithoutApi + pathWithSlash
+        if (import.meta.env.DEV) {
+            console.log(`[Request] 🔀 Legacy path: ${path} → ${finalUrl}`)
+        }
+        return finalUrl
+    }
+
+    return BASE_URL + pathWithSlash
+}
+
+// Log API base on startup (dev only)
+if (import.meta.env.DEV) {
+    console.log('[Request] 🔗 API Base:', BASE_URL)
+    if (LEGACY_PATHS.size > 0) {
+        console.log('[Request] 📋 Legacy paths (bypass /api):', [...LEGACY_PATHS])
+    }
+}
+
 interface InternalConfig {
     __retry?: boolean;
 }
@@ -227,7 +277,7 @@ const refreshAuthToken = async (): Promise<TokenRefreshResult | null> => {
 
     return new Promise<TokenRefreshResult | null>((resolve, reject) => {
         uni.request({
-            url: BASE_URL + '/auth/refresh',
+            url: resolveRequestUrl('/auth/refresh'),
             method: 'POST',
             data: { refreshToken },
             header: {
@@ -511,7 +561,7 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
 
             let requestTask: UniApp.RequestTask | null = null
             requestTask = uni.request({
-                url: BASE_URL + config.url,
+                url: resolveRequestUrl(config.url),
                 method: config.method || 'GET',
                 data: config.data,
                 header,
