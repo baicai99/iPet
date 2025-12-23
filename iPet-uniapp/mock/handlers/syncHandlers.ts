@@ -1,7 +1,11 @@
 import { RequestConfig } from '@/utils/common/request'
 
-export const syncMock = (config: RequestConfig) => {
-    if (config.method === 'GET') {
+import { defineMock } from '../types/common'
+
+export const syncGetMock = defineMock({
+    url: '/sync',
+    method: 'GET',
+    handler: (config: RequestConfig) => {
         return {
             pets: [],
             healthRecords: [],
@@ -9,13 +13,15 @@ export const syncMock = (config: RequestConfig) => {
             accountInfo: null
         }
     }
+})
 
-    if (config.method === 'POST') {
+export const syncPostMock = defineMock({
+    url: '/sync',
+    method: 'POST',
+    handler: (config: RequestConfig) => {
         return {
             success: true,
             timestamp: Date.now()
         }
     }
-
-    return null
-}
+})

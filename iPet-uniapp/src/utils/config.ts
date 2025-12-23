@@ -7,37 +7,18 @@
  * - business code only uses config
  *
  * Mock Mode Rule:
- * - mp-weixin: envVersion=release => off; develop/trial => on
- * - other platforms: mode=production => off; otherwise => on
+ * - Mock is enabled exclusively via VITE_MOCK (truthy values like true/1/on)
+ * - All other environments default to Real API so mock code paths cannot run unless explicitly requested
+ * - The flag is logged at startup to trace the active data source
  */
 
 // ⚠️ DEV-only fallback - never auto-used in production
-const DEV_FALLBACK_API = 'http://192.168.31.167:3000/api';
-
-declare const wx: any
-
-export type WeChatEnvVersion = 'develop' | 'trial' | 'release' | 'unknown'
+// Default to the reachable preview/production API so local dev works without special network routes.
+const DEV_FALLBACK_API = 'https://api.zhengjiyuan.top/api';
 
 const normalizeBaseUrl = (url: string): string => {
     return url.replace(/\/$/, '');
 };
-
-const resolveWeChatEnvVersion = (): WeChatEnvVersion => {
-    try {
-        const wxAny = typeof wx !== 'undefined' ? (wx as any) : null
-        const uniAny = typeof uni !== 'undefined' ? (uni as any) : null
-
-        const info = uniAny?.getAccountInfoSync?.() || wxAny?.getAccountInfoSync?.()
-        const envVersion = info?.miniProgram?.envVersion
-
-        if (envVersion === 'develop' || envVersion === 'trial' || envVersion === 'release') {
-            return envVersion
-        }
-    } catch {
-        // ignore
-    }
-    return 'unknown'
-}
 
 const resolveApiBaseUrl = (): string => {
     const raw = import.meta.env.VITE_API_BASE_URL;
@@ -68,13 +49,32 @@ const resolveApiBaseUrl = (): string => {
     return normalizeBaseUrl(raw);
 };
 
-export const API_BASE_URL = resolveApiBaseUrl()
+// Helper to parse boolean env values safely
+const getEnvBool = (key: string): boolean => {
+    const val = import.meta.env[key]
+    if (val === true) return true
+    if (typeof val === 'string') {
+        const normalized = val.trim().toLowerCase()
+        return normalized === 'true' || normalized === '1' || normalized === 'on'
+    }
+    return false
+}
+
 export const RUN_MODE = import.meta.env.MODE
-export const USE_MOCK = RUN_MODE !== 'production'
-export const WECHAT_ENV_VERSION = resolveWeChatEnvVersion()
-export const USE_PREVIEW_MOCK = WECHAT_ENV_VERSION === 'develop' || WECHAT_ENV_VERSION === 'trial'
-export const FORCE_ENABLE_MOCK = import.meta.env.VITE_FORCE_ENABLE_MOCK === 'true'
-export const IS_MOCK_MODE = USE_MOCK || USE_PREVIEW_MOCK || FORCE_ENABLE_MOCK
+const MOCK_FLAG_KEY = 'VITE_MOCK'
+const mockFlagRaw = import.meta.env[MOCK_FLAG_KEY]
+const formatEnvValue = (value: unknown): string => {
+    if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+        return 'unset'
+    }
+    return String(value)
+}
+const mockFlagLabel = formatEnvValue(mockFlagRaw)
+
+export const API_BASE_URL = resolveApiBaseUrl()
+export const USE_MOCK = getEnvBool(MOCK_FLAG_KEY)
+export const IS_MOCK_MODE = USE_MOCK // Alias for backward compatibility
+export const IS_DEV_MODE = import.meta.env.DEV
 export const ENABLE_PERFORMANCE_MONITOR = import.meta.env.VITE_ENABLE_PERF_MONITOR !== 'false'
 export const PERFORMANCE_REPORT_URL = import.meta.env.VITE_PERF_REPORT_URL || ''
 
@@ -87,7 +87,10 @@ export const APP_CONFIG = Object.freeze({
     PERFORMANCE_REPORT_URL,
 })
 
-// Log config on startup (DEV only)
+// Log config on startup
+console.log(`[APP_CONFIG] 🛠️ Mock Status: ${USE_MOCK ? 'ENABLED' : 'DISABLED'} (VITE_MOCK=${mockFlagLabel})`)
+console.log(`[APP_CONFIG] 🧭 当前数据源: ${USE_MOCK ? 'Mock' : 'Real'} (VITE_MOCK=${mockFlagLabel})`)
+
 if (import.meta.env.DEV) {
     console.log('[APP_CONFIG] Loaded:', {
         RUN_MODE,

@@ -4,12 +4,11 @@
  */
 
 import { getAccessToken, setAuthToken, clearAuthToken, getRefreshToken, setRefreshToken } from '@/utils/business/authStorage'
-import { APP_CONFIG, USE_MOCK, USE_PREVIEW_MOCK } from '@/utils/config'
+import { APP_CONFIG, USE_MOCK } from '@/utils/config'
 import { AppError, ErrorCode } from '@/types/error'
 import { showError } from './errorHandler'
 import { performanceMonitor } from '@/utils/performance/performanceMonitor'
 import { handleMockRequest } from './mockRegistry'
-import { handlePreviewMockRequest } from './previewMock'
 
 const BASE_URL = APP_CONFIG.API_BASE_URL
 
@@ -425,14 +424,6 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
             if (config.showLoading) {
                 hideGlobalLoading()
             }
-        }
-    }
-
-    // Preview runtime mock (WeChat develop/trial): lightweight fallback, without bundling full mock handlers in production
-    if (!import.meta.env.PROD && USE_PREVIEW_MOCK) {
-        const previewResult = await handlePreviewMockRequest<T>(config)
-        if (previewResult !== undefined) {
-            return previewResult
         }
     }
 

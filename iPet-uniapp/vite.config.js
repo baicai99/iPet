@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
 import { viteMockServe } from 'vite-plugin-mock'
 import { visualizer } from 'rollup-plugin-visualizer'
@@ -9,13 +9,24 @@ import path from 'path'
 process.env.UNI_INPUT_DIR = path.resolve(__dirname, 'src')
 
 export default defineConfig(({ mode }) => {
+    // Load env file based on `mode` in the current working directory.
+    // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
+    const env = loadEnv(mode, process.cwd(), '')
     const isProduction = mode === 'production'
+    const isTruthy = (value) => {
+        if (typeof value !== 'string') return false
+        const normalized = value.trim().toLowerCase()
+        return normalized === 'true' || normalized === '1' || normalized === 'on'
+    }
+    // Only enable runtime mock server when the shared VITE_MOCK flag is truthy
+    const enableMock = isTruthy(env.VITE_MOCK)
+
     return {
         plugins: [
             uni(),
             viteMockServe({
                 mockPath: 'mock',
-                enable: !isProduction,
+                enable: enableMock,
             }),
             visualizer({
                 filename: 'dist/stats.html',

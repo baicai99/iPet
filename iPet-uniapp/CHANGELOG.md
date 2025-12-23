@@ -1,3 +1,10 @@
+## Unreleased
+
+### 📈 Summary View 趋势状态规范
+
+- [x] 将 Summary View 的趋势三态及验收标准沉淀到 `docs/performance/summary-trend-status.md`，明确状态定义、文案与判定逻辑。
+- [x] 新增 `src/domain/trend/__tests__/getTrendStatus.test.ts`，通过 Vitest 覆盖“数据不足 / 稳定 / 存在趋势”三类结果，防止未来回退。
+
 ## 0.0.7 (2025-12-21)
 
 ### 性能优化

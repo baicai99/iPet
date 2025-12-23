@@ -49,7 +49,7 @@
                     icon="checkmark-circle"
                     iconColor="#10b981"
                     iconBgColor="#d1fae5"
-                    title="所有指标处于平稳状态"
+                    :title="trendStatusHint.message || '当前所有趋势趋于稳定'"
                     subtitle="当前暂无趋势变化，继续保持吧！"
                     navigate-to="/pages/trends/trends"
                 />
@@ -203,9 +203,8 @@ const changedMetricKeys = computed(() => healthStore.getChangedMetricKeys())
  */
 const trendStatusHint = computed(() => {
     const totalDays = healthStore.getTotalRecordDays()
-    // Type assertion needed because Pinia doesn't correctly infer shallowRef types
-    const trendMap = healthStore.metricTrendMap as unknown as { value: Record<string, any> }
-    return getTrendStatus(trendMap.value, totalDays)
+    // ✅ FIX: metricTrendMap is already a shallowRef, Pinia auto-unwraps it
+    return getTrendStatus(healthStore.metricTrendMap, totalDays)
 })
 
 // Helper functions for TrendCard props

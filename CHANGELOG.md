@@ -1,5 +1,49 @@
 # Changelog
 
+## Unreleased
+
+### 🧩 简化前端环境配置
+
+- 将 `.env.preview` 合并回 `.env.development`，并在 `iPet-uniapp/.env.development` 中说明开发与预览共享配置、`VITE_MOCK` 的行为提示；预览不再依赖独立文件。
+- 更新 `docs/frontend/工程化与开发指南层.md`、`docs/frontend/安全与合规层.md` 与 `docs/api/接口契约层.md`，统一为开发/预览（`.env.development`）与生产（`.env.production`）两套环境的说明。
+- 已删除 `.env.preview` 文件，所有运行/脚本逻辑只会依赖 `env.development` 或 `env.production`。
+
+### 🧪 Mock 模式只在显式开启时切换
+
+- `iPet-uniapp/src/utils/common/request.ts` 现在在 `VITE_MOCK` 为真时完全绕过网络，任何缺失的 mock handler 会导致 `MockFallthroughError` 抛出，避免不经意回落到后端。
+- `iPet-uniapp/src/utils/common/mockRegistry.ts` 在查不到 handler 时直接失败并列出可用路由，同时 `VITE_MOCK_STRICT` 相关分支已删去、`MockFallthroughError` 成为唯一错误信号。
+- `iPet-uniapp/src/utils/config.ts` 不再暴露 `MOCK_STRICT`，并在启动日志里只打印当前数据源。
+- `iPet-uniapp/docs/dev/mock-mode.md` 强调 `VITE_MOCK=true` 即完全 mock，`VITE_MOCK=false` 则使用后端，缺失 handler 不再触发 fallback。
+
+### 🧭 Dev 模式自动游客登录
+
+- `iPet-uniapp/src/services/initAuth.ts` now auto-creates a guest session when `import.meta.env.DEV` is true and no token exists, so you can skip signing in while running `npm run dev:*` (`initAuth` still falls back to the login page if auto-login fails).
+- `iPet-uniapp/src/permission.ts` treats Dev mode like Mock mode, allowing every navigation attempt to proceed without triggering the login redirect while the app is still booting.
+
+### 📈 Summary View稳定趋势提示
+
+- `iPet-uniapp/src/pages/summary/summary.vue` 让稳定态卡片使用 `getTrendStatus` 返回的文案并展示“当前所有趋势趋于稳定”，避免在全稳定场景下误显示“正在采集样本...”提示。
+- `iPet-uniapp/src/domain/trend/getTrendStatus.ts` 将 `all-stable` 状态的提示文案同步为“当前所有趋势趋于稳定”，确保其它模块拿到的文案一致。
+- `iPet-uniapp/docs/performance/summary-trend-status.md` 记录 Summary View 趋势三态、判定逻辑与验收标准，确保文档与实际 UI 保持一致。
+- `iPet-uniapp/src/domain/trend/__tests__/getTrendStatus.test.ts` 通过 Vitest 验证“数据不足 / 稳定 / 存在趋势”三类状态避免回退。
+
+
+## v2025.12.23-1 (2025-12-23)
+
+### 🛠️ 保证开发模式下 API 指向可达服务
+
+- `iPet-uniapp/src/utils/config.ts` 将开发 fallback API 统一指向稳定的预览/生产域名，避免默认 192.168 网络仅在局域网可达的情况。
+- `iPet-uniapp/.env.development` 与相关文档（工程化指南 / 安全合规 / 接口契约层）同步改为使用 `https://api.zhengjiyuan.top/api`，并提醒可通过 `.env.local` 指向本地后端。
+- `docs/frontend/工程化与开发指南层.md`, `docs/frontend/安全与合规层.md` 与 `docs/api/接口契约层.md` 更新文档说明，提醒开发者默认使用公开 API 并可通过 `.env.local` 指向本地。
+
+## v2025.12.22-7 (2025-12-22)
+
+### 🔧 Mock 数据仅在 `VITE_MOCK=true` 时生效
+
+- `src/utils/config.ts` 与 `request.ts` 现在仅依赖 `VITE_MOCK` 决定 `USE_MOCK`，默认关闭 Web Preview/H5，下沉逻辑不再根据平台或 `envVersion` 变更，并在启动时打印 `[APP_CONFIG] 🧭 当前数据源`（含开关值），方便追踪源头。
+- `vite.config.js` 只在 `VITE_MOCK` 为 truthy 时启用 `vite-plugin-mock`，以同一个开关控制运行时/构建时的 mock 注入；`.env.preview` 的注释也同步更换为新开关。
+- 新的 `iPet-uniapp/docs/dev/mock-mode.md` 说明了统一开关、本地实测示例与生产禁用要求，确保规范文档与行为一致。
+
 ## v2025.12.22-6 (2025-12-22)
 
 ### 🐛 修复 Trends View 数据充足时仍显示"采样中"的问题

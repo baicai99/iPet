@@ -10,6 +10,15 @@
  */
 
 import type { RequestConfig } from './request'
+import type { MockDefinition } from '@mock/types/common'
+
+// Special error to signal that request.ts should fallback to real network
+export class MockFallthroughError extends Error {
+    constructor() {
+        super('Mock handler not found - falling through to network')
+        this.name = 'MockFallthroughError'
+    }
+}
 
 // Static imports for mock handlers (only in non-production builds)
 // These will be tree-shaken out in production builds
@@ -25,160 +34,131 @@ import * as syncHandlersModule from '@mock/handlers/syncHandlers'
 
 export interface MockRequestConfig {
     url: string
-    method?: string  // Use string to be more flexible
+    method?: string
     data?: any
     header?: Record<string, any>
     params?: Record<string, any>
 }
 
-type MockHandler = (config: MockRequestConfig) => any
+// Handler types
+type LegacyMockHandler = (config: MockRequestConfig) => any
+type MockHandler = LegacyMockHandler | MockDefinition
 
 interface MockRoute {
     pattern: RegExp
     method: string
-    handlerName: string  // Changed from handler to handlerName
+    handler: MockHandler // Direct reference to handler or definition
+    handlerName: string  // For debugging
+    keys: string[] // Parameter names
+    score: number  // Specificity score
 }
 
 /**
- * Convert route pattern with path params to regex
- * e.g., '/pets/:id' -> /^\/pets\/([^/]+)$/
+ * Parse route pattern to generate Regex, Keys, and Score
  */
-const createRouteRegex = (pattern: string): RegExp => {
-    const escaped = pattern
-        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')  // Escape special regex chars
-        .replace(/\\:([^/]+)/g, '([^/]+)')        // Convert :param to capture group
-    return new RegExp(`^${escaped}$`)
-}
+const parseRoute = (pattern: string) => {
+    const keys: string[] = []
+    let score = 0
 
-/**
- * Mock route registry
- * Stores route patterns and handler names (not handlers directly)
- */
-const mockRoutes: MockRoute[] = [
-    // Health Records (main data endpoints)
-    { pattern: createRouteRegex('/health'), method: 'GET', handlerName: 'getHealthRecordsMock' },
-    { pattern: createRouteRegex('/health'), method: 'POST', handlerName: 'createHealthRecordMock' },
-    { pattern: createRouteRegex('/health/:id'), method: 'PATCH', handlerName: 'updateHealthRecordMock' },
-    { pattern: createRouteRegex('/health/:id'), method: 'DELETE', handlerName: 'deleteHealthRecordMock' },
-    { pattern: createRouteRegex('/health/summary'), method: 'GET', handlerName: 'getHealthSummaryMock' },
-    { pattern: createRouteRegex('/health/series'), method: 'GET', handlerName: 'getHealthSeriesMock' },
+    // Normalize pattern
+    const validPattern = pattern.startsWith('/') ? pattern : '/' + pattern
 
-    // Metrics (legacy/chart endpoints)
-    { pattern: createRouteRegex('/metrics/:id/history'), method: 'GET', handlerName: 'getMetricHistoryMock' },
-    { pattern: createRouteRegex('/metrics/:id/series'), method: 'GET', handlerName: 'getMetricSeriesMock' },
+    // Split into segments for scoring
+    const segments = validPattern.split('/').filter(Boolean)
 
-    // Pets
-    { pattern: createRouteRegex('/pets'), method: 'GET', handlerName: 'getPetsMock' },
-    { pattern: createRouteRegex('/pets'), method: 'POST', handlerName: 'createPetMock' },
-    { pattern: createRouteRegex('/pets/:id'), method: 'PATCH', handlerName: 'updatePetMock' },
-    { pattern: createRouteRegex('/pets/:id'), method: 'DELETE', handlerName: 'deletePetMock' },
+    // Build Regex and Score
+    // Static segment: 100 points
+    // Dynamic segment: 10 points
+    // Wildcard: 1 point
+    segments.forEach(seg => {
+        if (seg.startsWith(':')) {
+            score += 10
+            keys.push(seg.slice(1))
+        } else if (seg === '*') {
+            score += 1
+        } else {
+            score += 100
+        }
+    })
 
-    // Auth
-    { pattern: createRouteRegex('/verification/code'), method: 'POST', handlerName: 'sendCodeMock' },
-    { pattern: createRouteRegex('/users/register'), method: 'POST', handlerName: 'registerMock' },
-    { pattern: createRouteRegex('/auth/login'), method: 'POST', handlerName: 'loginMock' },
-    { pattern: createRouteRegex('/auth/guest'), method: 'POST', handlerName: 'guestMock' },
-    { pattern: createRouteRegex('/auth/upgrade'), method: 'POST', handlerName: 'upgradeMock' },
-    { pattern: createRouteRegex('/auth/refresh'), method: 'POST', handlerName: 'refreshTokenMock' },
+    // Regex generation
+    // '/pets/:id' -> /^\/pets\/([^/]+)$/
+    const regexString = '^' + validPattern
+        .replace(/\//g, '\\/')
+        .replace(/:([^/]+)/g, () => {
+            return '([^/]+)'
+        }) + '$'
 
-    // User profile
-    { pattern: createRouteRegex('/users/me'), method: 'GET', handlerName: 'getProfileMock' },
-    { pattern: createRouteRegex('/users/profile'), method: 'PUT', handlerName: 'updateProfileMock' },
-    { pattern: createRouteRegex('/users/vip-status'), method: 'GET', handlerName: 'getVipStatusMock' },
-    { pattern: createRouteRegex('/users/account'), method: 'DELETE', handlerName: 'deleteAccountMock' },
-
-    // Health Report
-    { pattern: createRouteRegex('/health/reports/generate'), method: 'POST', handlerName: 'generateReportMock' },
-
-    // Insights
-    { pattern: createRouteRegex('/insights/trend'), method: 'GET', handlerName: 'getTrendInsightMock' },
-    { pattern: createRouteRegex('/insights/:id'), method: 'GET', handlerName: 'getInsightMock' },
-
-    // Notifications
-    { pattern: createRouteRegex('/notifications/:id/read'), method: 'PUT', handlerName: 'markReadMock' },
-    { pattern: createRouteRegex('/notifications/read-all'), method: 'PUT', handlerName: 'markAllReadMock' },
-    { pattern: createRouteRegex('/notifications/preferences'), method: 'POST', handlerName: 'updatePreferenceMock' },
-    { pattern: createRouteRegex('/notifications/preferences/bulk'), method: 'POST', handlerName: 'syncAllPreferencesMock' },
-
-    // Sync
-    { pattern: createRouteRegex('/sync'), method: 'GET', handlerName: 'syncMock' },
-    { pattern: createRouteRegex('/sync'), method: 'POST', handlerName: 'syncMock' },
-]
-
-/**
- * Get mock handler by name
- * Uses statically imported modules for WeChat mini-program compatibility
- */
-const loadMockHandler = (handlerName: string): MockHandler => {
-    switch (handlerName) {
-        // Metric handlers
-        case 'getMetricHistoryMock':
-        case 'getMetricSeriesMock':
-        case 'getHealthRecordsMock':
-        case 'createHealthRecordMock':
-        case 'updateHealthRecordMock':
-        case 'deleteHealthRecordMock':
-        case 'getHealthSummaryMock':
-        case 'getHealthSeriesMock':
-            return metricHandlersModule[handlerName] as MockHandler
-
-        // Pet handlers
-        case 'getPetsMock':
-        case 'createPetMock':
-        case 'updatePetMock':
-        case 'deletePetMock':
-            return petHandlersModule[handlerName] as MockHandler
-
-        // Auth handlers
-        case 'sendCodeMock':
-        case 'registerMock':
-        case 'loginMock':
-        case 'refreshTokenMock':
-        case 'guestMock':
-        case 'upgradeMock':
-            return authHandlersModule[handlerName] as MockHandler
-
-        // User handlers
-        case 'updateProfileMock':
-        case 'getProfileMock':
-        case 'getVipStatusMock':
-        case 'deleteAccountMock':
-            return userHandlersModule[handlerName] as MockHandler
-
-        // Health Report handlers
-        case 'generateReportMock':
-            return healthReportHandlersModule[handlerName] as MockHandler
-
-        // Insight handlers
-        case 'getTrendInsightMock':
-        case 'getInsightMock':
-            return insightHandlersModule[handlerName] as MockHandler
-
-        // Notification handlers
-        case 'markReadMock':
-        case 'markAllReadMock':
-        case 'updatePreferenceMock':
-        case 'syncAllPreferencesMock':
-            return notificationHandlersModule[handlerName] as MockHandler
-
-        // Sync handlers
-        case 'syncMock':
-            return syncHandlersModule[handlerName] as MockHandler
-
-        default:
-            throw new Error(`Unknown mock handler: ${handlerName}`)
+    return {
+        pattern: new RegExp(regexString),
+        keys,
+        score
     }
 }
 
+// Helper to check if an export is a MockDefinition
+const isMockDefinition = (item: any): item is MockDefinition => {
+    return item && typeof item === 'object' && 'url' in item && 'method' in item && 'handler' in item
+}
+
+// Auto-discovery of routes from modules
+const discoverRoutes = (module: any, moduleName: string): MockRoute[] => {
+    const routes: MockRoute[] = []
+
+    Object.keys(module).forEach(key => {
+        const exportItem = module[key]
+        if (isMockDefinition(exportItem)) {
+            const { pattern, keys, score } = parseRoute(exportItem.url)
+            routes.push({
+                pattern,
+                method: exportItem.method.toUpperCase(),
+                handler: exportItem,
+                handlerName: `${moduleName}.${key}`,
+                keys,
+                score
+            })
+        }
+    })
+
+    return routes
+}
+
+// Auto-discovered routes from refactored modules
+const autoRoutes: MockRoute[] = [
+    ...discoverRoutes(metricHandlersModule, 'metricHandlers'),
+    ...discoverRoutes(petHandlersModule, 'petHandlers'),
+    ...discoverRoutes(authHandlersModule, 'authHandlers'),
+    ...discoverRoutes(userHandlersModule, 'userHandlers'),
+    ...discoverRoutes(healthReportHandlersModule, 'healthReportHandlers'),
+    ...discoverRoutes(insightHandlersModule, 'insightHandlers'),
+    ...discoverRoutes(notificationHandlersModule, 'notificationHandlers'),
+    ...discoverRoutes(syncHandlersModule, 'syncHandlers')
+]
+
+// Determine all routes, sorted by specificity (highest score first)
+const allRoutes: MockRoute[] = autoRoutes.sort((a, b) => b.score - a.score)
+
 /**
- * Find matching mock route for given URL and method
+ * Match URL against routes and extract params
  */
-const findMockRoute = (url: string, method: string): MockRoute | null => {
+const matchRoute = (url: string, method: string) => {
     const normalizedMethod = method.toUpperCase()
 
-    for (const route of mockRoutes) {
-        if (route.pattern.test(url) && route.method === normalizedMethod) {
-            return route
+    for (const route of allRoutes) {
+        if (route.method !== normalizedMethod) continue
+
+        const match = route.pattern.exec(url)
+        if (match) {
+            // Extract params
+            const params: Record<string, string> = {}
+            route.keys.forEach((key, index) => {
+                params[key] = match[index + 1]
+            })
+
+            return {
+                route,
+                params
+            }
         }
     }
     return null
@@ -203,15 +183,18 @@ export const handleMockRequest = async <T>(config: RequestConfig<T>): Promise<T>
 
     console.log(`[MockRegistry] Looking for handler: ${method} ${url}`)
 
-    const route = findMockRoute(url, method)
+    const matchResult = matchRoute(url, method)
 
-    if (!route) {
-        console.warn(`[MockRegistry] No mock handler for: ${method} ${url}`)
-        console.log(`[MockRegistry] Available routes:`, mockRoutes.map(r => `${r.method} ${r.pattern}`))
-        // Return empty response instead of throwing to prevent app crashes
-        return {} as T
+    if (!matchResult) {
+        const msg = `[MockRegistry] No mock handler for: ${method} ${url}`
+        console.warn(msg)
+
+        console.error(`[MockRegistry] No mock handler found for ${method} ${url}.`)
+        console.log(`[MockRegistry] Available routes:`, allRoutes.map(r => `${r.method} ${r.pattern}`))
+        throw new MockFallthroughError(msg)
     }
 
+    const { route, params } = matchResult
     console.log(`[MockRegistry] Handling: ${method} ${url} with ${route.handlerName}`)
 
     // Create mock config matching handler expectations
@@ -220,17 +203,22 @@ export const handleMockRequest = async <T>(config: RequestConfig<T>): Promise<T>
         method: method,
         data: config.data,
         header: config.header,
-        params: {}
+        params: params // Injected path params
     }
 
     // Simulate async behavior like real network call
     await new Promise(resolve => setTimeout(resolve, 50))
 
     try {
-        // Get handler from statically imported modules
-        const handler = loadMockHandler(route.handlerName)
-        // Use type assertion since mock handlers accept RequestConfig but we're passing MockRequestConfig
-        const result = handler(mockConfig as any)
+        let result: any
+        if (isMockDefinition(route.handler)) {
+            // New MockDefinition object
+            result = route.handler.handler(mockConfig as any)
+        } else {
+            // Legacy functional handler
+            result = route.handler(mockConfig)
+        }
+
         return result as T
     } catch (error) {
         console.error(`[MockRegistry] Handler error for ${method} ${url}:`, error)
@@ -255,5 +243,5 @@ export const handleMockRefreshToken = async (): Promise<{
     await new Promise(resolve => setTimeout(resolve, 50))
 
     // Use statically imported auth handlers
-    return authHandlersModule.refreshTokenMock(mockConfig as any)
+    return authHandlersModule.refreshTokenMock.handler(mockConfig as any)
 }

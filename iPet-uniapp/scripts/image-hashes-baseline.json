@@ -1,0 +1,62 @@
+{
+  "generated": "2025-12-23T06:45:44.709Z",
+  "directory": "/Users/zhengjiyuan/Desktop/iPet/iPet-uniapp/src/static/images/article",
+  "files": {
+    "dog-bmi-assessment.png": {
+      "hash": "c392f61fd27407341b3261ebf11796e18be628ccd6cfcf6ef63bfb9a7a0b2415",
+      "size": 6601943
+    },
+    "dog-body-temp-monitoring.png": {
+      "hash": "52658f653e4120bf28cb5791978eafec0b15a723eff81039f3d56c1fa0f9cca7",
+      "size": 6827598
+    },
+    "dog-fitness-training.png": {
+      "hash": "f4633040342bc53376c2bb5ecee117015648ce9e4b418c7cc758a78a9d4d78ef",
+      "size": 7166492
+    },
+    "dog-body-fat-management.png": {
+      "hash": "89245aa3b34576dc6d4f90d9ab0581e99929719b56236fbe7816bb39f66706c5",
+      "size": 6776831
+    },
+    "dog-depression-awareness.png": {
+      "hash": "1e7c431f9c5d4f8760ad59dcff3755b228387b6bcadd7a711a028eb9c2453f4f",
+      "size": 6260850
+    },
+    "dog-bathing-guide.png": {
+      "hash": "be9e3548a7961c3b76e77acea08fb59df34ea54af32afd3982ef8cb58f635117",
+      "size": 5990716
+    },
+    "dog-anxiety-relief.png": {
+      "hash": "c01d2de03ad96ffe8354e072ea80d64dd64893037de089d8bd1a6dec6910792f",
+      "size": 6458870
+    },
+    "nutrition-carbohydrate.png": {
+      "hash": "396b91a44da8592a10eb397b769c981e517b7879050d5923977bee32074d2494",
+      "size": 7241535
+    },
+    "nutrition-fat.png": {
+      "hash": "453e4f53d564c142cce2da4fe33d80bfbd24cfba2ddac3c18a92cfadb1007a3f",
+      "size": 6887803
+    },
+    "nutrition-fiber.png": {
+      "hash": "f9b9a9185212739003c9da33c38d09027acf3d42ecac4aba1de904db6a0479a3",
+      "size": 6954026
+    },
+    "nutrition-energy.png": {
+      "hash": "a1ff56d7f7f87e147b16a38b36faa4d9d06691021dccb698617a48b7867cfa77",
+      "size": 6487983
+    },
+    "nutrition-calcium.png": {
+      "hash": "9a0a2b774a910fb257dc7a958c9ed8b0a40cad7a1b7d20785e8a4ec4e7191afa",
+      "size": 7574539
+    },
+    "dog-deworming-guide.png": {
+      "hash": "3b58ea8d85c0b290f569cb2532d423502433f636d5b253a42982334391013a4e",
+      "size": 7047554
+    },
+    "nutrition-fish-oil.png": {
+      "hash": "b5e2e6fb39e62cbbf60d23ae643af1a0b84d7ad75f07748d1601ed2b0de93202",
+      "size": 6897467
+    }
+  }
+}

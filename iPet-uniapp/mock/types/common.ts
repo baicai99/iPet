@@ -1,11 +1,16 @@
-/**
- * Common types for mock handlers
- */
+import { RequestConfig } from '../../src/utils/common/request'
+export type { RequestConfig }
 
-export interface RequestConfig {
-    url: string
-    method?: string
-    data?: any
-    header?: Record<string, string>
-    params?: Record<string, any>
+export interface MockHandlerConfig extends RequestConfig {
+    params?: Record<string, string>
 }
+
+// Unified Mock Definition
+export interface MockDefinition {
+    url: string
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+    handler: (config: MockHandlerConfig) => any
+}
+
+// Helper to define a mock with type inference
+export const defineMock = (def: MockDefinition): MockDefinition => def

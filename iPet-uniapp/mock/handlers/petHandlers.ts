@@ -1,9 +1,13 @@
 import { RequestConfig } from '@/utils/common/request'
 import { pets } from '../pet.js'
 import { getMockStorage } from '../utils/mockStorage'
+import { defineMock } from '../types/common'
 
 const PETS_STORAGE_KEY = 'mock_pets'
 const storage = getMockStorage()
+
+// [Rest of storage logic unchanged]
+
 
 // Initialize from storage if available
 try {
@@ -24,51 +28,67 @@ const savePetsToStorage = () => {
     }
 }
 
-export const getPetsMock = (config: RequestConfig) => {
-    console.log('[Mock] getPetsMock called, returning', pets.length, 'pets')
-    return pets
-}
-
-export const createPetMock = (config: RequestConfig) => {
-    const newPet = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...config.data as any,
-        createdAt: new Date().toISOString()
+export const getPetsMock = defineMock({
+    url: '/pets',
+    method: 'GET',
+    handler: (config: RequestConfig) => {
+        console.log('[Mock] getPetsMock called, returning', pets.length, 'pets')
+        return pets
     }
-    pets.push(newPet)
-    savePetsToStorage()
-    return newPet
-}
+})
 
-export const updatePetMock = (config: RequestConfig) => {
-    const match = config.url.match(/\/pets\/([^\/]+)/)
-    const id = match ? match[1] : null
-    const updateData = config.data as any
-
-    if (!id) throw new Error('Invalid ID')
-
-    const index = pets.findIndex((p) => p.id === id)
-    if (index === -1) throw new Error('Pet not found')
-
-    pets[index] = {
-        ...pets[index],
-        ...updateData,
-        updatedAt: new Date().toISOString()
+export const createPetMock = defineMock({
+    url: '/pets',
+    method: 'POST',
+    handler: (config: RequestConfig) => {
+        const newPet = {
+            id: Math.random().toString(36).substr(2, 9),
+            ...config.data as any,
+            createdAt: new Date().toISOString()
+        }
+        pets.push(newPet)
+        savePetsToStorage()
+        return newPet
     }
-    savePetsToStorage()
-    return pets[index]
-}
+})
 
-export const deletePetMock = (config: RequestConfig) => {
-    const match = config.url.match(/\/pets\/([^\/]+)/)
-    const id = match ? match[1] : null
+export const updatePetMock = defineMock({
+    url: '/pets/:id',
+    method: 'PATCH',
+    handler: (config: RequestConfig) => {
+        const match = config.url.match(/\/pets\/([^\/]+)/)
+        const id = match ? match[1] : null
+        const updateData = config.data as any
 
-    if (!id) throw new Error('Invalid ID')
+        if (!id) throw new Error('Invalid ID')
 
-    const index = pets.findIndex((p) => p.id === id)
-    if (index === -1) throw new Error('Pet not found')
+        const index = pets.findIndex((p) => p.id === id)
+        if (index === -1) throw new Error('Pet not found')
 
-    pets.splice(index, 1)
-    savePetsToStorage()
-    return { success: true }
-}
+        pets[index] = {
+            ...pets[index],
+            ...updateData,
+            updatedAt: new Date().toISOString()
+        }
+        savePetsToStorage()
+        return pets[index]
+    }
+})
+
+export const deletePetMock = defineMock({
+    url: '/pets/:id',
+    method: 'DELETE',
+    handler: (config: RequestConfig) => {
+        const match = config.url.match(/\/pets\/([^\/]+)/)
+        const id = match ? match[1] : null
+
+        if (!id) throw new Error('Invalid ID')
+
+        const index = pets.findIndex((p) => p.id === id)
+        if (index === -1) throw new Error('Pet not found')
+
+        pets.splice(index, 1)
+        savePetsToStorage()
+        return { success: true }
+    }
+})

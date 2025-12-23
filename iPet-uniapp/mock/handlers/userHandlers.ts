@@ -16,81 +16,99 @@ try {
     console.error('Failed to load mock profile from storage', e)
 }
 
-export const getProfileMock = (config: RequestConfig) => {
-    return {
-        ...mockAccountInfo
+import { defineMock } from '../types/common'
+
+export const getProfileMock = defineMock({
+    url: '/users/me',
+    method: 'GET',
+    handler: (config: RequestConfig) => {
+        return {
+            ...mockAccountInfo
+        }
     }
-}
+})
 
-export const getVipStatusMock = (config: RequestConfig) => {
-    return {
-        ...mockVipStatus
+export const getVipStatusMock = defineMock({
+    url: '/users/vip-status',
+    method: 'GET',
+    handler: (config: RequestConfig) => {
+        return {
+            ...mockVipStatus
+        }
     }
-}
+})
 
-export const updateProfileMock = (config: RequestConfig) => {
-    const payload = (config.data || {}) as any
+export const updateProfileMock = defineMock({
+    url: '/users/profile',
+    method: 'PUT',
+    handler: (config: RequestConfig) => {
+        const payload = (config.data || {}) as any
 
-    // Update the mock object in place to persist changes
-    Object.assign(mockAccountInfo, {
-        ...payload,
-        displayName: payload.displayName || mockAccountInfo.displayName,
-        avatar: payload.avatar ?? mockAccountInfo.avatar,
-        gender: payload.gender ?? mockAccountInfo.gender,
-        mbti: payload.mbti ?? mockAccountInfo.mbti,
-        bio: payload.bio ?? mockAccountInfo.bio,
-        theme: payload.theme ?? mockAccountInfo.theme,
-        updatedAt: Date.now()
-    })
+        // Update the mock object in place to persist changes
+        Object.assign(mockAccountInfo, {
+            ...payload,
+            displayName: payload.displayName || mockAccountInfo.displayName,
+            avatar: payload.avatar ?? mockAccountInfo.avatar,
+            gender: payload.gender ?? mockAccountInfo.gender,
+            mbti: payload.mbti ?? mockAccountInfo.mbti,
+            bio: payload.bio ?? mockAccountInfo.bio,
+            theme: payload.theme ?? mockAccountInfo.theme,
+            updatedAt: Date.now()
+        })
 
-    // Persist to storage
-    try {
-        storage.set(PROFILE_STORAGE_KEY, mockAccountInfo)
-    } catch (e) {
-        console.error('Failed to save mock profile to storage', e)
+        // Persist to storage
+        try {
+            storage.set(PROFILE_STORAGE_KEY, mockAccountInfo)
+        } catch (e) {
+            console.error('Failed to save mock profile to storage', e)
+        }
+
+        return mockAccountInfo
     }
+})
 
-    return mockAccountInfo
-}
+export const deleteAccountMock = defineMock({
+    url: '/users/account',
+    method: 'DELETE',
+    handler: (config: RequestConfig) => {
+        if (!userState.currentUserId) {
+            // Fallback for testing if no login happened in this session, assume default user
+            const defaultUser = userState.users.find(u => u.email === 'test@example.com')
+            if (defaultUser) {
+                ; (userState as { currentUserId: number | null }).currentUserId = defaultUser.id
+            } else {
+                return {
+                    code: 401,
+                    message: 'Unauthorized',
+                    data: null
+                }
+            }
+        }
 
-export const deleteAccountMock = (config: RequestConfig) => {
-    if (!userState.currentUserId) {
-        // Fallback for testing if no login happened in this session, assume default user
-        const defaultUser = userState.users.find(u => u.email === 'test@example.com')
-        if (defaultUser) {
-            ; (userState as { currentUserId: number | null }).currentUserId = defaultUser.id
-        } else {
+        const index = userState.users.findIndex(u => u.id === userState.currentUserId)
+        if (index !== -1) {
+            userState.users.splice(index, 1)
+            userState.currentUserId = null
+
+            // Clear persisted data
+            try {
+                storage.remove(PROFILE_STORAGE_KEY)
+                // Also clear other related storage if needed
+            } catch (e) {
+                console.error('Failed to clear mock storage', e)
+            }
+
             return {
-                code: 401,
-                message: 'Unauthorized',
+                code: 200,
+                message: 'Account deleted successfully',
                 data: null
             }
         }
-    }
-
-    const index = userState.users.findIndex(u => u.id === userState.currentUserId)
-    if (index !== -1) {
-        userState.users.splice(index, 1)
-        userState.currentUserId = null
-
-        // Clear persisted data
-        try {
-            storage.remove(PROFILE_STORAGE_KEY)
-            // Also clear other related storage if needed
-        } catch (e) {
-            console.error('Failed to clear mock storage', e)
-        }
 
         return {
-            code: 200,
-            message: 'Account deleted successfully',
+            code: 404,
+            message: 'User not found',
             data: null
         }
     }
-
-    return {
-        code: 404,
-        message: 'User not found',
-        data: null
-    }
-}
+})

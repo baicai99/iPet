@@ -291,8 +291,8 @@ export function useSummaryData(petId: Ref<string | null>): UseSummaryDataReturn 
                         dailySummaries.value = cachedSnapshot.dailySummaries || {}
                     }
 
-                    // 检查缓存是否过期
-                    const cacheExpired = healthCacheService.isExpired('Summary_Snapshot')
+                    // 检查缓存是否过期 (使用本地定义的 5分钟 TTL)
+                    const cacheExpired = cachedSnapshot ? (Date.now() - cachedSnapshot.timestamp > CACHE_TTL_MS) : true
 
                     // 检查是否为每日首次打开（T5.2）
                     const needDailyRefresh = isFirstOpenToday() && !dailyRefreshTriggered

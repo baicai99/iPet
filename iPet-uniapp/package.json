@@ -48,7 +48,8 @@
     "build:mp-weixin:mock": "npm run build:mp-weixin:preview",
     "postinstall": "node scripts/patch-uni-sourcemap.mjs",
     "type-check": "vue-tsc --noEmit",
-    "check:size:mp-weixin": "node scripts/dist/check-mp-weixin-size.mjs --dist dist/build/mp-weixin --limitBytes 1572864 --warnBytes 1415577"
+    "check:size:mp-weixin": "node scripts/dist/check-mp-weixin-size.mjs --dist dist/build/mp-weixin --limitBytes 1572864 --warnBytes 1415577",
+    "mock:check": "node scripts/check-mock-sync.js"
   },
   "keywords": [],
   "author": "",

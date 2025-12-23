@@ -22,7 +22,7 @@ import type { TrendAnalysis } from './detectSignificantChanges'
  */
 export type TrendStatus =
     | 'insufficient-data'  // 数据采样不足（< 20 天）
-    | 'all-stable'         // 所有指标趋于稳定
+    | 'all-stable'         // 当前所有趋势趋于稳定
     | 'has-trends'         // 存在趋势变化
 
 /**
@@ -73,7 +73,7 @@ const MIN_SAMPLING_DAYS = 20
  *   { step_count: { hasSignificantChange: false, ... } },
  *   25
  * )
- * // => { status: 'all-stable', message: '所有指标趋于稳定' }
+ * // => { status: 'all-stable', message: '当前所有趋势趋于稳定' }
  * 
  * // 场景 3: 有趋势
  * const result = getTrendStatus(
@@ -133,7 +133,7 @@ export function getTrendStatus(
         // 状态 B: 所有指标都稳定
         return {
             status: 'all-stable',
-            message: '所有指标趋于稳定',
+            message: '当前所有趋势趋于稳定',
             changedCount,
             stableCount
         }

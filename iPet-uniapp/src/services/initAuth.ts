@@ -7,7 +7,7 @@ import { usePreferenceStore } from '@/stores/preferenceStore'
 import { getUserProfile } from '@/services/userService'
 import { refreshAuthToken } from '@/services/authService'
 import { useAppStore } from '@/stores/appStore'
-import { IS_MOCK_MODE } from '@/utils/config'
+import { IS_MOCK_MODE, IS_DEV_MODE } from '@/utils/config'
 
 const TOKEN_VALIDATION_BUFFER = 30 * 1000
 
@@ -81,9 +81,19 @@ const performInit = async () => {
             return
         }
 
-        const hydrated = hydrateTokenFromStorage(userStore)
+        let hydrated = hydrateTokenFromStorage(userStore)
 
         // 1. 没有 Token，重定向到登录页
+        if (!hydrated && IS_DEV_MODE) {
+            console.log('[initAuth] Dev mode detected, auto-guest login')
+            try {
+                await userStore.loginAsGuest()
+            } catch (error) {
+                console.warn('[initAuth] Dev mode guest login failed', error)
+            }
+            hydrated = hydrateTokenFromStorage(userStore)
+        }
+
         if (!hydrated) {
             console.log('[initAuth] No token found, redirecting to login')
             appStore.setAppReady(true)
