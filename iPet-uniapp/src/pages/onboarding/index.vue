@@ -18,9 +18,6 @@
         <view class="content-area">
             <!-- Step 1: User Profile -->
             <view class="step-content" v-if="step === 1">
-                <view class="header-section">
-                    <text class="title">完善您的资料</text>
-                </view>
 
                 <view class="form-section">
                     <UserProfileForm ref="userFormRef" v-model="userData" />
@@ -110,9 +107,21 @@ import { healthService } from '@/services/health.service';
 import { usePetCommands } from '@/composables/usePetCommands';
 import { emitDataChanged } from '@/services/syncEvents';
 import { ICONFONT_UNICODE } from '@/utils/ui/iconfont';
+import { onLoad, onUnload } from '@dcloudio/uni-app';
 
 const userStore = useUserStore();
 const petCommands = usePetCommands();
+
+// Onboarding completion flag
+const onboardingCompleted = ref(false);
+
+// Handle Back/Unload
+onUnload(() => {
+    // If unloaded (back button or navigate away) and not completed, logout
+    if (!onboardingCompleted.value) {
+        userStore.logout();
+    }
+});
 
 // --- 状态 ---
 const step = ref(1);
@@ -302,6 +311,9 @@ const handleFinish = async () => {
 
         uni.showToast({ title: '设置成功!', icon: 'success' });
 
+        // Mark as completed so onUnload doesn't logout
+        onboardingCompleted.value = true;
+
         // Delay navigation
         setTimeout(() => {
             uni.reLaunch({
@@ -318,10 +330,46 @@ const handleFinish = async () => {
 };
 </script>
 
+
+
 <style lang="scss" scoped>
 /* Page layout handled by FormPageLayout */
 
+.custom-navbar {
+    background-color: #fff;
+    /* Sticky is handled by layout header slot wrapper */
+
+    .navbar-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 44px;
+        /* Standard navigation bar height */
+        padding: 0 32rpx;
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            width: 44px;
+            /* Touch target */
+        }
+
+        .navbar-title {
+            font-size: 34rpx;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .nav-btn-placeholder {
+            width: 44px;
+        }
+    }
+}
+
 .progress-header {
+    /* ... existing styles ... */
     background-color: #fff;
     padding: 24rpx 32rpx;
     /* Sticky handled by layout header slot */

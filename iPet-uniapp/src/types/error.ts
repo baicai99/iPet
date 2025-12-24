@@ -273,6 +273,36 @@ export class AppError extends Error {
     }
 
     /**
+     * statusCode 别名，指向 httpStatus
+     * 提供向后兼容支持，使得 error.statusCode 和 error.httpStatus 都可用
+     * 
+     * @example
+     * const error = new AppError(ErrorCode.NOT_FOUND, '资源不存在', { httpStatus: 404 })
+     * console.log(error.httpStatus)  // 404
+     * console.log(error.statusCode)  // 404 (通过 getter)
+     */
+    get statusCode(): number | undefined {
+        return this.httpStatus
+    }
+
+    /**
+     * data 别名，兼容旧的错误处理代码
+     * 提供 error.data.message 访问路径
+     * 
+     * @example
+     * const error = new AppError(ErrorCode.NOT_FOUND, '资源不存在')
+     * console.log(error.message)       // '资源不存在'
+     * console.log(error.data.message)  // '资源不存在' (通过 getter)
+     */
+    get data(): { message: string; code?: ErrorCode; statusCode?: number } {
+        return {
+            message: this.message,
+            code: this.code,
+            statusCode: this.httpStatus
+        }
+    }
+
+    /**
      * 判断是否为认证相关错误
      */
     isAuthError(): boolean {

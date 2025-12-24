@@ -78,12 +78,8 @@ export const useUserStore = defineStore('user', () => {
     })
 
     const needsOnboarding = computed(() => {
-        // Mock mode: skip onboarding
-        if (IS_MOCK_MODE) {
-            return false
-        }
-
         // Guest mode: allow exploring without forced onboarding
+        // 游客模式不强制新手引导，让用户自由探索
         if (authMode.value === 'guest') {
             return false
         }
@@ -97,6 +93,7 @@ export const useUserStore = defineStore('user', () => {
         const hasPets = petStore.pets && petStore.pets.length > 0
 
         // 如果既没有完善资料，也没有宠物，就是新用户
+        // ✅ 不管是 dev/prod/mock 模式，只要是新用户就需要引导
         return !hasProfile && !hasPets
     })
 

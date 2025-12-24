@@ -162,16 +162,20 @@ const performInit = async () => {
         const petStore = usePetStore()
         await petStore.fetchPets()
 
-        // [新增] 检查是否需要引导
-        // ⚠️ TEMPORARILY DISABLED: Skip onboarding redirect for debugging
-        // const pages = getCurrentPages()
-        // const currentPage = pages[pages.length - 1]?.route || ''
+        // ✅ 检查是否需要新手引导
+        // 不管是 dev/prod/mock 模式，只要是新用户都需要引导
+        const pages = getCurrentPages()
+        const currentPage = pages[pages.length - 1]?.route || ''
 
-        // if (userStore.needsOnboarding && currentPage !== 'pages/onboarding/index') {
-        //     uni.reLaunch({
-        //         url: '/pages/onboarding/index'
-        //     })
-        // }
+        if (userStore.needsOnboarding && currentPage !== 'pages/onboarding/index') {
+            console.log('[initAuth] New user detected, redirecting to onboarding via login stack')
+            // Redirect to login first to ensure "Back" button works (creates history stack)
+            // The login page will handle the "action=onboard" and navigateTo onboarding
+            uni.reLaunch({
+                url: '/pages/login/index?action=onboard'
+            })
+            return // 跳转后直接返回，不继续执行后续逻辑
+        }
 
         const healthStore = useHealthStore()
 

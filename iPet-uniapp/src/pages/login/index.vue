@@ -1,10 +1,5 @@
 <template>
-  <AuthLayout 
-    title="欢迎回来" 
-    :guest-loading="isGuestLoading"
-    :primary-loading="isLoading"
-    @guest-login="handleGuestLogin"
-  >
+  <AuthLayout title="欢迎回来" :guest-loading="isGuestLoading" :primary-loading="isLoading" @guest-login="handleGuestLogin">
     <!-- Email Input -->
     <view class="input-group">
       <text class="input-label">电子邮箱</text>
@@ -12,14 +7,8 @@
         <view class="input-icon">
           <u-icon name="email" size="20" :color="emailFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
         </view>
-        <input 
-          type="text" 
-          v-model="email" 
-          class="input-field" 
-          placeholder="请输入邮箱" 
-          @focus="emailFocused = true"
-          @blur="emailFocused = false" 
-        />
+        <input type="text" v-model="email" class="input-field" placeholder="请输入邮箱" @focus="emailFocused = true"
+          @blur="emailFocused = false" />
       </view>
     </view>
 
@@ -30,14 +19,8 @@
         <view class="input-icon">
           <u-icon name="lock" size="20" :color="passwordFocused ? '#4F46E5' : '#94A3B8'"></u-icon>
         </view>
-        <input 
-          :type="showPassword ? 'text' : 'password'" 
-          v-model="password" 
-          class="input-field"
-          placeholder="请输入密码" 
-          @focus="passwordFocused = true" 
-          @blur="passwordFocused = false" 
-        />
+        <input :type="showPassword ? 'text' : 'password'" v-model="password" class="input-field" placeholder="请输入密码"
+          @focus="passwordFocused = true" @blur="passwordFocused = false" />
         <view class="password-toggle" @click="showPassword = !showPassword">
           <u-icon :name="showPassword ? 'eye-off' : 'eye'" size="20" color="#94A3B8"></u-icon>
         </view>
@@ -45,13 +28,8 @@
     </view>
 
     <!-- Primary Button -->
-    <button 
-      class="primary-btn" 
-      :class="{ 'loading': isLoading }" 
-      :disabled="isLoading" 
-      @click="handleLogin"
-      hover-class="primary-btn-hover"
-    >
+    <button class="primary-btn" :class="{ 'loading': isLoading }" :disabled="isLoading" @click="handleLogin"
+      hover-class="primary-btn-hover">
       <u-loading-icon v-if="isLoading" mode="circle" size="18" color="#ffffff"></u-loading-icon>
       <text class="btn-text">{{ isLoading ? '登录中...' : '立即登录' }}</text>
     </button>
@@ -97,6 +75,14 @@ const userStore = useUserStore();
 const TAB_PAGES = ['/pages/summary/summary', '/pages/my/my'];
 
 onLoad((options) => {
+  // Handle immediate onboard action (from initAuth)
+  if (options?.action === 'onboard') {
+    // Navigate to onboarding immediately
+    // This creates a history stack: Login -> Onboarding
+    uni.navigateTo({ url: '/pages/onboarding/index' });
+    return;
+  }
+
   const redirectParam = options?.redirect ? decodeURIComponent(options.redirect) : '';
   redirectTarget.value = redirectParam;
 });
@@ -142,7 +128,7 @@ const handleLogin = async () => {
     await petStore.fetchPets();
 
     if (userStore.needsOnboarding) {
-      uni.reLaunch({ url: '/pages/onboarding/index' });
+      uni.navigateTo({ url: '/pages/onboarding/index' });
     } else {
       navigateAfterLogin();
     }
