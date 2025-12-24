@@ -5,6 +5,7 @@ import { json, urlencoded } from 'express';
 import compression from 'compression';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
+import { SystemHealthService } from './system-health/system-health.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -43,6 +44,16 @@ async function bootstrap() {
   app.use(urlencoded({ extended: true, limit: bodyLimit }));
   app.use(compression());
   app.enableCors(corsOptions);
+
+  // Log version fingerprint at startup
+  const fingerprint = SystemHealthService.getVersionFingerprint();
+  console.log('🚀 iPet Backend Starting');
+  console.log(`   env: ${fingerprint.env}`);
+  console.log(`   version: ${fingerprint.version}`);
+  console.log(`   commit: ${fingerprint.commit}`);
+  console.log(`   buildTime: ${fingerprint.buildTime}`);
+
   await app.listen(port);
+  console.log(`✅ Server listening on port ${port}`);
 }
 bootstrap();

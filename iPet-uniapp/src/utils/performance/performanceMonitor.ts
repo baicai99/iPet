@@ -29,6 +29,8 @@ interface ApiMetric {
     duration: number
     status: number
     timestamp: number
+    /** 请求追踪 ID */
+    requestId?: string
 }
 
 /** 页面加载指标 */
@@ -126,8 +128,9 @@ class PerformanceMonitorImpl {
 
     /**
      * 记录 API 请求耗时
+     * @param requestId 可选的请求追踪 ID
      */
-    trackApiCall(url: string, method: string, duration: number, status: number): void {
+    trackApiCall(url: string, method: string, duration: number, status: number, requestId?: string): void {
         if (!this.enabled) return
 
         const metric: ApiMetric = {
@@ -136,11 +139,13 @@ class PerformanceMonitorImpl {
             method: method.toUpperCase(),
             duration,
             status,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            requestId
         }
 
         this.addMetric(metric)
-        this.logDev('api', `${method.toUpperCase()} ${url} ${duration}ms (${status})`)
+        const reqIdStr = requestId ? ` [${requestId.slice(0, 8)}]` : ''
+        this.logDev('api', `${method.toUpperCase()} ${url} ${duration}ms (${status})${reqIdStr}`)
     }
 
     /**

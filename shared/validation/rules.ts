@@ -83,3 +83,38 @@ export const isValidNicknameLength = (nickname: string): boolean => {
     const trimmed = nickname.trim();
     return trimmed.length >= NICKNAME_MIN_LENGTH && trimmed.length <= NICKNAME_MAX_LENGTH;
 };
+
+// ==================== Validation Messages ====================
+/**
+ * 统一校验错误消息
+ * 确保前后端显示一致的校验提示
+ */
+export const VALIDATION_MESSAGES = {
+    // Email
+    EMAIL_REQUIRED: '邮箱不能为空',
+    EMAIL_INVALID: '请输入有效的邮箱地址',
+
+    // Password
+    PASSWORD_REQUIRED: '密码不能为空',
+    PASSWORD_TOO_SHORT: `密码至少需要${PASSWORD_MIN_LENGTH}位`,
+    PASSWORD_TOO_LONG: `密码不能超过${PASSWORD_MAX_LENGTH}位`,
+    PASSWORD_INVALID: '密码需包含字母和数字，且不允许空格',
+
+    // Confirm Password
+    PASSWORDS_NOT_MATCH: '两次输入的密码不一致',
+
+    // Form
+    FORM_INCOMPLETE: '请填写所有字段',
+    EMAIL_AND_PASSWORD_REQUIRED: '邮箱和密码不能为空',
+
+    // Nickname
+    NICKNAME_TOO_SHORT: `昵称至少需要${NICKNAME_MIN_LENGTH}个字符`,
+    NICKNAME_TOO_LONG: `昵称不能超过${NICKNAME_MAX_LENGTH}个字符`,
+    NICKNAME_CONTAINS_SENSITIVE: '昵称包含敏感词汇',
+
+    // Verification Code
+    CODE_REQUIRED: '验证码不能为空',
+    CODE_INVALID: '请输入6位数字验证码',
+} as const;
+
+export type ValidationMessageKey = keyof typeof VALIDATION_MESSAGES;

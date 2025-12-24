@@ -17,9 +17,14 @@
     "lint:check": "eslint \"src-backend/**/*.ts\"",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:status": "prisma migrate status",
+    "ci:gate:migrations": "bash scripts/ci_gate_migrations.sh",
     "seed:k6": "ts-node scripts/seed_k6.ts",
     "backfill:health-buckets": "ts-node scripts/backfill_health_metric_buckets.ts",
-    "pack": "bash pack_deploy.sh"
+    "pack": "bash pack_deploy.sh",
+    "contract:validate": "node ../scripts/validate-contract.js",
+    "contract:types": "node ../scripts/generate-api-types.js"
   },
   "dependencies": {
     "@keyv/redis": "^5.1.5",

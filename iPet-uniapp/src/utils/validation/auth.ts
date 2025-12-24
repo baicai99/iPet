@@ -1,18 +1,18 @@
 /**
  * 认证相关表单验证工具
  * 
- * 统一登录/注册页面的验证逻辑，消除重复代码
+ * 统一登录/注册页面的验证逻辑，使用共享校验规则
  */
 
 // ============================================================================
-// 正则表达式
+// 从共享包导入
 // ============================================================================
 
-/** 邮箱正则 */
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-/** 密码正则：至少 8 位，需包含字母和数字，不含空白字符 */
-export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/
+import {
+    isValidEmail as sharedIsValidEmail,
+    validatePassword as sharedValidatePassword,
+    VALIDATION_MESSAGES,
+} from '../../../../shared/validation';
 
 // ============================================================================
 // 类型定义
@@ -22,6 +22,9 @@ export interface ValidationResult {
     valid: boolean
     message?: string
 }
+
+// Re-export shared regex for backward compatibility
+export { EMAIL_REGEX, PASSWORD_REGEX } from '../../../../shared/validation';
 
 // ============================================================================
 // 验证函数
@@ -42,10 +45,10 @@ export interface ValidationResult {
 export function validateEmail(email: string): ValidationResult {
     const trimmed = email.trim()
     if (!trimmed) {
-        return { valid: false, message: '邮箱不能为空' }
+        return { valid: false, message: VALIDATION_MESSAGES.EMAIL_REQUIRED }
     }
-    if (!EMAIL_REGEX.test(trimmed)) {
-        return { valid: false, message: '请输入有效的邮箱地址' }
+    if (!sharedIsValidEmail(trimmed)) {
+        return { valid: false, message: VALIDATION_MESSAGES.EMAIL_INVALID }
     }
     return { valid: true }
 }
@@ -59,13 +62,15 @@ export function validateEmail(email: string): ValidationResult {
 export function validatePassword(password: string): ValidationResult {
     const trimmed = password.trim()
     if (!trimmed) {
-        return { valid: false, message: '密码不能为空' }
+        return { valid: false, message: VALIDATION_MESSAGES.PASSWORD_REQUIRED }
     }
-    if (!PASSWORD_REGEX.test(trimmed)) {
-        return { valid: false, message: '密码至少 8 位，需包含字母和数字' }
+    const result = sharedValidatePassword(trimmed)
+    if (!result.isValid) {
+        return { valid: false, message: result.error ?? VALIDATION_MESSAGES.PASSWORD_INVALID }
     }
     return { valid: true }
 }
+
 
 /**
  * 验证确认密码
@@ -79,7 +84,7 @@ export function validateConfirmPassword(
     confirmPassword: string
 ): ValidationResult {
     if (password.trim() !== confirmPassword.trim()) {
-        return { valid: false, message: '两次输入的密码不一致' }
+        return { valid: false, message: VALIDATION_MESSAGES.PASSWORDS_NOT_MATCH }
     }
     return { valid: true }
 }
@@ -99,7 +104,7 @@ export function validateLoginForm(
     const trimmedPassword = password.trim()
 
     if (!trimmedEmail || !trimmedPassword) {
-        return { valid: false, message: '邮箱和密码不能为空' }
+        return { valid: false, message: VALIDATION_MESSAGES.EMAIL_AND_PASSWORD_REQUIRED }
     }
 
     const emailResult = validateEmail(trimmedEmail)
@@ -129,7 +134,7 @@ export function validateRegisterForm(
     const trimmedConfirm = confirmPassword.trim()
 
     if (!trimmedEmail || !trimmedPassword || !trimmedConfirm) {
-        return { valid: false, message: '请填写所有字段' }
+        return { valid: false, message: VALIDATION_MESSAGES.FORM_INCOMPLETE }
     }
 
     const emailResult = validateEmail(trimmedEmail)

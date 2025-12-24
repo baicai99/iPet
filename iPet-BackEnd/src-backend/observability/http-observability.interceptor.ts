@@ -20,13 +20,26 @@ const resolveRouteLabel = (req: Request): string => {
   return `${method} ${path}`;
 };
 
+const extractClientIp = (req: Request): string => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') {
+    const first = forwarded.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  if (Array.isArray(forwarded) && forwarded.length > 0) {
+    const first = forwarded[0]?.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+};
+
 @Injectable()
 export class HttpObservabilityInterceptor implements NestInterceptor {
   constructor(
     private readonly metrics: HttpMetricsService,
     private readonly logger: ObservabilityLogger,
     private readonly prom: PrometheusMetricsService,
-  ) {}
+  ) { }
 
   intercept(context: ExecutionContext, next: CallHandler) {
     if (context.getType() !== 'http') {
@@ -42,6 +55,8 @@ export class HttpObservabilityInterceptor implements NestInterceptor {
     const requestId = (req as any).requestId;
     const method = (req.method || '').toUpperCase();
     const url = stripQuery(req.originalUrl || req.url || '');
+    const ip = extractClientIp(req);
+
 
     return next.handle().pipe(
       catchError((error) => {
@@ -69,6 +84,7 @@ export class HttpObservabilityInterceptor implements NestInterceptor {
           url,
           statusCode,
           durationMs: Math.round(durationMs * 100) / 100,
+          ip,
           error: error?.message || String(error),
         });
         logged = true;
@@ -98,6 +114,7 @@ export class HttpObservabilityInterceptor implements NestInterceptor {
           statusCode,
           durationMs: Math.round(durationMs * 100) / 100,
           userId: (req as any).user?.uid,
+          ip,
         });
       }),
     );

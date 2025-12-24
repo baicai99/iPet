@@ -1,0 +1,9 @@
+{
+    "mode": "production",
+    "platform": "h5",
+    "apiBaseUrl": "https://api.zhengjiyuan.top/api",
+    "buildTime": "2025-12-25T04:17:26.000Z",
+    "gitCommit": "61739586058567a3cdae82622bd62c08323fad28",
+    "gitCommitShort": "6173958",
+    "version": "1.0.0"
+}

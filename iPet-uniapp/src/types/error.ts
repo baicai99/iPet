@@ -6,11 +6,27 @@
  */
 
 // ============================================================================
-// 错误码枚举
+// 从共享包导入统一错误码
+// ============================================================================
+
+import {
+    ErrorCode as SharedErrorCode,
+    ERROR_MESSAGES as SHARED_ERROR_MESSAGES,
+    mapHttpStatusToErrorCode as sharedMapHttpStatusToErrorCode,
+    getErrorMessage,
+} from '../../../shared/validation/error-codes';
+
+// Re-export for convenience
+export { SharedErrorCode, SHARED_ERROR_MESSAGES, getErrorMessage };
+
+// ============================================================================
+// Legacy 错误码枚举 (保持向后兼容)
 // ============================================================================
 
 /**
- * 业务错误码枚举
+ * 业务错误码枚举 (Legacy - 数字格式)
+ * 
+ * @deprecated 请使用 SharedErrorCode (字符串格式)
  * 
  * 分类规则：
  * - 1xxxx: 通用错误
@@ -59,6 +75,55 @@ export enum ErrorCode {
 }
 
 // ============================================================================
+// Legacy → Shared 错误码映射
+// ============================================================================
+
+/**
+ * 字符串错误码 → Legacy 数字错误码映射
+ */
+export const SHARED_TO_LEGACY_CODE: Record<SharedErrorCode, ErrorCode> = {
+    [SharedErrorCode.SUCCESS]: ErrorCode.SUCCESS,
+    [SharedErrorCode.UNKNOWN]: ErrorCode.UNKNOWN,
+    [SharedErrorCode.INVALID_PARAMS]: ErrorCode.INVALID_PARAMS,
+    [SharedErrorCode.VALIDATION_ERROR]: ErrorCode.INVALID_PARAMS,
+    [SharedErrorCode.RATE_LIMIT]: ErrorCode.RATE_LIMIT,
+
+    [SharedErrorCode.AUTH_UNAUTHORIZED]: ErrorCode.TOKEN_INVALID,
+    [SharedErrorCode.AUTH_TOKEN_EXPIRED]: ErrorCode.TOKEN_EXPIRED,
+    [SharedErrorCode.AUTH_REFRESH_EXPIRED]: ErrorCode.REFRESH_TOKEN_EXPIRED,
+    [SharedErrorCode.AUTH_LOGIN_FAILED]: ErrorCode.LOGIN_FAILED,
+    [SharedErrorCode.AUTH_USER_NOT_FOUND]: ErrorCode.USER_NOT_FOUND,
+    [SharedErrorCode.AUTH_ACCOUNT_DISABLED]: ErrorCode.ACCOUNT_DISABLED,
+
+    [SharedErrorCode.PERM_FORBIDDEN]: ErrorCode.FORBIDDEN,
+    [SharedErrorCode.PERM_NOT_OWNER]: ErrorCode.NOT_OWNER,
+    [SharedErrorCode.PERM_GUEST_RESTRICTED]: ErrorCode.GUEST_RESTRICTED,
+
+    [SharedErrorCode.RES_NOT_FOUND]: ErrorCode.NOT_FOUND,
+    [SharedErrorCode.RES_DELETED]: ErrorCode.DELETED,
+    [SharedErrorCode.RES_EXPIRED]: ErrorCode.EXPIRED,
+    [SharedErrorCode.RES_CONFLICT]: ErrorCode.CONFLICT,
+
+    [SharedErrorCode.BIZ_PET_LIMIT]: ErrorCode.PET_LIMIT_EXCEEDED,
+    [SharedErrorCode.BIZ_HEALTH_NOT_FOUND]: ErrorCode.HEALTH_RECORD_NOT_FOUND,
+    [SharedErrorCode.BIZ_SYNC_FAILED]: ErrorCode.SYNC_FAILED,
+    [SharedErrorCode.BIZ_GUEST_NOT_UPGRADABLE]: ErrorCode.FORBIDDEN,
+    [SharedErrorCode.BIZ_EMAIL_ALREADY_BOUND]: ErrorCode.CONFLICT,
+
+    [SharedErrorCode.CLIENT_NETWORK]: ErrorCode.NETWORK_ERROR,
+    [SharedErrorCode.CLIENT_TIMEOUT]: ErrorCode.TIMEOUT,
+    [SharedErrorCode.CLIENT_OFFLINE]: ErrorCode.OFFLINE,
+    [SharedErrorCode.CLIENT_ABORTED]: ErrorCode.ABORTED,
+};
+
+/**
+ * 将共享错误码转换为 Legacy 错误码
+ */
+export function toLegacyErrorCode(sharedCode: SharedErrorCode): ErrorCode {
+    return SHARED_TO_LEGACY_CODE[sharedCode] ?? ErrorCode.UNKNOWN;
+}
+
+// ============================================================================
 // 错误消息映射
 // ============================================================================
 
@@ -103,6 +168,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     [ErrorCode.ABORTED]: '请求已取消',
 }
 
+
 // ============================================================================
 // AppError 类
 // ============================================================================
@@ -111,6 +177,8 @@ export interface AppErrorOptions {
     httpStatus?: number
     details?: Record<string, any>
     cause?: Error
+    /** 请求追踪 ID，用于与后端日志关联 */
+    requestId?: string
 }
 
 /**
@@ -127,6 +195,8 @@ export class AppError extends Error {
     readonly code: ErrorCode
     readonly httpStatus?: number
     readonly details?: Record<string, any>
+    /** 请求追踪 ID，用于与后端日志关联 */
+    readonly requestId?: string
 
     constructor(code: ErrorCode, message?: string, options?: AppErrorOptions) {
         super(message ?? ERROR_MESSAGES[code] ?? '未知错误')
@@ -134,6 +204,7 @@ export class AppError extends Error {
         this.code = code
         this.httpStatus = options?.httpStatus
         this.details = options?.details
+        this.requestId = options?.requestId
 
         // 保持原因链
         if (options?.cause) {
@@ -143,6 +214,7 @@ export class AppError extends Error {
 
     /**
      * 从 HTTP 响应创建 AppError
+     * 支持后端返回的字符串错误码和 Legacy 数字错误码
      */
     static fromResponse(res: {
         statusCode: number
@@ -150,8 +222,20 @@ export class AppError extends Error {
     }): AppError {
         const { statusCode, data } = res
 
-        // 尝试解析业务错误码
-        const bizCode = (data?.code as ErrorCode) ?? mapHttpStatusToErrorCode(statusCode)
+        // 尝试解析业务错误码（支持字符串和数字格式）
+        let bizCode: ErrorCode
+        const backendCode = data?.code
+
+        if (typeof backendCode === 'string') {
+            // 新格式：字符串错误码，转换为 Legacy 格式
+            bizCode = toLegacyErrorCode(backendCode as SharedErrorCode)
+        } else if (typeof backendCode === 'number') {
+            // Legacy 格式：直接使用
+            bizCode = backendCode as ErrorCode
+        } else {
+            // 根据 HTTP 状态码推断
+            bizCode = mapHttpStatusToErrorCode(statusCode)
+        }
 
         // 获取错误消息（优先使用服务端消息）
         let message = data?.message
@@ -162,7 +246,8 @@ export class AppError extends Error {
 
         return new AppError(bizCode, message, {
             httpStatus: statusCode,
-            details: data?.errors
+            details: data?.errors,
+            requestId: data?.requestId
         })
     }
 

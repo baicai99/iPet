@@ -165,12 +165,21 @@ const hasPermission = (url: string) => {
     return { allowed: true }
 }
 
+// Flag to prevent intercepting redirects triggered by permission checks
+let isInternalRedirect = false
+
 export function initPermission() {
     const list = ['navigateTo', 'redirectTo', 'reLaunch', 'switchTab']
 
     list.forEach(item => {
         uni.addInterceptor(item, {
             invoke(e) {
+                // Skip permission check for internal redirects (login, register, onboarding)
+                // This prevents infinite recursion
+                if (isInternalRedirect) {
+                    return true
+                }
+
                 // Get the target url
                 const url = e.url
 
@@ -180,7 +189,14 @@ export function initPermission() {
                     return true
                 }
 
+                // Set flag before triggering redirect to prevent recursion
+                isInternalRedirect = true
                 handleUnauthorized(result.reason, url)
+                // Reset flag after a short delay to allow subsequent user-initiated navigation
+                setTimeout(() => {
+                    isInternalRedirect = false
+                }, 100)
+
                 return false
             },
             fail(err) {

@@ -16,6 +16,8 @@ import { createGuestSession, logoutUser, upgradeGuestAccount } from '@/services/
 import { CacheManager } from '@/utils/cache/CacheManager'
 import { healthCacheService } from '@/services/healthCacheService'
 import { IS_MOCK_MODE } from '@/utils/config'
+import { useAuthStateMachine } from '@/auth'
+import type { TokenInfo } from '@/auth'
 
 const DEFAULT_STATS: UserStats = {
     daysWithPet: 0,
@@ -123,10 +125,24 @@ export const useUserStore = defineStore('user', () => {
     }
 
     async function login(newToken: string, expiresAt: number | null, userInfo: Partial<AccountInfo>) {
+        const authMachine = useAuthStateMachine()
+        const isGuest = (userInfo as any)?.isGuest ?? false
+
         setToken(newToken, expiresAt)
         updateUserInfo(userInfo)
+
         if (newToken) {
-            authMode.value = (userInfo as any)?.isGuest ? 'guest' : 'user'
+            authMode.value = isGuest ? 'guest' : 'user'
+
+            // Dispatch to state machine for logging
+            const tokenInfo: TokenInfo = {
+                accessToken: newToken,
+                expiresAt,
+                isGuest
+            }
+            const event = isGuest ? 'LOGIN_GUEST_SUCCESS' : 'LOGIN_USER_SUCCESS'
+            const reason = isGuest ? 'guest_login_success' : 'user_login_success'
+            authMachine.dispatch(event, reason, { tokenUpdate: tokenInfo })
         } else {
             authMode.value = 'none'
         }
@@ -162,6 +178,8 @@ export const useUserStore = defineStore('user', () => {
     }
 
     function clearLocalSession() {
+        const authMachine = useAuthStateMachine()
+
         // Clear local session state without calling backend
         authMode.value = 'none'
         token.value = ''
@@ -171,12 +189,17 @@ export const useUserStore = defineStore('user', () => {
         transactionHistory.value = []
         clearAuthToken()
 
+        // Reset state machine
+        authMachine.dispatch('LOGOUT', 'user_logout')
+
         // Also clear other stores
         resetBusinessStores()
         resetAppCaches()
     }
 
     async function logout() {
+        const authMachine = useAuthStateMachine()
+
         try {
             // Try to call backend logout, but don't block local cleanup if it fails
             await logoutUser()
@@ -207,6 +230,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     async function upgradeGuestToUser(email: string, password: string) {
+        const authMachine = useAuthStateMachine()
         const result = await upgradeGuestAccount({ email, password })
 
         // Mode switch: clear caches/stores, but keep auth tokens we just received
@@ -221,6 +245,15 @@ export const useUserStore = defineStore('user', () => {
             updatedAt: Date.now(),
             isGuest: false
         } as any)
+
+        // Dispatch upgrade success event
+        authMachine.dispatch('UPGRADE_SUCCESS', 'guest_upgrade_success', {
+            tokenUpdate: {
+                accessToken: result.accessToken,
+                expiresAt: result.expiresAt ?? null,
+                isGuest: false
+            }
+        })
 
         const petStore = usePetStore()
         await petStore.fetchPets()

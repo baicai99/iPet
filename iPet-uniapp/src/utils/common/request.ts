@@ -9,6 +9,7 @@ import { AppError, ErrorCode } from '@/types/error'
 import { showError } from './errorHandler'
 import { performanceMonitor } from '@/utils/performance/performanceMonitor'
 import { handleMockRequest } from './mockRegistry'
+import { generateRequestId } from '@/utils/http/generateRequestId'
 
 const BASE_URL = APP_CONFIG.API_BASE_URL
 
@@ -16,10 +17,10 @@ const BASE_URL = APP_CONFIG.API_BASE_URL
  * Legacy Path Mapping
  * Backend routes that are NOT under /api prefix.
  * These paths will be resolved without the /api prefix.
- * TODO: Remove entries after backend migrates them to /api.
+ * NOTE: All routes are now unified under /api prefix.
  */
-const LEGACY_PATHS = new Set([
-    '/users/register'  // Backend route: /users/register (not /api/users/register)
+const LEGACY_PATHS = new Set<string>([
+    // All routes now use /api prefix - no legacy paths needed
 ])
 
 /**
@@ -406,7 +407,7 @@ const triggerTokenRefresh = () => {
     return refreshPromise
 }
 
-const handleError = (status: number, data: any, skipToast = false): AppError => {
+const handleError = (status: number, data: any, skipToast = false, requestId?: string): AppError => {
     // 尝试解析业务错误码
     let bizCode: ErrorCode = ErrorCode.UNKNOWN
 
@@ -445,9 +446,13 @@ const handleError = (status: number, data: any, skipToast = false): AppError => 
         message = message.join(', ')
     }
 
+    // 优先使用后端返回的 requestId，否则使用前端生成的
+    const finalRequestId = data?.requestId || requestId
+
     const error = new AppError(bizCode, message || undefined, {
         httpStatus: status,
-        details: data?.errors
+        details: data?.errors,
+        requestId: finalRequestId
     })
 
     // 显示 Toast（除非跳过）
@@ -480,6 +485,15 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
     const header: Record<string, any> = {
         'Content-Type': 'application/json',
         ...config.header
+    }
+
+    // 生成请求追踪 ID
+    const requestId = generateRequestId()
+    header['X-Request-Id'] = requestId
+
+    // 开发环境输出请求 ID
+    if (import.meta.env.DEV) {
+        console.log(`[Request] 🔗 ${config.url} | X-Request-Id: ${requestId}`)
     }
 
     const token = getAccessToken()
@@ -574,7 +588,7 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
                     const isSuccess = statusCode >= 200 && statusCode < 300
                     const isNotModified = statusCode === 304
 
-                    performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, statusCode)
+                    performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, statusCode, requestId)
 
                     if (config.rawResponse) {
                         if (isSuccess || isNotModified) {
@@ -611,7 +625,7 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
                         return
                     }
 
-                    const error = handleError(statusCode, data, config.skipErrorHandle)
+                    const error = handleError(statusCode, data, config.skipErrorHandle, requestId)
                     finish(() => reject(error))
                 },
                 fail: (err) => {
@@ -620,7 +634,7 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
                     const duration = Date.now() - requestStartTime
                     const errMsg = err?.errMsg ?? ''
 
-                    performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, 0)
+                    performanceMonitor.trackApiCall(config.url, config.method || 'GET', duration, 0, requestId)
 
                     if (errMsg === 'request:fail abort') {
                         finish(() => reject(new AppError(ErrorCode.ABORTED)))

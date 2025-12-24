@@ -38,6 +38,8 @@ export default defineConfig(({ mode }) => {
                 gzipSize: true,
                 brotliSize: true,
             }),
+            // Plugin mount point for Agent 5 build-meta integration
+            // Example: buildMetaPlugin() - generates build metadata for deployment
         ],
         esbuild: {
             target: 'es2020'
@@ -47,11 +49,15 @@ export default defineConfig(({ mode }) => {
             minify: 'terser',
             terserOptions: {
                 compress: {
-                    // In development mode build, keep console for debugging Mock
-                    // In production mode, drop console for smaller bundle
-                    drop_console: isProduction,
+                    // Don't use drop_console - it removes ALL console including warn/error
+                    // Instead, selectively remove only log and debug via pure_funcs
+                    // This preserves console.warn and console.error for production error monitoring
+                    drop_console: false,
                     drop_debugger: true,
-                    pure_funcs: isProduction ? ['console.log'] : []
+                    pure_funcs: isProduction ? [
+                        'console.log',
+                        'console.debug'
+                    ] : []
                 }
             },
             rollupOptions: {

@@ -1,0 +1,541 @@
+openapi: 3.0.3
+info:
+  title: iPet API
+  description: |
+    iPet 宠物管理应用 API 契约规范。
+    
+    本文档是接口的 Single Source of Truth (SSOT)，前后端必须遵守。
+  version: 1.0.0
+  contact:
+    name: iPet 后端团队
+
+servers:
+  - url: https://api.zhengjiyuan.top/api
+    description: 生产环境
+  - url: http://localhost:3000/api
+    description: 本地开发
+
+tags:
+  - name: Auth
+    description: 认证相关接口
+  - name: Users
+    description: 用户管理接口
+
+paths:
+  # ==================== Auth 模块 ====================
+  /auth/guest:
+    post:
+      tags: [Auth]
+      summary: 游客登录
+      description: 创建游客会话，返回临时访问令牌
+      operationId: createGuestSession
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                  description: 设备唯一标识
+                  example: "device-uuid-12345"
+                origin:
+                  type: string
+                  description: 来源平台
+                  example: "miniprogram"
+      responses:
+        '200':
+          description: 游客会话创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensResponse'
+        '429':
+          description: 请求频率限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 邮箱密码登录
+      description: 使用邮箱和密码进行用户登录
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensWithUserResponse'
+        '401':
+          description: 邮箱或密码错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: 请求频率限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 登出
+      description: 用户登出，清除会话
+      operationId: logout
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: 刷新 Token
+      description: 使用 refreshToken 获取新的 accessToken
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  description: 刷新令牌
+                  example: "eyJhbGciOiJIUzI1NiIs..."
+      responses:
+        '200':
+          description: Token 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensResponse'
+        '401':
+          description: refreshToken 无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /auth/upgrade:
+    post:
+      tags: [Auth]
+      summary: 游客升级正式账号
+      description: 将游客账号升级为使用邮箱密码的正式账号
+      operationId: upgradeGuestAccount
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpgradeRequest'
+      responses:
+        '200':
+          description: 升级成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensWithUserResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ==================== Users 模块 ====================
+  /users/register:
+    post:
+      tags: [Users]
+      summary: 用户注册
+      description: 创建新用户账号
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokensWithUserResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 邮箱已被注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: 获取当前用户
+      description: 获取当前登录用户的详细信息
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /users/verify:
+    post:
+      tags: [Users]
+      summary: 实名认证
+      description: 提交实名认证信息
+      operationId: verifyIdentity
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [realName, idCard]
+              properties:
+                realName:
+                  type: string
+                  description: 真实姓名
+                  example: "张三"
+                idCard:
+                  type: string
+                  description: 身份证号
+                  example: "110101199001011234"
+      responses:
+        '200':
+          description: 认证成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /users/settings:
+    post:
+      tags: [Users]
+      summary: 更新设置
+      description: 更新用户设置
+      operationId: updateSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [settings]
+              properties:
+                settings:
+                  type: object
+                  description: 设置对象
+                  additionalProperties: true
+      responses:
+        '200':
+          description: 设置更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /users/profile:
+    put:
+      tags: [Users]
+      summary: 更新个人资料
+      description: 更新用户个人资料信息
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: 资料更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /users/account:
+    delete:
+      tags: [Users]
+      summary: 删除账号
+      description: 永久删除用户账号
+      operationId: deleteAccount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 账号删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Account deleted successfully"
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT 访问令牌
+
+  schemas:
+    # ==================== Request Schemas ====================
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 用户邮箱
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: 用户密码
+          example: "password123"
+
+    UpgradeRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 升级后的邮箱
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: 设置的密码
+          example: "password123"
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 注册邮箱
+          example: "newuser@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: 注册密码
+          example: "password123"
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 50
+          description: 显示名称
+          example: "Tom"
+        avatar:
+          type: string
+          description: 头像 URL
+          example: "https://example.com/avatar.jpg"
+        bio:
+          type: string
+          maxLength: 200
+          description: 个人简介
+          example: "爱宠人士"
+        mbti:
+          type: string
+          description: MBTI 类型
+          example: "INFJ"
+        tags:
+          type: array
+          items:
+            type: string
+          description: 用户标签
+          example: ["猫奴", "铲屎官"]
+
+    # ==================== Response Schemas ====================
+    AuthTokensResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: 访问令牌
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        refreshToken:
+          type: string
+          description: 刷新令牌
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        expiresIn:
+          type: integer
+          description: accessToken 有效期（秒）
+          example: 3600
+
+    AuthTokensWithUserResponse:
+      allOf:
+        - $ref: '#/components/schemas/AuthTokensResponse'
+        - type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 用户 ID
+          example: "clxyz123abc"
+        email:
+          type: string
+          format: email
+          description: 用户邮箱
+          example: "user@example.com"
+        displayName:
+          type: string
+          description: 显示名称
+          example: "Tom"
+        avatar:
+          type: string
+          nullable: true
+          description: 头像 URL
+          example: "https://example.com/avatar.jpg"
+        bio:
+          type: string
+          nullable: true
+          description: 个人简介
+          example: "爱宠人士"
+        isGuest:
+          type: boolean
+          description: 是否为游客账号
+          example: false
+        isVerified:
+          type: boolean
+          description: 是否已实名认证
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间 (ISO 8601)
+          example: "2025-12-18T06:52:28.000Z"
+
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务错误码
+          example: 20001
+        message:
+          type: string
+          description: 错误信息
+          example: "Token is invalid"
+        requestId:
+          type: string
+          description: 请求追踪 ID
+          example: "req-uuid-12345"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: 错误字段
+              message:
+                type: string
+                description: 字段级错误信息
+          description: 详细错误信息（可选）

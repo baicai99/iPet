@@ -56,6 +56,7 @@ export function showError(error: AppError | Error | unknown, options?: ShowError
             message: appError.message,
             httpStatus: appError.httpStatus,
             details: appError.details,
+            requestId: appError.requestId,
             cause: appError.cause
         })
     }

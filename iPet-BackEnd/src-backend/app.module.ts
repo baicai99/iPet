@@ -25,6 +25,8 @@ import { Keyv } from 'keyv';
 import { createKeyv as createKeyvRedis } from '@keyv/redis';
 import { ObservabilityModule } from './observability/observability.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { SystemHealthModule } from './system-health/system-health.module';
+import { InfraModule } from './infra/infra.module';
 
 @Module({
   imports: [
@@ -75,6 +77,8 @@ import { MetricsModule } from './metrics/metrics.module';
     ArticleModule,
     SystemConfigModule,
     HealthScheduleModule,
+    SystemHealthModule,
+    InfraModule,
   ],
   controllers: [AppController],
   providers: [

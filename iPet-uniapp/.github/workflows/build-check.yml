@@ -7,9 +7,15 @@ on:
     branches: [main]
 
 jobs:
-  build-mp-weixin:
-    name: Build WeChat Mini Program
+  build-matrix:
+    name: Build ${{ matrix.platform }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - h5
+          - mp-weixin
     
     steps:
       - name: Checkout code
@@ -26,20 +32,22 @@ jobs:
         working-directory: ./iPet-uniapp
         run: npm ci
       
+      - name: Validate Environment (Production)
+        working-directory: ./iPet-uniapp
+        run: npm run check:env:production
+      
       - name: Type check
         working-directory: ./iPet-uniapp
         run: npm run type-check
       
-      - name: Build WeChat Mini Program
+      - name: Build ${{ matrix.platform }}
         working-directory: ./iPet-uniapp
-        run: npm run build:mp-weixin
+        run: npm run build:${{ matrix.platform }}
       
-      - name: Check package size
+      - name: Check WeChat Mini Program size
+        if: matrix.platform == 'mp-weixin'
         working-directory: ./iPet-uniapp
-        run: |
-          # 检测微信小程序“主包”大小（不包含分包；插件不计入本仓构建产物）
-          # 主包限制: 1.5MB = 1572864 bytes
-          node scripts/dist/check-mp-weixin-size.mjs --dist dist/build/mp-weixin --limitBytes 1572864 --warnBytes 1415577
+        run: npm run check:size:mp-weixin
 
   # 依赖安全审计 (可选，仅在 PR 时运行)
   security-audit:

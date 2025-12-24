@@ -25,17 +25,6 @@ ON "HealthRecord"("petId", "date" DESC)
 WHERE "deleted" = false;
 
 -- ============================================================
--- HealthSchedule Table Indexes
--- ============================================================
-
--- Index for active schedules per pet
--- Covers: findAll(petId) with isActive filter and date ordering
--- Expected improvement: ~60-80% faster schedule queries
-CREATE INDEX IF NOT EXISTS "idx_health_schedule_pet_active" 
-ON "HealthSchedule"("petId", "isActive", "date" ASC)
-WHERE "isActive" = true;
-
--- ============================================================
 -- Article Table Indexes
 -- ============================================================
 

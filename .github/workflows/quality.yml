@@ -20,3 +20,37 @@ jobs:
           cache-dependency-path: iPet-BackEnd/package-lock.json
       - run: npm ci
       - run: npm run build
+
+  # ========================================
+  # 🔒 GATE: API Contract Validation
+  # ========================================
+  contract-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for PR diff
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install contract validation tools
+        run: npm install @apidevtools/swagger-parser yaml
+
+      - name: Validate OpenAPI contract
+        run: node scripts/validate-contract.js
+
+      - name: Detect contract changes in PR
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 Checking for contract changes..."
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} || echo "")
+          if echo "$CHANGED_FILES" | grep -q 'docs/contracts/'; then
+            echo "::warning::📋 Contract changes detected in this PR. Please ensure frontend/backend are updated accordingly."
+            echo ""
+            echo "Changed contract files:"
+            echo "$CHANGED_FILES" | grep 'docs/contracts/' || true
+          else
+            echo "✅ No contract changes in this PR"
+          fi
