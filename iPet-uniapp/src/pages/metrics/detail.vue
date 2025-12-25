@@ -37,7 +37,8 @@
                 <view class="info-card" v-for="metric in formattedRelatedMetrics" :key="metric.key"
                     @click="navigateToMetric(metric.key)">
                     <view class="card-icon" :style="{ backgroundColor: metric.color.bg }">
-                        <text class="iconfont" :style="{ color: metric.color.hex, fontSize: '20px' }">{{ metric.icon }}</text>
+                        <text class="iconfont" :style="{ color: metric.color.hex, fontSize: '20px' }">{{ metric.icon
+                        }}</text>
                     </view>
                     <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
                             }}</text>
@@ -58,6 +59,9 @@
             <view class="section-card" @click="viewHistory">
                 <HistoryButton :text="metricStrings.HISTORY_CTA" />
             </view>
+
+            <!-- 底部间距 -->
+            <view class="spacer"></view>
         </view>
 
         <!-- Floating Action Button -->
@@ -693,5 +697,10 @@ async function confirmCompletion(e) {
         transform: scale(0.95);
         opacity: 0.9;
     }
+}
+
+/* Bottom Spacer */
+.spacer {
+    margin-bottom: 200rpx;
 }
 </style>

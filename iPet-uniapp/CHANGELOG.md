@@ -3,6 +3,11 @@
 ### 🐛 避免 Summary 接口在未选宠时抛 500
 - [x] `GET /health/summary` 现在在缺失 `petId` 时直接返回空的 `pinnedMetrics`/`trends`/`dailySummaries`，避免用户刚注册/登录还没选宠物时异常涌现并干扰体验（`iPet-BackEnd/src-backend/health/health.controller.ts`）。
 
+### 🐛 修复微信小程序头像上传域名限制
+- [x] `iPet-uniapp/src/services/uploadService.ts` 现在在 `wx.uploadFile` 被 “url not in domain list” 拦截时，自动读取裁剪后的图片为 Base64 并调用新增的 `/uploads/:type/base64` 接口，以保障真实机自研版本仍然能上传头像。
+- [x] 新增 `iPet-BackEnd/src-backend/uploads/dto/upload-base64.dto.ts` 与 `/api/uploads/:type/base64` 路由 (`iPet-BackEnd/src-backend/uploads/uploads.controller.ts` + service 抽象)，让后端可同时处理 multipart 和 Base64 上传，并保持返回格式一致。
+- [x] 文档：`docs/backend/接口契约.md` 说明了 Base64 上传契约，`docs/frontend/产品迭代与技术债管理层.md` 增补微信小程序 uploadFile 域名白名单要求，提醒发布团队同步配置。
+
 ## 0.0.16 (2025-12-24)
 
 ### 🧩 简化前端环境配置

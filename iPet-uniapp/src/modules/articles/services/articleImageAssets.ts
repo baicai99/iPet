@@ -1,13 +1,8 @@
 const ARTICLE_STATIC_IMAGE_PREFIX = '/static/images/articles/'
 const ARTICLE_MP_IMAGE_PREFIX = '/pages/articles/images/articles/'
 
-const usePagesArticleImages = (() => {
-    let flag = false
-    // #ifdef MP-WEIXIN
-    flag = import.meta.env.MODE === 'production'
-    // #endif
-    return flag
-})()
+// Production builds currently only ship `/static/images/articles`, so keep the original prefix.
+const usePagesArticleImages = false
 
 function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
