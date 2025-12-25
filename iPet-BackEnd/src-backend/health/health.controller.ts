@@ -57,13 +57,22 @@ export class HealthController {
     }
 
     @Get('summary')
-    getSummary(@Req() req: AuthenticatedRequest, @Query('petId') petId: string) {
+    getSummary(@Req() req: AuthenticatedRequest, @Query('petId') petId?: string) {
         const uid = req.user?.uid;
         if (!uid) throw new Error('User ID missing');
         const userId = req.user?.uid;
         if (!userId) throw new NotFoundException('User ID not found');
-        if (!petId) throw new Error('Pet ID is required');
-        return this.healthService.getSummary(userId, petId);
+        const sanitizedPetId = petId?.trim();
+        if (!sanitizedPetId) {
+            // Missing petId happens early in onboarding; return empty summary instead of throwing.
+            return {
+                pinnedMetrics: [],
+                trends: [],
+                dailySummaries: {}
+            };
+        }
+
+        return this.healthService.getSummary(userId, sanitizedPetId);
     }
 
     /**

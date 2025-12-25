@@ -1,3 +1,8 @@
+## 0.0.17 (2025-12-25)
+
+### 🐛 避免 Summary 接口在未选宠时抛 500
+- [x] `GET /health/summary` 现在在缺失 `petId` 时直接返回空的 `pinnedMetrics`/`trends`/`dailySummaries`，避免用户刚注册/登录还没选宠物时异常涌现并干扰体验（`iPet-BackEnd/src-backend/health/health.controller.ts`）。
+
 ## 0.0.16 (2025-12-24)
 
 ### 🧩 简化前端环境配置

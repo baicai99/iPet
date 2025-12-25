@@ -915,6 +915,14 @@ export class HealthService implements OnModuleInit {
             await this.ensureHealthMetricBucketColumns();
         }
 
+        const hasHealthScheduleTable = await this.tableExists('HealthSchedule');
+        if (!hasHealthScheduleTable) {
+            this.logger.warn('[HealthService] HealthSchedule table missing. Creating automatically...');
+            await this.createHealthScheduleTable();
+        } else {
+            await this.ensureHealthScheduleColumns();
+        }
+
         await this.ensureHealthIndexes();
     }
 
@@ -1013,6 +1021,41 @@ export class HealthService implements OnModuleInit {
                 ADD COLUMN IF NOT EXISTS "timestamp" BIGINT,
                 ADD COLUMN IF NOT EXISTS "version" INTEGER NOT NULL DEFAULT 1,
                 ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+        `);
+    }
+
+    private async createHealthScheduleTable(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "HealthSchedule" (
+                "id" TEXT NOT NULL,
+                "petId" TEXT NOT NULL,
+                "type" TEXT NOT NULL,
+                "date" TEXT NOT NULL,
+                "time" TEXT,
+                "repeat" TEXT,
+                "note" TEXT,
+                "isActive" BOOLEAN NOT NULL DEFAULT true,
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "HealthSchedule_pkey" PRIMARY KEY ("id"),
+                CONSTRAINT "HealthSchedule_petId_fkey"
+                    FOREIGN KEY ("petId") REFERENCES "Pet"("id")
+                    ON DELETE CASCADE ON UPDATE CASCADE
+            );
+        `);
+    }
+
+    private async ensureHealthScheduleColumns(): Promise<void> {
+        await this.prisma.$executeRawUnsafe(`
+            ALTER TABLE "HealthSchedule"
+                ADD COLUMN IF NOT EXISTS "type" TEXT,
+                ADD COLUMN IF NOT EXISTS "date" TEXT,
+                ADD COLUMN IF NOT EXISTS "time" TEXT,
+                ADD COLUMN IF NOT EXISTS "repeat" TEXT,
+                ADD COLUMN IF NOT EXISTS "note" TEXT,
+                ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true,
+                ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
         `);
     }
 
