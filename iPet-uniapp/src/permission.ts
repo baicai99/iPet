@@ -46,6 +46,8 @@ const resolveAuthLevel = (url: string): RouteAuthLevel => {
     return 'guest'
 }
 
+const isOnboardingRoute = (url: string) => normalizePath(url) === '/pages/onboarding/index'
+
 const evaluateTokenState = (userStore: ReturnType<typeof useUserStore>) => {
     if (!userStore || !userStore.token) {
         return { valid: false, reason: 'missing-token' }
@@ -132,6 +134,7 @@ const hasPermission = (url: string) => {
     }
 
     const userStore = useUserStore()
+    const targetIsOnboarding = isOnboardingRoute(url)
     const tokenState = evaluateTokenState(userStore)
 
     // 2. Token 无效，拦截
@@ -155,6 +158,9 @@ const hasPermission = (url: string) => {
     // 3. [新增] 新用户强制引导逻辑
     // 如果需要引导，且目标页面不是 onboarding，则拦截
     if (userStore.needsOnboarding && userStore.authMode === 'user') {
+        if (targetIsOnboarding) {
+            return { allowed: true }
+        }
         return {
             allowed: false,
             reason: 'needs-onboarding',

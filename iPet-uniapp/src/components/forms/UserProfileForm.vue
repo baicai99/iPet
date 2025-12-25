@@ -1,7 +1,7 @@
 <template>
     <view class="user-profile-form">
         <!-- 头像区域 -->
-        <AvatarUploader v-model="modelValue.avatar" placeholderIcon="account" hint="点击修改头像" />
+        <AvatarUploader v-model="modelValue.avatar" placeholderIcon="account" />
 
         <!-- 基础表单 -->
         <view class="section">

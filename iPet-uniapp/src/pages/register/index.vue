@@ -163,7 +163,7 @@ const handleRegister = async () => {
     showToast('注册成功');
 
     // Always redirect to onboarding for new users
-    uni.reLaunch({ url: '/pages/onboarding/index' });
+    uni.navigateTo({ url: '/pages/onboarding/index' });
   } catch (error) {
     // ✅ 使用统一的错误处理
     if (isRateLimitError(error)) {

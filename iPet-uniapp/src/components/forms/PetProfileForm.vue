@@ -6,11 +6,7 @@
                 <!-- Avatar Section -->
                 <AvatarUploader v-model="modelValue.avatar" :showGlow="true" placeholderIcon="camera-fill" />
 
-                <!-- 必填信息 -->
                 <view class="card-section">
-                    <view class="section-header">
-                        <text class="section-title">基本信息 (必填)</text>
-                    </view>
 
                     <!-- Name -->
                     <u-form-item prop="name">
@@ -29,12 +25,14 @@
                             <view class="species-grid">
                                 <view class="species-card" :class="{ 'selected': modelValue.type === 'dog' }"
                                     @click="updateType('dog')">
-                                    <text class="iconfont species-icon">{{ ICONFONT_UNICODE.petDog }}</text>
+                                    <image v-if="SPECIES_ASSETS.dog" class="species-image"
+                                        :src="SPECIES_ASSETS.dog" mode="aspectFit"></image>
                                     <text class="species-name">狗狗</text>
                                 </view>
                                 <view class="species-card" :class="{ 'selected': modelValue.type === 'cat' }"
                                     @click="updateType('cat')">
-                                    <text class="iconfont species-icon">{{ ICONFONT_UNICODE.petCat }}</text>
+                                    <image v-if="SPECIES_ASSETS.cat" class="species-image"
+                                        :src="SPECIES_ASSETS.cat" mode="aspectFit"></image>
                                     <text class="species-name">猫猫</text>
                                 </view>
                             </view>
@@ -72,7 +70,7 @@
                     <view class="row-2-col">
                         <u-form-item prop="weight" class="col-item">
                             <view class="input-group">
-                                <text class="label">体重 (kg) <text class="required">*</text></text>
+                        <text class="label">体重 (kg)</text>
                                 <view class="input-wrapper">
                                     <input type="digit" :value="modelValue.weight"
                                         @input="updateField('weight', $event.detail.value)" placeholder="0.0"
@@ -83,7 +81,7 @@
 
                         <u-form-item prop="birthday" class="col-item">
                             <view class="input-group">
-                                <text class="label">生日 <text class="required">*</text></text>
+                                <text class="label">生日</text>
                                 <view class="custom-input" @click="openBirthdayPicker">
                                     <text v-if="modelValue.birthday">{{ modelValue.birthday }}</text>
                                     <text v-else class="input-placeholder">选择日期</text>
@@ -117,9 +115,6 @@
 
                 <!-- 选填信息 -->
                 <view class="card-section">
-                    <view class="section-header">
-                        <text class="section-title">更多信息 (选填)</text>
-                    </view>
 
                     <!-- Chip ID -->
                     <view class="input-group">
@@ -237,8 +232,6 @@ import { ref, computed } from 'vue'
 import { DOG_BREEDS, CAT_BREEDS, OTHER_BREEDS } from '@/config/petBreeds'
 import PinyinMatch from 'pinyin-match'
 import AvatarUploader from './AvatarUploader.vue'
-import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
-
 interface PetProfile {
     avatar: string;
     name: string;
@@ -265,6 +258,10 @@ const emit = defineEmits(['update:modelValue'])
 
 const petFormRef = ref<any>(null)
 const PERSONALITY_TAGS = ['粘人', '高冷', '贪吃', '活泼', '胆小', '护主', '温顺', '拆家']
+const SPECIES_ASSETS = {
+    dog: '/static/images/onboarding/bianmu.webp',
+    cat: '/static/images/onboarding/xianluomao.webp'
+}
 const maxDate = Number(new Date())
 
 // State
@@ -288,8 +285,6 @@ const rules = {
     name: [{ required: true, message: '请输入宠物名字', trigger: ['blur', 'change'] }],
     type: [{ required: true, message: '请选择宠物种类', trigger: ['change'] }],
     breed: [{ required: true, message: '请选择品种', trigger: ['change'] }],
-    birthday: [{ required: true, message: '请选择生日', trigger: ['change'] }],
-    weight: [{ required: true, message: '请输入体重', trigger: ['blur', 'change'] }],
     arrivalDate: [
         {
             validator: (rule: any, value: any, callback: any) => {
@@ -418,18 +413,6 @@ defineExpose({
     border: 1rpx solid #f3f4f6;
 }
 
-.section-header {
-    margin-bottom: 32rpx;
-}
-
-.section-title {
-    font-size: 24rpx;
-    font-weight: bold;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 1rpx;
-}
-
 .input-group {
     width: 100%;
     margin-bottom: 32rpx;
@@ -461,6 +444,7 @@ defineExpose({
     box-sizing: border-box;
     display: flex;
     align-items: center;
+    width: 100%;
 }
 
 .custom-textarea {
@@ -490,9 +474,11 @@ defineExpose({
     flex-direction: column;
     align-items: center;
     padding: 24rpx 0;
+    gap: 12rpx;
     background-color: #ffffff;
     border: 2rpx solid #e5e7eb;
     border-radius: 24rpx;
+    min-height: 150rpx;
 
     &.selected {
         background-color: #fff7ed;
@@ -504,16 +490,15 @@ defineExpose({
         }
     }
 }
-
 .species-name {
     margin-top: 12rpx;
     font-size: 26rpx;
     color: #6b7280;
 }
 
-.species-icon {
-    width: 60rpx;
-    height: 60rpx;
+.species-image {
+    width: 96rpx;
+    height: 96rpx;
 }
 
 .gender-switch {
@@ -552,12 +537,17 @@ defineExpose({
 }
 
 .row-2-col {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 32rpx;
 }
 
 .col-item {
-    flex: 1;
+    min-width: 0;
+}
+
+.input-wrapper {
+    width: 100%;
 }
 
 .tags-container {

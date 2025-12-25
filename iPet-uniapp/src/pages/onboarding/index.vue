@@ -19,6 +19,11 @@
             <!-- Step 1: User Profile -->
             <view class="step-content" v-if="step === 1">
 
+                <view class="header-section">
+                    <text class="title">完善个人资料</text>
+                    <text class="subtitle">告诉我们你的故事，开启个性化体验</text>
+                </view>
+
                 <view class="form-section">
                     <UserProfileForm ref="userFormRef" v-model="userData" />
                 </view>
@@ -47,18 +52,13 @@
                 <view class="preview-card">
                     <view class="card-header">
                         <view class="card-avatar">
-                            <image v-if="petData.avatar" :src="petData.avatar" class="card-avatar-img"
-                                mode="aspectFill" />
-                            <block v-else>
-                                <text class="iconfont species-icon-card">
-                                    {{ petData.type === 'cat' ? ICONFONT_UNICODE.petCat : ICONFONT_UNICODE.petDog }}
-                                </text>
-                            </block>
+                            <image v-if="petData.avatar" :src="petData.avatar" class="card-avatar-img" mode="aspectFill" />
+                            <image v-else :src="SPECIES_ASSETS[petData.type] || SPECIES_ASSETS.dog"
+                                class="card-avatar-img species-icon-card" mode="aspectFit" />
                         </view>
                         <view class="card-info">
                             <text class="card-name">{{ petData.name }}</text>
-                            <text class="card-sub">{{ petData.breed }} · {{ petData.type === 'cat' ? '喵星人' : '汪星人'
-                                }}</text>
+                            <text class="card-sub">{{ petData.breed }} · {{ petData.type === 'cat' ? '喵星人' : '汪星人' }}</text>
                         </view>
                     </view>
                     <view class="card-details">
@@ -106,11 +106,14 @@ import { updateUserProfile } from '@/services/userService';
 import { healthService } from '@/services/health.service';
 import { usePetCommands } from '@/composables/usePetCommands';
 import { emitDataChanged } from '@/services/syncEvents';
-import { ICONFONT_UNICODE } from '@/utils/ui/iconfont';
 import { onLoad, onUnload } from '@dcloudio/uni-app';
 
 const userStore = useUserStore();
 const petCommands = usePetCommands();
+const SPECIES_ASSETS = {
+    dog: '/static/images/onboarding/bianmu.webp',
+    cat: '/static/images/onboarding/xianluomao.webp'
+};
 
 // Onboarding completion flag
 const onboardingCompleted = ref(false);
@@ -505,27 +508,28 @@ const handleFinish = async () => {
             padding-bottom: 32rpx;
             border-bottom: 2rpx solid rgba(255, 255, 255, 0.2);
 
-            .card-avatar {
-                width: 96rpx;
-                height: 96rpx;
-                background-color: rgba(255, 255, 255, 0.2);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-right: 24rpx;
-
-                .card-avatar-img {
-                    width: 100%;
-                    height: 100%;
+                .card-avatar {
+                    width: 96rpx;
+                    height: 96rpx;
+                    background-color: rgba(255, 255, 255, 0.2);
                     border-radius: 50%;
-                }
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 24rpx;
 
-                .species-icon-card {
-                    width: 50rpx;
-                    height: 50rpx;
+                    .card-avatar-img {
+                        width: 100%;
+                        height: 100%;
+                        border-radius: 50%;
+                    }
+
+                    .species-icon-card {
+                        width: 50rpx;
+                        height: 50rpx;
+                        object-fit: contain;
+                    }
                 }
-            }
 
             .card-info {
                 .card-name {
