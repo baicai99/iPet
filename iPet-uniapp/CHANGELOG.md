@@ -1,3 +1,25 @@
+## 0.0.18 (2025-12-25)
+
+### ✨ Features
+- [x] **Build Meta Traceability**: Implemented a Vite plugin to generate `dist/build-meta.json` (mode, platform, apiBaseUrl, buildTime, gitCommit) for artifact transparency.
+- [x] **Production Logging Infrastructure**: Added `src/utils/logger.ts` with production-level gating (preserving `warn`/`error` logs while removing `debug`/`info` in production).
+- [x] **Guest Login Revamp**: Enhanced guest login flow with improved authentication UIs and native back navigation.
+- [x] **Visualization Enhancement**: Integrated u-charts and echarts for advanced metric visualization (trend折线、状态网格、风险网格).
+
+### 🎨 Styles & Refactors
+- [x] **UI Polish**: Refactored `ArticleRecommendations.vue` and `MetricWiki.vue` from card-in-card to flat section layouts with titles and improved spacing.
+- [x] **Trend Logic Consolidation**: Unified trend evaluation and formatting logic into `trendEvaluator.ts` and `trendFormatter.ts` to ensure a single source of truth application-wide.
+- [x] **Design Token Migration**: Migrated design tokens from CSS custom properties to SCSS variables for better build-time safety and consistency.
+
+### 🐛 Bug Fixes
+- [x] **Mini Program API Access**: Resolved issues preventing backend access in WeChat Mini Program production builds.
+- [x] **Build Conflicts**: Fixed `defineProps` and `defineEmits` declaration conflicts in `BaseChart.vue`.
+- [x] **Onboarding Flow**: Fixed issues where the onboarding guide was skipped in development mode.
+- [x] **Error Handling**: Improved backend error message parsing (e.g., matching 404 "Account not registered").
+
+### 🚀 CI/DevOps
+- [x] **Environment Validation**: Added `check:env` scripts and integrated them into build pipelines to prevent accidental production builds with development configurations.
+
 ## 0.0.17 (2025-12-25)
 
 ### 🐛 避免 Summary 接口在未选宠时抛 500

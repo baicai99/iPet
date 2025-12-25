@@ -51,8 +51,14 @@ yarn install
   * **HBuilderX**: 打开项目 -\> 点击顶部菜单栏 "运行" -\> "运行到小程序模拟器" -\> "微信开发者工具"。
   * **VS Code**:
     ```bash
+    # 验证环境配置
+    npm run check:env:development
+    # 启动微信小程序开发
     npm run dev:mp-weixin
     ```
+
+> [!IMPORTANT]
+> 在构建或运行之前，建议运行 `npm run check:env` 以确保环境变量配置正确，防止错误的 API 域名或数据源（Mock/Real）被误操作到生产环境。
 
 -----
 
@@ -94,6 +100,7 @@ yarn install
   * **Vue 语法**: 统一使用 Vue 3 `<script setup>` 语法糖。
   * **样式隔离**: 组件样式必须使用 `<style lang="scss" scoped>`。
   * **国际化**: 避免在组件中硬编码中文文案，建议使用 `src/locale/zh-Hans.js` 中的常量（如 `STRINGS.MY.LOGOUT`）。
+  * **日志记录**: 生产环境严禁使用 `console.log`。请统一使用 `src/utils/logger.ts`。该工具会自动在生产环境自动去除 `debug` 和 `info` 级别的日志，仅保留 `warn` 和 `error` 日志以供排障。
 
 ### 4.2 数据流规范 (Data Flow)
 

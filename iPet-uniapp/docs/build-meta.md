@@ -99,7 +99,7 @@ npm run build:mp-weixin
 
 ### Production Verification
 
-Once deployed, you can verify the build metadata directly via HTTP:
+Once deployed, you can verify the build metadata directly via HTTP. For pre-build verification, use the `npm run check:env` command family to ensure the configuration being injected matches targets.
 
 ```bash
 # Direct access to build metadata
