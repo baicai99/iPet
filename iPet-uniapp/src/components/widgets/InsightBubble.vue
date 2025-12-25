@@ -1,9 +1,9 @@
 <template>
     <view class="insight-bubble">
         <u-icon name="info-circle-fill" color="#fb923c" size="18" class="insight-icon"></u-icon>
-        <text class="insight-text">
+        <view class="insight-text">
             <slot></slot>
-        </text>
+        </view>
     </view>
 </template>
 

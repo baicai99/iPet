@@ -123,11 +123,8 @@ const onChartPointClick = (params: any) => {
 .trend-card {
     width: 100%;
     background-color: #ffffff;
-    padding: 24rpx; // p-6
-    box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.03);
-    border: 1rpx solid #f1f5f9;
+    padding: 24rpx;
     box-sizing: border-box;
-    border-radius: 24rpx;
     position: relative;
     overflow: hidden;
 }

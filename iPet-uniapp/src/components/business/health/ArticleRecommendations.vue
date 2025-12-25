@@ -1,5 +1,6 @@
 <template>
-    <view class="section-card articles-section" v-if="articles.length > 0">
+    <!-- ✅ 使用 Section 结构，与 Summary View 保持一致，避免"卡片嵌套卡片" -->
+    <view class="articles-section" v-if="articles.length > 0">
         <view class="section-header">
             <text class="section-title">相关科普</text>
         </view>
@@ -60,12 +61,13 @@ const articles = computed<ArticleManifestItem[]>(() => {
 
 <style lang="scss" scoped>
 .articles-section {
-    background-color: #ffffff;
-    border-radius: 24rpx;
-    padding: 32rpx;
+    /* ✅ Section 结构：无卡片外观，直接承载文章列表 */
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
 
     .section-header {
-        margin-bottom: 24rpx;
+        margin-bottom: 8rpx;
     }
 
     .section-title {

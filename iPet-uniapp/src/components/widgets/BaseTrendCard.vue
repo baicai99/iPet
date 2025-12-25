@@ -34,7 +34,7 @@
 
       <!-- Main Title -->
       <slot name="main-title">
-        <text class="main-title">{{ mainTitle }}</text>
+        <text class="main-title">{{ computedMainTitle }}</text>
       </slot>
 
       <!-- Chart Area -->
@@ -43,24 +43,16 @@
         <view class="bars-wrapper">
           <!-- Left Side (Previous Period) -->
           <view class="bars-section bars-left" :style="{ width: leftSectionWidth }">
-            <view 
-              v-for="(val, index) in previousValues" 
-              :key="'left-' + index" 
-              class="bar-slot"
-              :style="{ width: leftSlotWidth }"
-            >
+            <view v-for="(val, index) in previousValues" :key="'left-' + index" class="bar-slot"
+              :style="{ width: leftSlotWidth }">
               <view class="bar" :style="{ height: getBarHeight(val) }"></view>
             </view>
           </view>
 
           <!-- Right Side (Recent Period) -->
           <view class="bars-section bars-right" :style="{ width: rightSectionWidth }">
-            <view 
-              v-for="(val, index) in recentValues" 
-              :key="'right-' + index" 
-              class="bar-slot"
-              :style="{ width: rightSlotWidth }"
-            >
+            <view v-for="(val, index) in recentValues" :key="'right-' + index" class="bar-slot"
+              :style="{ width: rightSlotWidth }">
               <view class="bar bar-highlight" :style="{ height: getBarHeight(val) }"></view>
             </view>
           </view>
@@ -73,7 +65,8 @@
             <template v-if="isStable">
               <view class="avg-line avg-line-full" :style="{ top: overallLineTop, borderColor: primaryColor }">
                 <text class="avg-label avg-label-center" :style="{ color: primaryColor }">
-                  {{ formatNumber(overallAvg) }} <text class="avg-unit" :style="{ color: primaryColor }">{{ unit }}</text>
+                  {{ formatNumber(overallAvg) }} <text class="avg-unit" :style="{ color: primaryColor }">{{ unit
+                    }}</text>
                 </text>
               </view>
             </template>
@@ -98,7 +91,8 @@
                 borderColor: primaryColor
               }">
                 <text class="avg-label avg-label-right" :style="{ color: primaryColor }">
-                  {{ formatNumber(recentAvg) }} <text class="avg-unit" :style="{ color: primaryColor }">{{ unit }}</text>
+                  {{ formatNumber(recentAvg) }} <text class="avg-unit" :style="{ color: primaryColor }">{{ unit
+                    }}</text>
                 </text>
               </view>
             </template>
@@ -126,6 +120,8 @@
 import { computed } from 'vue'
 import { TOKENS } from '@/config/theme'
 import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
+import { formatHeadline } from '@/domain/trend/trendFormatter'
+import type { TrendResult } from '@/domain/trend/trendTypes'
 
 // ============================================================================
 // Props
@@ -134,8 +130,12 @@ import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 const props = withDefaults(defineProps<{
   /** 显示标题 */
   title?: string
-  /** 主标题文案 */
+  /** 主标题文案（兼容模式，推荐使用 trendResult） */
   mainTitle?: string
+  /** 趋势判定结果（新模式：配合 metricName 使用 formatHeadline） */
+  trendResult?: TrendResult
+  /** 指标名称（配合 trendResult 使用） */
+  metricName?: string
   /** 图标名称 */
   icon?: string
   /** 单位 */
@@ -196,8 +196,16 @@ const emit = defineEmits<{
 
 const textMuted = computed(() => TOKENS.textMuted)
 
+/** 计算主标题：优先使用 trendResult + metricName 生成 headline */
+const computedMainTitle = computed(() => {
+  if (props.trendResult && props.metricName) {
+    return formatHeadline(props.metricName, props.trendResult)
+  }
+  return props.mainTitle
+})
+
 /** 是否有数据 */
-const hasData = computed(() => 
+const hasData = computed(() =>
   props.previousValues.length > 0 || props.recentValues.length > 0
 )
 
@@ -208,22 +216,22 @@ const totalSlots = computed(() => {
 })
 
 /** 左侧区域宽度 */
-const leftSectionWidth = computed(() => 
+const leftSectionWidth = computed(() =>
   `${(props.previousValues.length / totalSlots.value) * 100}%`
 )
 
 /** 右侧区域宽度 */
-const rightSectionWidth = computed(() => 
+const rightSectionWidth = computed(() =>
   `${(props.recentValues.length / totalSlots.value) * 100}%`
 )
 
 /** 左侧槽位宽度 */
-const leftSlotWidth = computed(() => 
+const leftSlotWidth = computed(() =>
   props.previousValues.length > 0 ? `${100 / props.previousValues.length}%` : '0%'
 )
 
 /** 右侧槽位宽度 */
-const rightSlotWidth = computed(() => 
+const rightSlotWidth = computed(() =>
   props.recentValues.length > 0 ? `${100 / props.recentValues.length}%` : '0%'
 )
 
@@ -330,8 +338,13 @@ const handleClick = () => {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* ============================================================================

@@ -1,4 +1,7 @@
 import { getCategoryTitle } from '@/data/categoryConfig'
+import { evaluateTrend } from '@/domain/trend/trendEvaluator'
+import { formatHeadline } from '@/domain/trend/trendFormatter'
+import type { TrendResult, TrendDirection as CoreTrendDirection } from '@/domain/trend/trendTypes'
 
 type TrendDirection = 'up' | 'down' | 'flat'
 type InsightStatus = 'excellent' | 'good' | 'warning' | 'danger' | 'insufficient'
@@ -21,8 +24,16 @@ interface InsightState {
 }
 
 interface InsightResult {
+    /** 完整文本（headline + advice） */
     text: string
+    /** 事实句（与 TrendCard 一致） */
+    headline: string
+    /** 建议句 */
+    advice: string
+    /** 状态信息（兼容旧版） */
     state: InsightState
+    /** 趋势判定结果（新增） */
+    trendResult: TrendResult
 }
 
 const CATEGORY_GROUP_MAP: Record<string, string> = {
@@ -394,9 +405,50 @@ const formatTemplate = (
         .replace(/\{unit\}/g, context.unit || '')
 }
 
-export const buildInsightBubble = (params: InsightParams): InsightResult => {
-    const group = mapCategoryToGroup(params.category)
-    const state = determineState({ ...params, group })
+/**
+ * 将 TrendResult 映射为 InsightState（兼容旧版）
+ */
+const mapTrendResultToState = (result: TrendResult, group: string): InsightState => {
+    // 映射 direction
+    let direction: TrendDirection = 'flat'
+    if (result.direction === 'up') direction = 'up'
+    else if (result.direction === 'down') direction = 'down'
+
+    // 映射 status
+    let status: InsightStatus = 'good'
+    if (result.status === 'insufficient') {
+        status = 'insufficient'
+    } else if (result.status === 'stable') {
+        status = 'excellent'
+    } else {
+        // trending
+        const absChange = Math.abs(result.changePercent ?? 0)
+        if (absChange >= 30) status = 'danger'
+        else if (absChange >= 10) status = 'warning'
+        else status = 'good'
+    }
+
+    return {
+        status,
+        direction,
+        changePercent: result.changePercent ?? 0,
+        changeValue: Math.abs(result.changePercent ?? 0),
+        group
+    }
+}
+
+/**
+ * 构建建议句（只负责建议，不计算趋势）
+ * 
+ * @param state 状态信息
+ * @param params 上下文参数
+ * @returns 建议句文本
+ */
+export const buildAdvice = (
+    state: InsightState,
+    params: { metricTitle?: string; category?: string; unit?: string }
+): string => {
+    const group = state.group
     const categoryTitle = getCategoryTitle(params.category || 'default')
 
     const template = pickTemplate(group, state.status, state.direction)
@@ -405,14 +457,80 @@ export const buildInsightBubble = (params: InsightParams): InsightResult => {
         pickTemplate('default', state.status, state.direction) ||
         pickRandom(DEFAULT_LIBRARY[state.status] || [])
 
-    const text = formatTemplate(fallbackTemplate, {
+    return formatTemplate(fallbackTemplate, {
         ...params,
         ...state,
         categoryTitle
     })
+}
+
+/**
+ * 构建 Insight 气泡内容（headline + advice 结构）
+ * 
+ * @param params 输入参数
+ * @returns InsightResult 包含 headline、advice 和完整 text
+ * 
+ * @example
+ * ```typescript
+ * const result = buildInsightBubble({
+ *   metricTitle: '体重',
+ *   category: 'bodyMeasurement',
+ *   values: [10, 10.2, 10.5, 10.8, 11]
+ * })
+ * // result.headline = "体重相比上周增长 5%"
+ * // result.advice = "最近体重上升，留意零食和主食的热量分配。"
+ * // result.text = "体重相比上周增长 5%，最近体重上升，留意零食和主食的热量分配。"
+ * ```
+ */
+export const buildInsightBubble = (params: InsightParams): InsightResult => {
+    const group = mapCategoryToGroup(params.category)
+
+    // 1. 提取数值数组
+    const rawValues = Array.isArray(params.values) ? params.values : []
+    const values = rawValues
+        .map(val => normalizeNumber(val))
+        .filter((val): val is number => val !== null)
+
+    // 2. 使用统一趋势判定引擎
+    const trendResult = evaluateTrend({
+        values,
+        totalRecordDays: values.length,
+        windowDays: 7
+    })
+
+    // 3. 生成事实句（与 TrendCard 完全一致）
+    const headline = formatHeadline(params.metricTitle || '该指标', trendResult)
+
+    // 4. 映射为 InsightState（兼容旧版）
+    const state = mapTrendResultToState(trendResult, group)
+
+    // 5. 生成建议句
+    const advice = buildAdvice(state, params)
+
+    // 6. 组合：headline + advice（用逗号连接）
+    const text = advice ? `${headline}，${advice}` : headline
 
     return {
         text,
-        state
+        headline,
+        advice,
+        state,
+        trendResult
     }
+}
+
+/**
+ * 仅构建建议句（供外部使用 TrendResult 时调用）
+ * 
+ * @param trendResult 趋势判定结果
+ * @param params 上下文参数
+ * @returns 建议句文本
+ */
+export const buildAdviceFromTrendResult = (
+    trendResult: TrendResult,
+    params: { metricTitle?: string; category?: string; unit?: string }
+): string => {
+    const group = mapCategoryToGroup(params.category)
+    const state = mapTrendResultToState(trendResult, group)
+    return buildAdvice(state, params)
 }

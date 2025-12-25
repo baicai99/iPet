@@ -16,3 +16,12 @@ export const TREND_WINDOW_SIZE = 40
 
 /** 切换到周视图的阈值（当周数 >= N 时使用周聚合） */
 export const TREND_WEEKS_FOR_WEEKLY_MODE = 20
+
+/** 稳定判定阈值：变化 < 5% 视为稳定 */
+export const TREND_STABLE_THRESHOLD_PERCENT = 5
+
+/** 默认比较窗口（天） */
+export const TREND_DEFAULT_WINDOW_DAYS = 7
+
+/** 默认比较标签 */
+export const TREND_DEFAULT_COMPARE_LABEL = '相比上周'

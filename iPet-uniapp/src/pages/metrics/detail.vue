@@ -38,10 +38,10 @@
                     @click="navigateToMetric(metric.key)">
                     <view class="card-icon" :style="{ backgroundColor: metric.color.bg }">
                         <text class="iconfont" :style="{ color: metric.color.hex, fontSize: '20px' }">{{ metric.icon
-                        }}</text>
+                            }}</text>
                     </view>
                     <view class="card-value">{{ metric.displayValue }}<text class="card-unit">{{ metric.displayUnit
-                            }}</text>
+                    }}</text>
                     </view>
                     <text class="card-label">{{ metric.title }}</text>
                 </view>
@@ -390,7 +390,6 @@ async function confirmCompletion(e) {
 .header-container {
     width: 100%;
     background-color: #ffffff;
-    padding-bottom: 24rpx;
 }
 
 .detail-container {

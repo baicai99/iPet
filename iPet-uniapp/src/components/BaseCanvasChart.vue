@@ -137,7 +137,7 @@ const chartOpts = computed(() => {
 
     return {
       color: [themeColor],
-      padding: showAxis.value ? [15, 10, 0, 15] : [0, 0, 0, 0],
+      padding: showAxis.value ? [15, 0, 0, 10] : [0, 0, 0, 0],
       enableScroll: false,
       legend: {
         show: props.spec?.showLegend ?? false
@@ -161,6 +161,7 @@ const chartOpts = computed(() => {
         max: props.spec?.max,
         tofix: 0
       },
+      dataLabel: false,
       extra: {
         line: {
           type: 'curve',

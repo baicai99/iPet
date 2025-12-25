@@ -36,9 +36,9 @@ const fetchInsight = async () => {
     await updateInsightText(remoteSuggestion)
 }
 
-const updateInsightText = async (fallbackSuggestion = '') => {
+const updateInsightText = async (remoteSuggestion = '') => {
     await nextTick()
-    const { text } = buildInsightBubble({
+    const { headline, advice } = buildInsightBubble({
         metricTitle: props.metricMetadata.title || '',
         category: props.metricMetadata.category || 'default',
         values: props.currentData.values,
@@ -46,7 +46,15 @@ const updateInsightText = async (fallbackSuggestion = '') => {
         trend: props.currentData.trend,
         unit: props.metricUnitLabel
     })
-    insightText.value = text || fallbackSuggestion || metricStrings.INSIGHT_PLACEHOLDER
+
+    // 优先使用本地 headline，远程仅作为 advice 的补充/替代
+    const finalAdvice = remoteSuggestion || advice
+
+    if (finalAdvice) {
+        insightText.value = `${headline}，${finalAdvice}`
+    } else {
+        insightText.value = headline || metricStrings.INSIGHT_PLACEHOLDER
+    }
 }
 
 // Watch for data changes to update insight

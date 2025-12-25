@@ -1,12 +1,6 @@
 <template>
-  <BaseCanvasChart 
-    :spec="spec"
-    :options="options"
-    :height="height"
-    :width="width"
-    @point-click="handlePointClick"
-    @chart-ready="handleChartReady"
-  />
+  <BaseCanvasChart :spec="spec" :options="options" :height="height" :width="width" @point-click="handlePointClick"
+    @chart-ready="handleChartReady" />
 </template>
 
 <script setup lang="ts">
@@ -23,7 +17,6 @@
  * @deprecated options - Use spec instead
  */
 
-import { defineProps, defineEmits } from 'vue'
 import BaseCanvasChart from './BaseCanvasChart.vue'
 import type { ChartSpec } from '@/types/chart'
 

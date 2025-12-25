@@ -20,7 +20,7 @@
                 <view class="value-row">
                     <text :class="isValueText ? 'value-text' : 'value'">{{ valueStr }}</text>
                     <text v-if="unitStr && valueStr !== '暂无数据' && valueStr !== '暂无待办计划'" class="unit">{{ unitStr
-                    }}</text>
+                        }}</text>
                 </view>
             </view>
 
@@ -301,6 +301,7 @@ const handleClick = () => {
     /* font-bold */
     color: #94a3b8;
     /* slate-400 */
+    padding-left: 8rpx;
 }
 
 .chart-section {
