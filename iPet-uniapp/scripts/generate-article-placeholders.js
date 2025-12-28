@@ -10,35 +10,35 @@ const path = require('path');
 
 // Required cover images from article frontmatter
 const REQUIRED_COVERS = [
-    'anxiety.webp',
-    'bathing.webp',
-    'bmi.webp',
-    'body-fat.webp',
-    'body-temp.webp',
-    'calcium.webp',
-    'carb.webp',
-    'dental-care.webp',
-    'depression.webp',
-    'deworming.webp',
-    'diet_energy.webp',
-    'dog-exercise.webp',
-    'dog-nutrition.webp',
-    'fat.webp',
-    'fiber.webp',
-    'fish_oil.webp',
-    'fitness_training.webp',
-    'lean-mass.webp',
-    'protein.webp',
-    'run_distance.webp',
-    'run_pace.webp',
-    'shoulder-height.webp',
-    'stool.webp',
-    'training.webp',
-    'vaccination.webp',
-    'vomiting.webp',
-    'waist.webp',
-    'water.webp',
-    'weight-management.webp',
+    'anxiety.jpg',
+    'bathing.jpg',
+    'bmi.jpg',
+    'body-fat.jpg',
+    'body-temp.jpg',
+    'calcium.jpg',
+    'carb.jpg',
+    'dental-care.jpg',
+    'depression.jpg',
+    'deworming.jpg',
+    'diet_energy.jpg',
+    'dog-exercise.jpg',
+    'dog-nutrition.jpg',
+    'fat.jpg',
+    'fiber.jpg',
+    'fish_oil.jpg',
+    'fitness_training.jpg',
+    'lean-mass.jpg',
+    'protein.jpg',
+    'run_distance.jpg',
+    'run_pace.jpg',
+    'shoulder-height.jpg',
+    'stool.jpg',
+    'training.jpg',
+    'vaccination.jpg',
+    'vomiting.jpg',
+    'waist.jpg',
+    'water.jpg',
+    'weight-management.jpg',
 ];
 
 const OUTPUT_DIR = path.resolve(__dirname, '../public/static/images/articles');
@@ -48,14 +48,11 @@ if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
-// Create a 1x1 transparent WebP placeholder
-// This is the smallest valid WebP file (26 bytes)
-const PLACEHOLDER_WEBP = Buffer.from([
-    0x52, 0x49, 0x46, 0x46, 0x1a, 0x00, 0x00, 0x00,
-    0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x4c,
-    0x0d, 0x00, 0x00, 0x00, 0x2f, 0x00, 0x00, 0x00,
-    0x00, 0x00
-]);
+// Create a 1x1 JPG placeholder (smallest valid JPEG)
+const PLACEHOLDER_JPG = Buffer.from(
+    '/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAALCAABAAEBAREA/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAXAQEAAwAAAAAAAAAAAAAAAAABAAID/8QAFQEBAQAAAAAAAAAAAAAAAAAAAQT/xAAXEQEAAwAAAAAAAAAAAAAAAAABABEh/9oADAMBAAIRAxEAPwCqgA//2Q==',
+    'base64'
+);
 
 console.log(`[generate-article-placeholders] Creating ${REQUIRED_COVERS.length} placeholder images...`);
 
@@ -70,9 +67,9 @@ for (const filename of REQUIRED_COVERS) {
         continue;
     }
 
-    fs.writeFileSync(filepath, PLACEHOLDER_WEBP);
+    fs.writeFileSync(filepath, PLACEHOLDER_JPG);
     created++;
 }
 
 console.log(`[generate-article-placeholders] Created ${created} placeholders, skipped ${skipped} existing files`);
-console.log(`[generate-article-placeholders] Total size: ${(PLACEHOLDER_WEBP.length * created / 1024).toFixed(2)}KB`);
+console.log(`[generate-article-placeholders] Total size: ${(PLACEHOLDER_JPG.length * created / 1024).toFixed(2)}KB`);

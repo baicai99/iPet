@@ -3,6 +3,7 @@
  * 用于 MiniStatusGrid 和 StatusGridChart
  */
 import dayjs from 'dayjs'
+import { getLocalDayKey } from '@/utils/common/timeKey'
 import { mapValueToY, isLegacyValue, convertLegacyValue } from '@/config/stoolStatusConfig'
 
 // 时间范围对应的网格分段数
@@ -153,7 +154,7 @@ export function processChartPoints(
                     x: getXFromTimestamp(point.timestamp, range, width, padding),
                     y: getYPosition(rawValue, height),
                     timestamp: point.timestamp || null,
-                    date: point.date || (point.timestamp ? new Date(point.timestamp).toISOString().split('T')[0] : null),
+                    date: point.date || (point.timestamp ? getLocalDayKey(point.timestamp) : null),
                     isNormal: isNormalValue(rawValue)
                 }
             })
@@ -167,7 +168,7 @@ export function processChartPoints(
                     x: columnIndex * segmentWidth + segmentWidth / 2,
                     y: getYPosition(rawValue, height),
                     timestamp: point.timestamp || null,
-                    date: point.date || (point.timestamp ? new Date(point.timestamp).toISOString().split('T')[0] : null),
+                    date: point.date || (point.timestamp ? getLocalDayKey(point.timestamp) : null),
                     isNormal: isNormalValue(rawValue)
                 }
             })

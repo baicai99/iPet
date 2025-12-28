@@ -8,6 +8,7 @@
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
 import { normalizeArticleMarkdownImageUrls } from '@/modules/articles/services/articleImageAssets'
+import { sanitizeMarkdown } from '@/modules/articles/services/markdownSanitizer'
 
 interface Props {
     markdownText?: string
@@ -23,7 +24,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { markdownText, showLineNumber, previewImg } = toRefs(props)
 
-const normalizedMarkdown = computed(() => normalizeArticleMarkdownImageUrls(markdownText.value ?? ''))
+const normalizedMarkdown = computed(() => {
+    const rawMarkdown = markdownText.value ?? ''
+    const withNormalizedImages = normalizeArticleMarkdownImageUrls(rawMarkdown)
+    return sanitizeMarkdown(withNormalizedImages)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -118,9 +123,10 @@ const normalizedMarkdown = computed(() => normalizeArticleMarkdownImageUrls(mark
         }
 
         hr {
-            margin: 32rpx 0;
+            margin: 36rpx 0;
             border: none;
-            border-top: 2rpx solid #e5e7eb;
+            height: 2rpx;
+            background: linear-gradient(90deg, transparent, #d1d5db, transparent);
         }
 
         table {

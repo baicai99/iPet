@@ -40,7 +40,7 @@ const RANGE_CONFIGS: Record<string, RangeConfig> = {
     last7d: { tickCount: 7, tickFormat: 'MM/DD', bucket: 'day', daysBack: 7 },
     month: { tickCount: 30, tickFormat: 'D', bucket: 'day', daysBack: 30 },
     last30d: { tickCount: 30, tickFormat: 'D', bucket: 'day', daysBack: 30 },
-    six_month: { tickCount: 26, tickFormat: 'M/D', bucket: 'calendarWeek', daysBack: 180 },
+    six_month: { tickCount: 6, tickFormat: 'M', bucket: 'calendarMonth', daysBack: 180 },
     year: { tickCount: 12, tickFormat: 'MMM', bucket: 'calendarMonth', daysBack: 365 },
     last12m: { tickCount: 12, tickFormat: 'MMM', bucket: 'calendarMonth', daysBack: 365 },
     last40w: { tickCount: 40, tickFormat: 'M/D', bucket: 'calendarWeek', daysBack: 280 }

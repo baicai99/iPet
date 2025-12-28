@@ -29,7 +29,7 @@
 import { ref, computed, onUnmounted } from 'vue';
 import { useImageCacheStore } from '@/stores/imageCacheStore';
 import { uploadService } from '@/services/uploadService';
-import { convertToWebPSimple } from '@/utils/common/imageConverter';
+import { convertToJpegSimple } from '@/utils/common/imageConverter';
 
 const props = defineProps<{
     modelValue?: string | null;
@@ -85,9 +85,17 @@ const onCropperConfirm = async (rsp: { avatar?: string; path?: string; index?: n
     }
     localPreviewPath.value = filePath; // 立即显示预览
     
-    // 转换为 WebP 格式以降低文件体积
-    const webpPath = await convertToWebPSimple(filePath, 80);
-    await uploadImage(webpPath);
+    try {
+        // 转换为 JPG 格式以降低文件体积
+        const jpgPath = await convertToJpegSimple(filePath, 80);
+        await uploadImage(jpgPath);
+    } catch (error: any) {
+        const message = error?.message || '头像仅支持 JPG 格式';
+        console.error('[AvatarUploader] JPG conversion failed', error);
+        localPreviewPath.value = '';
+        emit('upload-fail', error);
+        uni.showToast({ title: message, icon: 'none' });
+    }
 };
 
 const uploadImage = async (filePath: string) => {

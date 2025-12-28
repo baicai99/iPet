@@ -346,23 +346,35 @@ export function alignToAxis(
     }
 
     // 对齐到轴
-    return axisTimestamps.map(ts => {
+    const alignedValues: (number | null)[] = []
+    let lastValidValue: number | null = null
+
+    for (const ts of axisTimestamps) {
         if (valueMap.has(ts)) {
-            return valueMap.get(ts)!
+            const value = valueMap.get(ts)!
+            alignedValues.push(value)
+            if (value !== null && Number.isFinite(value)) {
+                lastValidValue = value
+            }
+            continue
         }
 
         // 缺失值处理
         switch (missingPolicy) {
             case 'zero':
-                return 0
+                alignedValues.push(0)
+                break
             case 'carry':
-                // TODO: 实现 carry 逻辑（沿用上一个有效值）
-                return null
+                alignedValues.push(lastValidValue)
+                break
             case 'null':
             default:
-                return null
+                alignedValues.push(null)
+                break
         }
-    })
+    }
+
+    return alignedValues
 }
 
 // ============================================================================

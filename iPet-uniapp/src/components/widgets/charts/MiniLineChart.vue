@@ -1,8 +1,9 @@
 <template>
-    <view class="mini-chart-container">
+    <view class="mini-chart-container" :style="containerStyle">
         <!-- #ifdef MP-WEIXIN -->
         <qiun-data-charts v-if="hasAnyPoint" type="line" :canvasId="canvasId" :chartData="uchartsData"
-            :opts="uchartsOpts" :canvas2d="true" :animation="false" :optsWatch="false" style="width: 100%; height: 100%;" />
+            :opts="uchartsOpts" :canvas2d="true" :animation="false" :optsWatch="false"
+            style="width: 100%; height: 100%;" />
         <view v-else class="empty"></view>
         <!-- #endif -->
 
@@ -23,6 +24,14 @@ const props = defineProps({
     data: {
         type: Array,
         default: () => []
+    },
+    width: {
+        type: String,
+        default: '200rpx'
+    },
+    height: {
+        type: String,
+        default: '80rpx'
     },
     color: {
         type: String,
@@ -55,11 +64,11 @@ const uchartsData = computed(() => {
 
 const uchartsOpts = computed(() => ({
     color: [props.color],
-    padding: [0, 0, 0, 0],
+    padding: [2, 2, 2, 2],
     enableScroll: false,
     legend: { show: false },
-    xAxis: { disabled: true, disableGrid: true },
-    yAxis: { disabled: true, disableGrid: true },
+    xAxis: { disabled: true, disableGrid: true, axisLine: false, fontSize: 0 },
+    yAxis: { disabled: true, disableGrid: true, axisLine: false, fontSize: 0 },
     dataPointShape: false,
     dataLabel: false,
     extra: {
@@ -72,11 +81,17 @@ const smoothPath = computed(() => {
     const data = normalizedData.value
     
     // 2. Generate Points
-    const points = generatePoints(data, width, height)
+    const points = generatePoints(data, width, height, { top: 2, bottom: 2, left: 2, right: 2 })
     
     // 3. Generate Path (Smooth)
     return generateLinePath(points, true)
 })
+
+const containerStyle = computed(() => ({
+    width: props.width,
+    height: props.height
+}))
+
 </script>
 
 <style scoped>
@@ -95,6 +110,5 @@ const smoothPath = computed(() => {
 .chart-svg {
     width: 100%;
     height: 100%;
-    overflow: visible;
 }
 </style>

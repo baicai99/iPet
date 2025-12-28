@@ -7,7 +7,8 @@ import matter from 'gray-matter'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '../..')
-const CONTENT_DIR = path.resolve(ROOT, 'src/modules/articles/content/articles')
+const CONTENT_DIR = path.resolve(ROOT, 'src/articles/source/md')
+const SOURCE_IMAGES_DIR = path.resolve(ROOT, 'src/articles/source/images')
 const METADATA_FILE = path.resolve(ROOT, 'src/data/metricMetadata.ts')
 const COVER_PUBLIC_ROOT = path.resolve(ROOT, 'public')
 const COVER_STATIC_ROOT = path.resolve(ROOT, 'src/static')
@@ -37,9 +38,13 @@ function validateCoverPath(cover) {
     if (!cover || typeof cover !== 'string') return false
     if (!cover.startsWith('/static/')) return false
     const relative = cover.replace(/^\/static\//, '')
+    const sourceRelative = cover.replace(/^\/static\/images\/articles\//, '')
+    const sourceFallbackWebp = sourceRelative.replace(/\.jpg$/i, '.webp')
     const candidates = [
         path.resolve(COVER_PUBLIC_ROOT, 'static', relative),
-        path.resolve(COVER_STATIC_ROOT, relative)
+        path.resolve(COVER_STATIC_ROOT, relative),
+        path.resolve(SOURCE_IMAGES_DIR, sourceRelative),
+        path.resolve(SOURCE_IMAGES_DIR, sourceFallbackWebp)
     ]
     return candidates.some(candidate => fs.existsSync(candidate))
 }

@@ -1,0 +1,30 @@
+---
+id: shoulder_height
+title: 狗狗肩高测量与生长发育指南
+summary: 肩高是评估狗狗体型和发育的重要指标，了解正确测量方法。
+cover: "/static/images/articles/shoulder-height.jpg"
+category: education
+author: iPet 健康团队
+tags:
+  - shoulder_height
+  - measurement
+  - growth
+  - health
+updateTime: 2025-04-22
+source: local
+---
+
+## 什么是肩高？
+
+肩高是指狗狗自然站立时，从地面到肩胛骨最高点的垂直距离，是判断犬种标准和生长发育的关键指标。
+
+## 如何正确测量肩高
+
+- 让狗狗自然站立在平坦地面上
+- 找到肩胛骨最高点（前腿与身体连接处）
+- 使用测量尺从地面垂直测量到该点
+- 记录数值，建议每月测量一次
+
+## 不同犬种的肩高标准
+
+小型犬通常肩高25-40cm，中型犬40-60cm，大型犬60cm以上。具体标准因品种而异。

@@ -13,7 +13,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONTENT_DIR = path.resolve(__dirname, '../src/modules/articles/content/articles');
+const CONTENT_DIR = path.resolve(__dirname, '../src/articles/source/md');
 
 // 文章元数据映射
 const ARTICLES_METADATA = {

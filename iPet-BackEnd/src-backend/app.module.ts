@@ -27,6 +27,8 @@ import { ObservabilityModule } from './observability/observability.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { SystemHealthModule } from './system-health/system-health.module';
 import { InfraModule } from './infra/infra.module';
+import { AdminModule } from './admin/admin.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
   imports: [
@@ -79,6 +81,8 @@ import { InfraModule } from './infra/infra.module';
     HealthScheduleModule,
     SystemHealthModule,
     InfraModule,
+    AdminModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [

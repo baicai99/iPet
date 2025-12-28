@@ -201,7 +201,8 @@ const safeChartData = computed(() => {
       series: (Array.isArray(serialized.series) ? serialized.series : []).map((s: any) => ({
         name: s?.name || 'Series',
         data: Array.isArray(s?.data) ? s.data : [],
-        color: s?.color
+        color: s?.color,
+        connectNulls: s?.connectNulls
       }))
     }
   } catch (e) {
@@ -304,7 +305,8 @@ function specToUChartsData(spec: ChartSpec) {
       return {
         name: s.name,
         data: processedData,
-        color: s.color
+        color: s.color,
+        connectNulls: spec.connectNulls ?? false
       }
     })
 

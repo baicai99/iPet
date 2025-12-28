@@ -4,6 +4,7 @@
  * 专门处理离散风险等级类指标（焦虑、抑郁等）
  */
 import dayjs from 'dayjs'
+import { getLocalDayKey } from '@/utils/common/timeKey'
 
 // 风险等级定义（固定顺序，自上而下：重度 → 最轻）
 export const RISK_LEVELS = ['最轻', '轻度', '中度', '重度'] as const
@@ -180,7 +181,7 @@ export function processRiskChartPoints(
             y: valueToY(point.value, height),
             color: RISK_COLORS[level],
             timestamp: point.timestamp || null,
-            date: point.date || (point.timestamp ? new Date(point.timestamp).toISOString().split('T')[0] : null)
+            date: point.date || (point.timestamp ? getLocalDayKey(point.timestamp) : null)
         })
     })
 

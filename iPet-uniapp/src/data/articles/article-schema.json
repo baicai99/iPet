@@ -43,8 +43,8 @@
         },
         "cover": {
             "type": "string",
-            "pattern": "^/static/images/articles/.+\\.webp$",
-            "description": "封面图片路径，必须在 /static/images/articles/ 目录下，仅支持 WebP 格式"
+            "pattern": "^/static/images/articles/.+\\.jpg$",
+            "description": "封面图片路径，必须在 /static/images/articles/ 目录下，仅支持 JPG 格式"
         },
         "category": {
             "type": "string",

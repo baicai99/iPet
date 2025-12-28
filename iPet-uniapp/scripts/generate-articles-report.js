@@ -28,7 +28,7 @@ function generateReport() {
 
     const manifestFile = path.resolve(__dirname, '../public/static/articles/articles-manifest.json')
     const mdOutputDir = path.resolve(__dirname, '../public/static/articles/md')
-    const contentDir = path.resolve(__dirname, '../src/modules/articles/content/articles')
+        const contentDir = path.resolve(__dirname, '../src/articles/source/md')
 
     // 1. 统计 Manifest 数据
     try {

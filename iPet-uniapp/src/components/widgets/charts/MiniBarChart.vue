@@ -1,5 +1,5 @@
 <template>
-    <view class="mini-bar-chart">
+    <view class="mini-bar-chart" :style="containerStyle">
         <view v-for="(d, i) in normalizedData" :key="i" class="bar" :style="{
             height: `${d.percent}%`,
             backgroundColor: color,
@@ -16,6 +16,14 @@ const props = defineProps({
     data: {
         type: Array,
         default: () => []
+    },
+    width: {
+        type: String,
+        default: '200rpx'
+    },
+    height: {
+        type: String,
+        default: '80rpx'
     },
     color: {
         type: String,
@@ -35,6 +43,11 @@ const normalizedData = computed(() => {
         percent: (d / max) * 100
     }))
 })
+
+const containerStyle = computed(() => ({
+    width: props.width,
+    height: props.height
+}))
 </script>
 
 <style scoped>
@@ -45,12 +58,14 @@ const normalizedData = computed(() => {
     height: 100%;
     width: 100%;
     gap: 2rpx;
+    min-width: 100rpx;
+    min-height: 40rpx;
 }
 
 .bar {
-    flex: 1;
+    flex: 1 0 8rpx;
     border-radius: 2rpx;
-    min-width: 4rpx;
+    min-width: 8rpx;
     transition: height 0.3s ease;
 }
 </style>

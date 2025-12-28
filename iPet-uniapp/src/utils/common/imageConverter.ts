@@ -4,13 +4,13 @@
  */
 
 /**
- * 将图片压缩并转换为更小的体积
- * 使用 uni.compressImage API，这是跨平台最稳定的方案
+ * 将图片压缩为 JPEG 格式
+ * 使用 uni.compressImage API，输出格式由平台决定；本方法强制校验为 JPG/JPEG
  * @param tempFilePath - 临时文件路径（例如裁剪后的图片）
  * @param quality - 压缩质量 (0-100)，默认 80
- * @returns 压缩后的临时文件路径
+ * @returns 压缩后的临时文件路径（.jpg/.jpeg）
  */
-export async function convertToWebPSimple(
+export async function convertToJpegSimple(
     tempFilePath: string,
     quality: number = 80
 ): Promise<string> {
@@ -19,8 +19,7 @@ export async function convertToWebPSimple(
     }
 
     try {
-        // uni.compressImage 会智能压缩图片
-        // 在支持的平台上可能输出 WebP，否则输出压缩的 JPG
+        // uni.compressImage 会智能压缩图片，输出格式由平台决定
         const result = await new Promise<{ tempFilePath: string }>((resolve, reject) => {
             uni.compressImage({
                 src: tempFilePath,
@@ -29,6 +28,10 @@ export async function convertToWebPSimple(
                 fail: reject
             });
         });
+
+        if (!/\.jpe?g$/i.test(result.tempFilePath)) {
+            throw new Error('Avatar image must be JPG/JPEG');
+        }
 
         console.log('[ImageConverter] Image compression successful:', {
             original: tempFilePath,
@@ -39,8 +42,7 @@ export async function convertToWebPSimple(
         return result.tempFilePath;
 
     } catch (error) {
-        console.error('[ImageConverter] Image compression failed, using original file:', error);
-        // 压缩失败时，返回原文件路径
-        return tempFilePath;
+        console.error('[ImageConverter] Image compression failed:', error);
+        throw error;
     }
 }

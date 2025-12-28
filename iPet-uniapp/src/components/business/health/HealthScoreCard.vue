@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
     score: {
@@ -59,6 +59,7 @@ const props = defineProps({
 })
 
 const canvasSize = ref(200)
+let drawTimer = null
 
 /**
  * 状态文本
@@ -182,9 +183,16 @@ onMounted(() => {
     canvasSize.value = rpxToPx(400)
 
     // 延迟绘制，确保 canvas 已渲染
-    setTimeout(() => {
+    drawTimer = setTimeout(() => {
         drawScoreCircle()
     }, 100)
+})
+
+onUnmounted(() => {
+    if (drawTimer) {
+        clearTimeout(drawTimer)
+        drawTimer = null
+    }
 })
 
 watch(() => props.score, () => {

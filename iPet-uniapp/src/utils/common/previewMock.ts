@@ -1,6 +1,7 @@
 import type { RequestConfig } from './request'
 import type { HealthRecord } from '@shared/types/health'
 import type { Pet } from '@shared/types/pet'
+import { getLocalDayKey } from './timeKey'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const NOW_TIMESTAMP = Date.now()
@@ -236,7 +237,7 @@ export async function handlePreviewMockRequest<T>(config: RequestConfig<T>): Pro
         const dailySummaries: Record<string, any> = {}
         for (let i = 0; i < 7; i += 1) {
             const date = new Date(Date.now() - i * DAY_MS)
-            const dateKey = date.toISOString().split('T')[0]
+            const dateKey = getLocalDayKey(date)
             dailySummaries[dateKey] = {
                 meal: round1(260 + i * 0.7),
                 water: round1(450 + i * 1.1),
@@ -298,4 +299,3 @@ export async function handlePreviewMockRequest<T>(config: RequestConfig<T>): Pro
 
     return undefined
 }
-

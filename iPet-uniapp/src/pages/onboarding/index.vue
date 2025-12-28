@@ -107,6 +107,7 @@ import { healthService } from '@/services/health.service';
 import { usePetCommands } from '@/composables/usePetCommands';
 import { emitDataChanged } from '@/services/syncEvents';
 import { onLoad, onUnload } from '@dcloudio/uni-app';
+import { getLocalDayKey } from '@/utils/common/timeKey';
 
 const userStore = useUserStore();
 const petCommands = usePetCommands();
@@ -273,7 +274,7 @@ const handleFinish = async () => {
 
 
         // 3. Create initial Health Records
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDayKey(Date.now());
         const healthPromises = [];
 
         if (petPayload.weight) {

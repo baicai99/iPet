@@ -4,7 +4,7 @@
  * 图片优化脚本
  * 
  * 功能：
- * 1. 批量转换 src/static/images/articles/*.{png,jpg,jpeg} 为 WebP
+ * 1. 批量转换 src/static/images/articles/*.{png,jpg,jpeg} 为 JPG
  * 2. 压缩至 < 80KB
  * 3. 输出到 dist 目录（源文件不变）
  * 4. 生成优化报告
@@ -26,7 +26,7 @@ const CONFIG = {
     maxSizeKB: 80,
     targetWidth: 800,  // 统一宽度
     targetHeight: 400, // 统一高度
-    webpQuality: 80,   // 初始质量
+    jpegQuality: 82,   // 初始质量
     minQuality: 60     // 最低质量阈值
 }
 
@@ -54,7 +54,7 @@ async function compressImage(inputPath, outputPath, targetSizeKB) {
     // 确保输出目录存在
     fs.mkdirSync(path.dirname(outputPath), { recursive: true })
 
-    let quality = CONFIG.webpQuality
+    let quality = CONFIG.jpegQuality
     let outputSize = 0
     let attempts = 0
     const maxAttempts = 5
@@ -62,13 +62,13 @@ async function compressImage(inputPath, outputPath, targetSizeKB) {
     while (attempts < maxAttempts) {
         attempts++
 
-        // 转换为 WebP
+        // 转换为 JPG
         await sharp(inputPath)
             .resize(CONFIG.targetWidth, CONFIG.targetHeight, {
                 fit: 'cover',
                 position: 'center'
             })
-            .webp({ quality })
+            .jpeg({ quality })
             .toFile(outputPath)
 
         // 检查文件大小
@@ -137,7 +137,7 @@ async function optimizeImages() {
 
     for (const file of files) {
         const inputPath = path.join(CONFIG.sourceDir, file)
-        const outputName = file.replace(/\.(png|jpg|jpeg)$/i, '.webp')
+        const outputName = file.replace(/\.(png|jpg|jpeg)$/i, '.jpg')
         const outputPath = path.join(CONFIG.outputDir, outputName)
 
         try {

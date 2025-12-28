@@ -23,6 +23,7 @@ import healthCacheService from '@/services/healthCacheService'
 import { healthCacheServiceV2 } from '@/services/healthCacheServiceV2'  // ✅ NEW: V2 缓存
 import type { HealthRecord, MetricSeriesResponse, MetricSeriesParams } from '@shared/types/health'
 import { parseTimestamp, sortRecordsByTime, getMetricSeries, getMetricSeriesV2 } from '@/utils/business/healthDataHelper'
+import { getLocalDayKey } from '@/utils/common/timeKey'
 import { processPinnedMetrics, processTrendMetrics } from '@/utils/business/healthSummaryHelper'
 import { getAllMetricKeys } from '@/data/metricMetadata'
 import {
@@ -354,11 +355,8 @@ export const useHealthStore = defineStore('health', () => {
         const dates = new Set<string>()
         for (const id of ids.value) {
             const record = entities.value[id]
-            if (record?.date) {
-                // Extract date part (YYYY-MM-DD)
-                const dateStr = record.date.split('T')[0]
-                dates.add(dateStr)
-            }
+            const dayKey = record ? getLocalDayKey(record) : ''
+            if (dayKey) dates.add(dayKey)
         }
         return dates.size
     }

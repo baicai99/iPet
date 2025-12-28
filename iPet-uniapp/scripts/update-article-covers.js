@@ -2,7 +2,7 @@
 
 /**
  * 批量更新文章 frontmatter 中的 cover 路径
- * 将 .png 扩展名替换为 .webp
+ * 将封面路径统一替换为 .jpg
  */
 
 import fs from 'fs'
@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
-const CONTENT_DIR = path.resolve(ROOT, 'src/modules/articles/content/articles')
+const CONTENT_DIR = path.resolve(ROOT, 'src/articles/source/md')
 
 const colors = {
     green: '\x1b[32m',
@@ -38,8 +38,8 @@ function updateFrontmatter() {
         // 替换 cover 路径中的图片扩展名
         const original = content
         content = content.replace(
-            /^cover:\s*["']?(\/static\/images\/articles\/.+)\.(png|jpg|jpeg)["']?$/gm,
-            'cover: "$1.webp"'
+            /^cover:\s*["']?(\/static\/images\/articles\/.+)\.(png|jpg|jpeg|webp)["']?$/gm,
+            'cover: "$1.jpg"'
         )
 
         if (content !== original) {

@@ -43,13 +43,56 @@ model User {
   guestDeviceId  String?
   guestOrigin    String?
 
+  // Admin management fields
+  isBanned     Boolean  @default(false)
+  bannedAt     DateTime?
+  bannedReason String?
   
-  
-  
+  // Soft delete for admin operations
+  deletedAt    DateTime?
+  deletedBy    String?   // Admin ID who deleted
 
   @@index([isGuest, lastActiveAt], name: "users_guest_last_active")
+  @@index([isBanned], name: "users_is_banned")
+  @@index([deletedAt], name: "users_deleted_at")
 }
 
+// Admin model for backend management
+model Admin {
+  id             String   @id @default(cuid())
+  username       String   @unique
+  passwordHash   String
+  displayName    String?
+  role           String   @default("admin")  // admin, super_admin
+  isActive       Boolean  @default(true)
+  tokenRevokedAt DateTime?  // Tokens issued before this time are invalid
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  auditLogs      AdminAuditLog[]
+}
+
+// Admin audit log for tracking all admin actions
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  
+  action      String   // login, ban_user, unban_user, delete_user, create_article, update_article, delete_article, etc.
+  targetType  String?  // user, article, pet, system
+  targetId    String?  // ID of the affected resource
+  details     Json?    // Additional details, diff, old/new values
+  
+  ip          String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([adminId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+}
 
 
 model UserSyncState {
@@ -133,8 +176,13 @@ model Article {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Soft delete for admin operations
+  deletedAt DateTime?
+  deletedBy String?   // Admin ID who deleted
+
   // TD-008: Index for category filtering with date ordering
   @@index([category, createdAt(sort: Desc)], name: "idx_article_category_created")
+  @@index([deletedAt], name: "idx_article_deleted_at")
 }
 
 model PinnedMetric {

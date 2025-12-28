@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * 将新重命名的 PNG 图片转换为 WebP 并更新文章封面
+ * 将新重命名的 PNG 图片转换为 JPG 并更新文章封面
  * 
  * 功能：
  * 1. 读取 /src/static/images/article/ 中的 PNG 文件
- * 2. 生成 WebP 到 /src/pages/articles/images/articles/
+ * 2. 生成 JPG 到 /src/pages/articles/images/articles/
  * 3. 映射到对应的文章 ID
  * 
- * P0 约束：原图不修改，只生成新的 WebP 副本
+ * P0 约束：原图不修改，只生成新的 JPG 副本
  */
 
 import fs from 'fs'
@@ -29,26 +29,26 @@ const CONFIG = {
     maxSizeKB: 80,
     targetWidth: 800,
     targetHeight: 400,
-    webpQuality: 80,
+    jpegQuality: 82,
     minQuality: 60
 }
 
-// PNG 文件名 → 文章 cover WebP 文件名映射
+// PNG 文件名 → 文章 cover JPG 文件名映射
 const IMAGE_TO_COVER_MAP = {
-    'dog-bmi-assessment.png': 'bmi.webp',
-    'dog-body-temp-monitoring.png': 'body-temp.webp',
-    'dog-fitness-training.png': 'fitness_training.webp',
-    'dog-body-fat-management.png': 'body-fat.webp',
-    'dog-depression-awareness.png': 'depression.webp',
-    'dog-bathing-guide.png': 'bathing.webp',
-    'dog-anxiety-relief.png': 'anxiety.webp',
-    'nutrition-carbohydrate.png': 'carb.webp',
-    'nutrition-fat.png': 'fat.webp',
-    'nutrition-fiber.png': 'fiber.webp',
-    'nutrition-energy.png': 'diet_energy.webp',
-    'nutrition-calcium.png': 'calcium.webp',
-    'dog-deworming-guide.png': 'deworming.webp',
-    'nutrition-fish-oil.png': 'fish_oil.webp'
+    'dog-bmi-assessment.png': 'bmi.jpg',
+    'dog-body-temp-monitoring.png': 'body-temp.jpg',
+    'dog-fitness-training.png': 'fitness_training.jpg',
+    'dog-body-fat-management.png': 'body-fat.jpg',
+    'dog-depression-awareness.png': 'depression.jpg',
+    'dog-bathing-guide.png': 'bathing.jpg',
+    'dog-anxiety-relief.png': 'anxiety.jpg',
+    'nutrition-carbohydrate.png': 'carb.jpg',
+    'nutrition-fat.png': 'fat.jpg',
+    'nutrition-fiber.png': 'fiber.jpg',
+    'nutrition-energy.png': 'diet_energy.jpg',
+    'nutrition-calcium.png': 'calcium.jpg',
+    'dog-deworming-guide.png': 'deworming.jpg',
+    'nutrition-fish-oil.png': 'fish_oil.jpg'
 }
 
 const colors = {
@@ -69,7 +69,7 @@ function formatBytes(bytes) {
 }
 
 async function compressImage(inputPath, outputPath, targetSizeKB) {
-    let quality = CONFIG.webpQuality
+    let quality = CONFIG.jpegQuality
     let outputSize = 0
     let attempts = 0
     const maxAttempts = 5
@@ -82,7 +82,7 @@ async function compressImage(inputPath, outputPath, targetSizeKB) {
                 fit: 'cover',
                 position: 'center'
             })
-            .webp({ quality })
+            .jpeg({ quality })
             .toFile(outputPath)
 
         const stats = fs.statSync(outputPath)
@@ -103,7 +103,7 @@ async function compressImage(inputPath, outputPath, targetSizeKB) {
 }
 
 async function generateCovers() {
-    console.log('\n🖼️  Generating article cover WebP files...\n')
+    console.log('\n🖼️  Generating article cover JPG files...\n')
     console.log(`Source: ${CONFIG.sourceDir}`)
     console.log(`Output directories:`)
     CONFIG.outputDirs.forEach(dir => console.log(`  - ${dir}`))
@@ -116,7 +116,7 @@ async function generateCovers() {
     let successCount = 0
     let failureCount = 0
 
-    for (const [pngFile, webpFile] of Object.entries(IMAGE_TO_COVER_MAP)) {
+    for (const [pngFile, jpgFile] of Object.entries(IMAGE_TO_COVER_MAP)) {
         const inputPath = path.join(CONFIG.sourceDir, pngFile)
 
         if (!fs.existsSync(inputPath)) {
@@ -127,16 +127,16 @@ async function generateCovers() {
         const originalSize = fs.statSync(inputPath).size / 1024
 
         try {
-            process.stdout.write(`${pngFile} → ${webpFile}... `)
+            process.stdout.write(`${pngFile} → ${jpgFile}... `)
 
             // 先生成到第一个目录
-            const primaryOutputPath = path.join(CONFIG.outputDirs[0], webpFile)
+            const primaryOutputPath = path.join(CONFIG.outputDirs[0], jpgFile)
             const result = await compressImage(inputPath, primaryOutputPath, CONFIG.maxSizeKB)
 
             if (result.success) {
                 // 复制到其他目录
                 for (let i = 1; i < CONFIG.outputDirs.length; i++) {
-                    const secondaryPath = path.join(CONFIG.outputDirs[i], webpFile)
+                    const secondaryPath = path.join(CONFIG.outputDirs[i], jpgFile)
                     fs.copyFileSync(primaryOutputPath, secondaryPath)
                 }
 
@@ -146,7 +146,7 @@ async function generateCovers() {
 
                 results.push({
                     source: pngFile,
-                    output: webpFile,
+                    output: jpgFile,
                     originalSizeKB: originalSize,
                     outputSizeKB: result.outputSize,
                     saved: savedPercent

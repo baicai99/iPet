@@ -40,6 +40,7 @@ export class JwtAuthGuard implements CanActivate {
       '/auth/refresh',
       '/auth/guest',
       '/auth/logout',
+      '/admin/login',
     ];
     const openGetPrefixes = ['/articles'];
     const openGetEndpoints = ['/metrics', '/observability/http-metrics', '/system/health', '/system/ready', '/infra/health'];

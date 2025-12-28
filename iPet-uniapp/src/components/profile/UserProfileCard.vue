@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useImageCacheStore } from '@/stores/imageCacheStore';
 import { getGenderStyle, getGenderBgClass } from '@/config/genderConfig';
 
@@ -86,11 +86,39 @@ const isPressed = ref(false);
 const isEmpty = computed(() => !props.user)
 const isVip = computed(() => props.user?.isVip);
 
+const loggedAvatarUrls = new Set<string>()
+
 // 优化：解析后的头像路径，优先读取本地缓存
 const resolvedAvatarUrl = computed(() => {
     if (!props.user?.avatarUrl) return '';
     return imageCache.resolve(props.user.avatarUrl);
 });
+
+watch(
+    resolvedAvatarUrl,
+    (value) => {
+        if (!value || loggedAvatarUrls.has(value)) return
+        loggedAvatarUrls.add(value)
+        console.info('[Avatar] resolved', {
+            avatarUrl: props.user?.avatarUrl,
+            resolved: value
+        })
+        // #ifdef MP-WEIXIN
+        if (typeof uni !== 'undefined' && typeof uni.getImageInfo === 'function') {
+            uni.getImageInfo({
+                src: value,
+                success: (res) => {
+                    console.info('[Avatar] wx.getImageInfo ok', { src: value, res })
+                },
+                fail: (err) => {
+                    console.warn('[Avatar] wx.getImageInfo fail', { src: value, err })
+                }
+            })
+        }
+        // #endif
+    },
+    { immediate: true }
+)
 
 // Handlers
 const handlePressStart = () => {

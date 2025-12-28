@@ -1,6 +1,14 @@
 <template>
     <view class="mini-trend-chart">
-        <svg :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`">
+        <!-- #ifdef MP-WEIXIN -->
+        <qiun-data-charts v-if="hasAnyPoint" type="line" :canvasId="canvasId" :chartData="uchartsData"
+            :opts="uchartsOpts" :canvas2d="true" :animation="false" :optsWatch="false"
+            style="width: 100%; height: 100%;" />
+        <view v-else class="empty"></view>
+        <!-- #endif -->
+
+        <!-- #ifndef MP-WEIXIN -->
+        <svg width="100%" height="100%" :viewBox="`0 0 ${width} ${height}`" preserveAspectRatio="none">
             <!-- Gradient Definition -->
             <defs>
                 <linearGradient :id="`gradient-${id}`" x1="0" y1="0" x2="0" y2="1">
@@ -16,11 +24,12 @@
             <path :d="linePath" fill="none" :stroke="color" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round" />
         </svg>
+        <!-- #endif -->
     </view>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, getCurrentInstance } from 'vue'
 
 const props = defineProps({
     data: {
@@ -29,11 +38,11 @@ const props = defineProps({
     },
     width: {
         type: Number,
-        default: 300
+        default: 100
     },
     height: {
         type: Number,
-        default: 100
+        default: 40
     },
     color: {
         type: String,
@@ -41,7 +50,41 @@ const props = defineProps({
     }
 })
 
+const instance = getCurrentInstance()
+const canvasId = `mini_trend_${instance?.uid ?? Math.random().toString(36).slice(2)}`
 const id = Math.random().toString(36).substr(2, 9)
+
+const hasAnyPoint = computed(() => (
+    Array.isArray(props.data) && props.data.some((v) => typeof v === 'number' && Number.isFinite(v))
+))
+
+const uchartsData = computed(() => {
+    const values = Array.isArray(props.data) ? props.data : []
+    return {
+        categories: values.map((_v, idx) => String(idx + 1)),
+        series: [
+            {
+                name: 'Series',
+                data: values,
+                connectNulls: true
+            }
+        ]
+    }
+})
+
+const uchartsOpts = computed(() => ({
+    color: [props.color],
+    padding: [0, 0, 0, 0],
+    enableScroll: false,
+    legend: { show: false },
+    xAxis: { disabled: true, disableGrid: true },
+    yAxis: { disabled: true, disableGrid: true },
+    dataPointShape: false,
+    dataLabel: false,
+    extra: {
+        line: { type: 'curve', width: 2, activeType: 'none' }
+    }
+}))
 
 const normalizedData = computed(() => {
     if (!props.data || props.data.length === 0) return []
@@ -81,5 +124,10 @@ const areaPath = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.empty {
+    width: 100%;
+    height: 100%;
 }
 </style>

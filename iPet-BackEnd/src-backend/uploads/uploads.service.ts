@@ -42,6 +42,13 @@ export class UploadsService {
         }
 
         const ext = this.resolveExtension(originalName, mimeType);
+        if (safeType === 'user-avatar') {
+            const normalized = (mimeType || '').toLowerCase();
+            const isJpeg = normalized === 'image/jpeg' || ext.toLowerCase() === '.jpg' || ext.toLowerCase() === '.jpeg';
+            if (!isJpeg) {
+                throw new BadRequestException('Avatar image must be JPG/JPEG');
+            }
+        }
         const filename = `${createId()}_original${ext}`;
         const absolutePath = path.join(absoluteDir, filename);
 

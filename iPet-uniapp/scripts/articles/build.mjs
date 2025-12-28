@@ -5,10 +5,14 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import crypto from 'crypto'
 import matter from 'gray-matter'
+import sharp from 'sharp'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '../..')
-const CONTENT_DIR = path.resolve(ROOT, 'src/modules/articles/content/articles')
+const SOURCE_ROOT = path.resolve(ROOT, 'src/articles/source')
+const CONTENT_DIR = path.resolve(SOURCE_ROOT, 'md')
+const SOURCE_IMAGES_DIR = path.resolve(SOURCE_ROOT, 'images')
+const STATIC_IMAGES_DIR = path.resolve(ROOT, 'src/static/images/articles')
 const PUBLIC_DIR = path.resolve(ROOT, 'public/static/articles')
 const MD_OUTPUT_DIR = path.join(PUBLIC_DIR, 'md')
 const MANIFEST_OUTPUT = path.join(PUBLIC_DIR, 'articles-manifest.json')
@@ -40,6 +44,44 @@ const log = (msg) => console.log(`\u001b[36m[articles:build]\u001b[0m ${msg}`)
 
 function ensureDir(dir) {
     fs.mkdirSync(dir, { recursive: true })
+}
+
+async function syncImages() {
+    if (!fs.existsSync(SOURCE_IMAGES_DIR)) {
+        log(`Source images directory missing, skipping sync: ${SOURCE_IMAGES_DIR}`)
+        return
+    }
+
+    fs.rmSync(STATIC_IMAGES_DIR, { recursive: true, force: true })
+    ensureDir(STATIC_IMAGES_DIR)
+
+    const convertToJpeg = async (fromPath, toPath) => {
+        await sharp(fromPath)
+            .jpeg({ quality: 82 })
+            .toFile(toPath)
+    }
+
+    const copyDirectory = async (fromDir, toDir) => {
+        const entries = fs.readdirSync(fromDir, { withFileTypes: true })
+        for (const entry of entries) {
+            const fromPath = path.join(fromDir, entry.name)
+            const ext = path.extname(entry.name).toLowerCase()
+            const targetName = entry.name.replace(/\.(webp|png|jpeg)$/i, '.jpg')
+            const toPath = path.join(toDir, ext === '.jpg' ? entry.name : targetName)
+            if (entry.isDirectory()) {
+                ensureDir(toPath)
+                await copyDirectory(fromPath, toPath)
+                continue
+            }
+            if (ext === '.jpg') {
+                fs.copyFileSync(fromPath, toPath)
+                continue
+            }
+            await convertToJpeg(fromPath, toPath)
+        }
+    }
+
+    await copyDirectory(SOURCE_IMAGES_DIR, STATIC_IMAGES_DIR)
 }
 
 function hashValue(value) {
@@ -134,7 +176,7 @@ function parseFile(filePath) {
 
     const sourceValue = data.source === 'remote' ? 'remote' : 'builtin'
     const markdown = content.trimStart()
-    const hash = hashValue(markdown)
+    const hash = hashValue(`${JSON.stringify(data)}\n${markdown}`)
 
     const manifestItem = {
         id: data.id,
@@ -197,12 +239,14 @@ function generateBuiltinTs(builtinArticles) {
     fs.writeFileSync(BUILTIN_TS, fileContent)
 }
 
-function build() {
+async function build() {
     log('Starting article build...')
 
     if (!fs.existsSync(CONTENT_DIR)) {
         throw new Error(`Content directory not found: ${CONTENT_DIR}`)
     }
+
+    await syncImages()
 
     const files = fs.readdirSync(CONTENT_DIR).filter((file) => file.endsWith('.md'))
     if (!files.length) {
@@ -214,7 +258,7 @@ function build() {
     const fingerprint = {
         scriptVersion: SCRIPT_VERSION,
         files: Object.fromEntries(parsed.map(({ relativePath, hash }) => [relativePath, hash])),
-        imagesHash: hashDirectory(path.resolve(ROOT, 'src/static/images/articles'))
+        imagesHash: hashDirectory(SOURCE_IMAGES_DIR)
     }
 
     const cache = loadCache()
@@ -275,9 +319,7 @@ function build() {
     log(`Build completed. Total: ${summary.total}, builtin: ${summary.builtin}, remote: ${summary.remote}, version: ${summary.contentVersion}`)
 }
 
-try {
-    build()
-} catch (error) {
+build().catch((error) => {
     console.error('\u001b[31m[articles:build]\u001b[0m Build failed:', error)
     process.exit(1)
-}
+})

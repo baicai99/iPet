@@ -1,3 +1,7 @@
+import packageJson from '../../package.json'
+
+const APP_VERSION = packageJson.version || '0.0.1'
+
 export const services = [
     {
         id: 'emergency-card',
@@ -82,7 +86,7 @@ export const helpFeedback = [
     {
         label: '关于我们',
         icon: 'info-circle',
-        value: 'v0.0.1',
+        value: `v${APP_VERSION}`,
         path: '/pages/about/about'
     }
 ]

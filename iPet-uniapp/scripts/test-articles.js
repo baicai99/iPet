@@ -12,10 +12,11 @@ import { fileURLToPath } from 'url'
 import matter from 'gray-matter'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const CONTENT_DIR = path.resolve(__dirname, '../src/modules/articles/content/articles')
+const CONTENT_DIR = path.resolve(__dirname, '../src/articles/source/md')
 const MANIFEST_JSON = path.resolve(__dirname, '../public/static/articles/articles-manifest.json')
 const MD_OUTPUT_DIR = path.resolve(__dirname, '../public/static/articles/md')
 const STATIC_ROOT = path.resolve(__dirname, '../src/static')
+const SOURCE_IMAGES_DIR = path.resolve(__dirname, '../src/articles/source/images')
 
 let totalTests = 0
 let passedTests = 0
@@ -39,8 +40,12 @@ function hashContent(content) {
 function validateCoverPath(cover) {
     if (!cover?.startsWith('/static/')) return false
     const relative = cover.replace(/^\/static\//, '')
-    const fullPath = path.resolve(STATIC_ROOT, relative)
-    return fs.existsSync(fullPath)
+    const sourceRelative = cover.replace(/^\/static\/images\/articles\//, '')
+    const candidates = [
+        path.resolve(STATIC_ROOT, relative),
+        path.resolve(SOURCE_IMAGES_DIR, sourceRelative)
+    ]
+    return candidates.some(candidate => fs.existsSync(candidate))
 }
 
 function testFrontmatterCompleteness() {

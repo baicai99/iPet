@@ -6,6 +6,9 @@ import compression from 'compression';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { SystemHealthService } from './system-health/system-health.service';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -34,12 +37,21 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  // Global pipes, interceptors, and filters
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      forbidNonWhitelisted: true,
       transform: true,
     }),
   );
+  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  // Request ID middleware
+  const requestIdMiddleware = new RequestIdMiddleware();
+  app.use((req: any, res: any, next: any) => requestIdMiddleware.use(req, res, next));
+
   app.use(json({ limit: bodyLimit }));
   app.use(urlencoded({ extended: true, limit: bodyLimit }));
   app.use(compression());
@@ -57,3 +69,4 @@ async function bootstrap() {
   console.log(`✅ Server listening on port ${port}`);
 }
 bootstrap();
+

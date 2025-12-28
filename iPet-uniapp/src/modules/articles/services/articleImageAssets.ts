@@ -1,25 +1,28 @@
-const ARTICLE_STATIC_IMAGE_PREFIX = '/static/images/articles/'
-const ARTICLE_MP_IMAGE_PREFIX = '/pages/articles/images/articles/'
-
-// Production builds currently only ship `/static/images/articles`, so keep the original prefix.
-const usePagesArticleImages = false
-
-function escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-const staticImageRegex = new RegExp(escapeRegExp(ARTICLE_STATIC_IMAGE_PREFIX), 'g')
-
 export function resolveArticleImageAssetUrl(url: string): string {
-    if (!url || !usePagesArticleImages) return url
-    if (!url.startsWith(ARTICLE_STATIC_IMAGE_PREFIX)) return url
-    return url.replace(ARTICLE_STATIC_IMAGE_PREFIX, ARTICLE_MP_IMAGE_PREFIX)
+    return url
 }
 
 export function normalizeArticleMarkdownImageUrls(markdown: string): string {
-    if (!markdown || !usePagesArticleImages) return markdown
-    if (!staticImageRegex.test(markdown)) {
-        return markdown
+    if (!markdown) {
+        return ''
     }
-    return markdown.replace(staticImageRegex, ARTICLE_MP_IMAGE_PREFIX)
+
+    const lines = markdown.split(/\r?\n/)
+    let inCodeBlock = false
+    const normalizedLines = lines.map((line) => {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('```')) {
+            inCodeBlock = !inCodeBlock
+            return line
+        }
+        if (inCodeBlock) {
+            return line
+        }
+        if (/^(\*{3,}|-{3,})$/.test(trimmed)) {
+            return '---'
+        }
+        return line.replace(/\*\*([^*\n]*？)\*\*/g, '__$1__')
+    })
+
+    return normalizedLines.join('\n')
 }

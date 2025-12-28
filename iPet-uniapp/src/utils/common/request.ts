@@ -55,6 +55,13 @@ const resolveRequestUrl = (path: string): string => {
     return BASE_URL + pathWithSlash
 }
 
+const unwrapApiResponse = (payload: any) => {
+    if (payload && typeof payload === 'object' && 'success' in payload && 'data' in payload) {
+        return (payload as any).data
+    }
+    return payload
+}
+
 // Log API base on startup (dev only)
 if (import.meta.env.DEV) {
     console.log('[Request] 🔗 API Base:', BASE_URL)
@@ -596,7 +603,7 @@ const request = async <T = any>(config: RequestConfig<T> & InternalConfig): Prom
                             return
                         }
                     } else if (isSuccess || isNotModified) {
-                        finish(() => resolve(data as T))
+                        finish(() => resolve(unwrapApiResponse(data) as T))
                         return
                     }
 

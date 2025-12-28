@@ -103,6 +103,11 @@ export const buildChartData = (visualizationType: string, history: any[] = [], l
     }
 
     switch (visualizationType) {
+        case 'trend_line':
+            if (limit && limit > 0) {
+                return buildDailyLatestSeries(history, limit)
+            }
+            return sorted.map(item => item.value)
         case 'event_timeline':
             // For timeline, we might want the latest events, so we slice from the end (latest) 
             // but the display usually expects desc order.
@@ -123,6 +128,39 @@ export const buildChartData = (visualizationType: string, history: any[] = [], l
         default:
             return sorted.map(item => item.value)
     }
+}
+
+/**
+ * Builds latest-per-day series values for the recent N days (local date).
+ * Skips days without records and keeps chronological order.
+ */
+export const buildDailyLatestSeries = (history: any[] = [], daysCount: number = 7, endDate?: number | string | Date): any[] => {
+    if (!Array.isArray(history)) return []
+
+    const anchor = endDate ? dayjs(endDate) : dayjs()
+    const startDate = anchor.startOf('day').subtract(Math.max(daysCount, 1) - 1, 'day')
+    const latestByDate = new Map<string, { ts: number; value: any }>()
+
+    history.forEach(record => {
+        const ts = parseTimestamp(record)
+        if (!ts) return
+        const recordDate = dayjs(ts)
+        if (recordDate.isBefore(startDate, 'day') || recordDate.isAfter(anchor, 'day')) return
+
+        const dateStr = recordDate.format('YYYY-MM-DD')
+        const existing = latestByDate.get(dateStr)
+        if (!existing || ts > existing.ts) {
+            latestByDate.set(dateStr, { ts, value: record.value })
+        }
+    })
+
+    return Array.from(latestByDate.keys())
+        .sort((a, b) => dayjs(a).valueOf() - dayjs(b).valueOf())
+        .map(dateStr => {
+            const entry = latestByDate.get(dateStr)
+            const num = Number(entry?.value)
+            return Number.isNaN(num) ? entry?.value : num
+        })
 }
 
 /**

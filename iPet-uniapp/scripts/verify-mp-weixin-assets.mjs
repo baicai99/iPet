@@ -2,7 +2,7 @@
 /**
  * 构建后验收：检查微信小程序产物中的资产
  * 1. 禁止大 PNG（除 tabs）
- * 2. 确保 WebP 已重定位到分包
+ * 2. 检查是否仍存在 WebP
  * 3. 报告总包大小
  */
 import fs from 'node:fs'
@@ -43,6 +43,7 @@ function main() {
 
     const allFiles = walk(distDir)
     const pngFiles = allFiles.filter(f => f.path.toLowerCase().endsWith('.png'))
+    const jpgFiles = allFiles.filter(f => f.path.toLowerCase().endsWith('.jpg'))
     const webpFiles = allFiles.filter(f => f.path.toLowerCase().endsWith('.webp'))
 
     // 检查 PNG
@@ -55,24 +56,17 @@ function main() {
         return f.size > 50 * 1024
     })
 
-    // 检查 WebP 是否在正确位置（分包内）
-    const misplacedWebps = webpFiles.filter(f => {
-        const relativePath = path.relative(distDir, f.path)
-        // 应该在 pages/articles/images/articles/ 下
-        return relativePath.startsWith('static/images/articles/')
-    })
-
     // 计算大小
     const totalSize = allFiles.reduce((sum, f) => sum + f.size, 0)
     const pngSize = pngFiles.reduce((sum, f) => sum + f.size, 0)
-    const webpSize = webpFiles.reduce((sum, f) => sum + f.size, 0)
+    const jpgSize = jpgFiles.reduce((sum, f) => sum + f.size, 0)
 
     console.log('─'.repeat(60))
     console.log('📊 MP-Weixin Build Asset Report')
     console.log('─'.repeat(60))
     console.log(`Total size:     ${(totalSize / 1024 / 1024).toFixed(2)} MB`)
     console.log(`PNG total:      ${(pngSize / 1024).toFixed(0)} KB (${pngFiles.length} files)`)
-    console.log(`WebP total:     ${(webpSize / 1024).toFixed(0)} KB (${webpFiles.length} files)`)
+    console.log(`JPG total:      ${(jpgSize / 1024).toFixed(0)} KB (${jpgFiles.length} files)`)
     console.log('─'.repeat(60))
 
     let hasError = false
@@ -86,14 +80,13 @@ function main() {
         hasError = true
     }
 
-    if (misplacedWebps.length > 0) {
-        console.error('\x1b[33m⚠️ WebP files not relocated to subpackage:\x1b[0m')
-        misplacedWebps.forEach(f => {
+    if (webpFiles.length > 0) {
+        console.error('\x1b[33m⚠️ WebP files detected in build (expected JPG):\x1b[0m')
+        webpFiles.forEach(f => {
             const rel = path.relative(distDir, f.path)
             console.error(`   - ${rel}`)
         })
-        console.error('   Expected location: pages/articles/images/articles/')
-        // 这是警告，不算错误（relocate 脚本可能还没运行）
+        // 这是警告，不算错误（可用于排查遗漏转换）
     }
 
     // 主包大小检查（假设 2MB 限制）

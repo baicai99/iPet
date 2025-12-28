@@ -13,8 +13,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { resolveArticleCoverUrl } from '@/modules/articles/services/resolveArticleCoverUrl'
+
+const loggedCovers = new Set()
+let loggedPngCheck = false
 
 const props = defineProps({
     id: { type: [String, Number], required: true },
@@ -30,6 +33,43 @@ const props = defineProps({
 })
 
 const resolvedCover = computed(() => resolveArticleCoverUrl(props.cover))
+
+onMounted(() => {
+    const cover = resolvedCover.value
+    if (!cover || loggedCovers.has(cover)) return
+    loggedCovers.add(cover)
+    console.info('[ArticleCover] resolved', {
+        id: props.id,
+        cover: props.cover,
+        resolved: cover
+    })
+    // #ifdef MP-WEIXIN
+    if (typeof uni !== 'undefined' && typeof uni.getImageInfo === 'function') {
+        uni.getImageInfo({
+            src: cover,
+            success: (res) => {
+                console.info('[ArticleCover] wx.getImageInfo ok', { src: cover, res })
+            },
+            fail: (err) => {
+                console.warn('[ArticleCover] wx.getImageInfo fail', { src: cover, err })
+            }
+        })
+        if (!loggedPngCheck) {
+            loggedPngCheck = true
+            const pngProbe = '/static/tabs/like.png'
+            uni.getImageInfo({
+                src: pngProbe,
+                success: (res) => {
+                    console.info('[ArticleCover] png probe ok', { src: pngProbe, res })
+                },
+                fail: (err) => {
+                    console.warn('[ArticleCover] png probe fail', { src: pngProbe, err })
+                }
+            })
+        }
+    }
+    // #endif
+})
 
 const goToDetail = () => {
     if (!props.navigateToDetail) {

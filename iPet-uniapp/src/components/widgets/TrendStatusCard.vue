@@ -72,7 +72,6 @@ const handleCardClick = () => {
     flex-direction: column;
     align-items: center;
     gap: 16rpx;
-    min-height: 280rpx;
     cursor: pointer;
     transition: opacity 0.2s ease;
 

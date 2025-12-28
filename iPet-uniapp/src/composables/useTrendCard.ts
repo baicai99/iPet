@@ -13,6 +13,7 @@ import { computed, ref, type Ref, type ComputedRef } from 'vue'
 import { useHealthStore } from '@/stores/healthStore'
 import type { HealthRecord } from '@shared/types/health'
 import { getTrendCopywriting, type TrendSentiment } from '@/config/trendCopywriting'
+import { getLocalDayKey } from '@/utils/common/timeKey'
 import {
     TREND_MIN_DATA_POINTS,
     TREND_THRESHOLD_PERCENT,
@@ -90,7 +91,7 @@ function groupByDate(records: HealthRecord[]): Map<string, number[]> {
     const groups = new Map<string, number[]>()
 
     for (const record of records) {
-        const dateKey = record.date?.split('T')[0] || ''
+        const dateKey = getLocalDayKey(record.date)
         if (!dateKey) continue
 
         if (!groups.has(dateKey)) {

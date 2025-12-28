@@ -4,14 +4,14 @@
  * 图片格式永久转换脚本
  * 
  * 功能：
- * 1. 调用 optimize-images.js 生成 WebP 文件到 dist 目录
- * 2. 将 WebP 文件复制回 src/static/images/articles 目录
+ * 1. 调用 optimize-images.js 生成 JPG 文件到 dist 目录
+ * 2. 将 JPG 文件复制回 src/static/images/articles 目录
  * 3. 删除原始的 PNG/JPG 文件
  * 4. 生成转换报告
  * 
  * 目的：
  * 确保无论使用何种编译工具（HBuilderX、npm、Vite等），
- * 都能使用优化后的 WebP 图片，避免编译大体积的 PNG 文件
+ * 都能使用优化后的 JPG 图片，避免编译大体积的 PNG 文件
  */
 
 import fs from 'fs'
@@ -47,7 +47,7 @@ function formatBytes(bytes) {
 }
 
 async function convertImages() {
-    console.log('\n🔄 Starting permanent image conversion to WebP...\n')
+    console.log('\n🔄 Starting permanent image conversion to JPG...\n')
     console.log(`Source directory: ${CONFIG.sourceDir}`)
     console.log(`Working directory: ${CONFIG.distDir}\n`)
 
@@ -66,28 +66,28 @@ async function convertImages() {
 
     console.log('')
 
-    // Step 2: 检查生成的 WebP 文件
-    log('cyan', '🔍', 'Step 2/4: Checking generated WebP files...')
+    // Step 2: 检查生成的 JPG 文件
+    log('cyan', '🔍', 'Step 2/4: Checking generated JPG files...')
 
     if (!fs.existsSync(CONFIG.distDir)) {
         throw new Error(`Dist directory not found: ${CONFIG.distDir}`)
     }
 
-    const webpFiles = fs.readdirSync(CONFIG.distDir)
-        .filter(f => f.endsWith('.webp'))
+    const jpgFiles = fs.readdirSync(CONFIG.distDir)
+        .filter(f => f.endsWith('.jpg'))
 
-    if (webpFiles.length === 0) {
-        throw new Error('No WebP files were generated')
+    if (jpgFiles.length === 0) {
+        throw new Error('No JPG files were generated')
     }
 
-    log('green', '✓', `Found ${webpFiles.length} WebP files`)
+    log('green', '✓', `Found ${jpgFiles.length} JPG files`)
     console.log('')
 
-    // Step 3: 复制 WebP 文件到源目录
-    log('cyan', '📋', 'Step 3/4: Copying WebP files to source directory...')
+    // Step 3: 复制 JPG 文件到源目录
+    log('cyan', '📋', 'Step 3/4: Copying JPG files to source directory...')
 
     const copyResults = []
-    for (const file of webpFiles) {
+    for (const file of jpgFiles) {
         const sourcePath = path.join(CONFIG.distDir, file)
         const destPath = path.join(CONFIG.sourceDir, file)
 
@@ -110,7 +110,7 @@ async function convertImages() {
     log('cyan', '🗑️ ', 'Step 4/4: Removing original PNG/JPG files...')
 
     const originalFiles = fs.readdirSync(CONFIG.sourceDir)
-        .filter(f => /\.(png|jpg|jpeg)$/i.test(f))
+        .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
 
     const deletionResults = []
     for (const file of originalFiles) {
@@ -134,15 +134,15 @@ async function convertImages() {
     console.log('─'.repeat(60))
     console.log('📊 Conversion Summary')
     console.log('─'.repeat(60))
-    console.log(`WebP files created:  ${colors.green}${copyResults.length}${colors.reset}`)
+    console.log(`JPG files created:   ${colors.green}${copyResults.length}${colors.reset}`)
     console.log(`PNG/JPG deleted:     ${colors.yellow}${deletionResults.length}${colors.reset}`)
 
-    const totalWebpSize = copyResults.reduce((sum, r) => sum + r.size, 0)
+    const totalJpgSize = copyResults.reduce((sum, r) => sum + r.size, 0)
     const totalDeletedSize = deletionResults.reduce((sum, r) => sum + r.size, 0)
 
-    console.log(`New total size:      ${formatBytes(totalWebpSize)}`)
+    console.log(`New total size:      ${formatBytes(totalJpgSize)}`)
     console.log(`Old total size:      ${formatBytes(totalDeletedSize)}`)
-    console.log(`Space saved:         ${formatBytes(totalDeletedSize - totalWebpSize)} (${((1 - totalWebpSize / totalDeletedSize) * 100).toFixed(1)}%)`)
+    console.log(`Space saved:         ${formatBytes(totalDeletedSize - totalJpgSize)} (${((1 - totalJpgSize / totalDeletedSize) * 100).toFixed(1)}%)`)
     console.log('─'.repeat(60))
 
     // 保存详细报告
@@ -150,14 +150,14 @@ async function convertImages() {
         timestamp: new Date().toISOString(),
         sourceDirectory: CONFIG.sourceDir,
         summary: {
-            webpCreated: copyResults.length,
+            jpgCreated: copyResults.length,
             originalDeleted: deletionResults.length,
-            totalWebpSizeKB: totalWebpSize / 1024,
+            totalJpgSizeKB: totalJpgSize / 1024,
             totalDeletedSizeKB: totalDeletedSize / 1024,
-            spaceSavedKB: (totalDeletedSize - totalWebpSize) / 1024,
-            spaceSavedPercent: ((1 - totalWebpSize / totalDeletedSize) * 100).toFixed(1)
+            spaceSavedKB: (totalDeletedSize - totalJpgSize) / 1024,
+            spaceSavedPercent: ((1 - totalJpgSize / totalDeletedSize) * 100).toFixed(1)
         },
-        webpFiles: copyResults,
+        jpgFiles: copyResults,
         deletedFiles: deletionResults
     }
 
@@ -166,8 +166,8 @@ async function convertImages() {
 
     console.log(`\n${colors.green}✨ Conversion completed successfully!${colors.reset}`)
     console.log(`${colors.cyan}Next steps:${colors.reset}`)
-    console.log(`  1. Update article frontmatter to use .webp extensions`)
-    console.log(`  2. Update article-schema.json to enforce .webp format`)
+    console.log(`  1. Update article frontmatter to use .jpg extensions`)
+    console.log(`  2. Update article-schema.json to enforce .jpg format`)
     console.log(`  3. Run 'npm run articles:build' to regenerate manifest\n`)
 }
 

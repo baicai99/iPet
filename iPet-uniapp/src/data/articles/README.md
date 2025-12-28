@@ -1,6 +1,6 @@
 # 文章系统维护指南
 
-> ⚠️ 2025-12-14 起，文章内容的唯一事实源位于 `src/modules/articles/content/articles/`，脚本迁移至 `scripts/articles/*.mjs`，产物为 `public/static/articles/articles-manifest.json` 与 `public/static/articles/md/{id}.md`。本页保留旧版背景，具体操作请以新版 Markdown + Manifest 链路为准。
+> ⚠️ 2025-12-14 起，文章内容的唯一事实源位于 `src/articles/source/md/`，封面图片源位于 `src/articles/source/images/`，脚本迁移至 `scripts/articles/*.mjs`，产物为 `public/static/articles/articles-manifest.json` 与 `public/static/articles/md/{id}.md`。本页保留旧版背景，具体操作请以新版 Markdown + Manifest 链路为准。
 
 **版本**: 2.0  
 **最后更新**: 2025-12-14
@@ -35,7 +35,7 @@ scripts/articles/build.mjs 解析 + 校验
 
 ### Step 1: 创建 Markdown 文件
 
-在 `src/modules/articles/content/articles/` 目录下创建 `.md` 文件，文件名建议使用文章ID（snake_case）。
+在 `src/articles/source/md/` 目录下创建 `.md` 文件，文件名建议使用文章ID（snake_case）。
 
 **示例**: `new_article.md`
 
@@ -44,7 +44,7 @@ scripts/articles/build.mjs 解析 + 校验
 id: new_article
 title: 文章标题（5-50字）
 summary: 文章摘要（10-100字）
-cover: /static/images/articles/filename.png
+cover: /static/images/articles/filename.jpg
 category: education
 author: iPet 健康团队
 tags:
@@ -63,7 +63,7 @@ source: local  # local 或 remote
 
 ### Step 2: 准备封面图
 
-- 放置到 `src/static/images/articles/` 目录
+- 放置到 `src/articles/source/images/` 目录（构建时会同步到 `src/static/images/articles/` 供运行时使用）
 - 推荐尺寸: 1200x630px
 - 格式: PNG / JPG / WebP
 - 文件大小:  < 100KB（使用 `npm run optimize:images` 压缩）
@@ -81,8 +81,8 @@ npm run articles:test
 ### Step 4: 提交代码
 
 ```bash
-git add src/modules/articles/content/articles/new_article.md
-git add src/static/images/articles/cover.png
+git add src/articles/source/md/new_article.md
+git add src/articles/source/images/cover.png
 git add public/static/articles/articles-manifest.json
 git add public/static/articles/md/new_article.md
 git add src/modules/articles/domain/generated/builtinManifest.ts
@@ -154,7 +154,7 @@ npm run articles:test
 | `id` | string | ✅ | 唯一标识（小写+下划线） | `dog_weight` |
 | `title` | string | ✅ | 文章标题（5-50字） | `狗狗体重管理指南` |
 | `summary` | string | ✅ | 摘要（10-100字） | `了解如何科学管理...` |
-| `cover` | string | ✅ | 封面图路径 | `/static/images/articles/cover.png` |
+| `cover` | string | ✅ | 封面图路径 | `/static/images/articles/cover.jpg` |
 | `category` | enum | ✅ | 分类：`education`/`news`/`debunk` | `education` |
 | `author` | string | ✅ | 作者名称 | `iPet 健康团队` |
 | `tags` | array | ✅ | 标签数组（至少1个） | `[weight, health]` |
@@ -218,7 +218,7 @@ node scripts/test-articles.js
 ```bash
 # 常见错误
 - updateTime 格式错误（必须是 YYYY-MM-DD）
-- cover 路径不正确（必须以 /static/images/articles/ 开头）
+- cover 路径不正确（必须以 /static/images/articles/ 开头，且必须是 .jpg）
 - tags 为空数组
 - category 不是 education/news/debunk 之一
 ```
@@ -232,7 +232,7 @@ node scripts/test-articles.js
 ### Q: 如何删除文章？
 
 **A**: 
-1. 删除 `src/modules/articles/content/articles/文章.md`
+1. 删除 `src/articles/source/md/文章.md`
 2. 删除对应封面图
 3. 运行 `npm run articles:build`
 4. 提交变更

@@ -25,9 +25,10 @@
             </view>
 
             <!-- Right: Chart -->
-            <!-- ⚠️ TEMPORARILY DISABLED for summary view performance -->
-            <view class="chart-section" :class="{ 'wide-chart': isWide }" :style="{ height: chartHeight }"
-                v-if="false && hasChartData">
+            <!-- Right: Chart -->
+            <view class="chart-section" :class="{ 'wide-chart': isWide }"
+                :style="{ height: chartHeight, width: chartWidth, flex: isWide ? '1 1 auto' : '0 0 auto' }"
+                v-if="hasChartData">
                 <!-- 条件渲染替代动态组件 -->
                 <MiniLineChart v-if="chartComponentName === 'MiniLineChart'" v-bind="resolvedChartProps" />
                 <MiniBarChart v-else-if="chartComponentName === 'MiniBarChart'" v-bind="resolvedChartProps" />
@@ -84,6 +85,7 @@ const themeBg = computed(() => props.config?.theme.bg || props.themeBg)
 const iconName = computed(() => props.config?.iconName || props.iconName)
 const chartHeight = computed(() => props.config?.chartHeight || props.chartHeight)
 const isWide = computed(() => props.config?.isWide || props.isWide)
+const chartWidth = computed(() => props.config?.chartWidth || (isWide.value ? '100%' : '200rpx'))
 
 const isValueText = computed(() => {
     return isNaN(Number(valueStr.value))
@@ -134,6 +136,8 @@ const resolvedChartProps = computed(() => {
             events: Object.freeze(props.config.chartData),
             emoji: statusEmoji,
             color: chartColor,
+            width: chartWidth.value,
+            height: chartHeight.value,
             strokeColor: baseChartProps.strokeColor || themeColor.value,
             barColor: baseChartProps.barColor || themeColor.value,
             activeColor: baseChartProps.activeColor || themeColor.value,
@@ -309,8 +313,9 @@ const handleClick = () => {
     width: 200rpx;
     /* w-24 approx */
     display: flex;
-    align-items: flex-end;
+    align-items: stretch;
     justify-content: flex-end;
+    overflow: hidden;
 }
 
 .chart-section.wide-chart {

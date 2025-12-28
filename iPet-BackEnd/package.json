@@ -1,11 +1,14 @@
 {
   "name": "iPet-BackEndNew",
-  "version": "0.0.1",
+  "version": "0.0.18",
   "description": "",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "prisma:sync": "node scripts/prisma-sync.js",
+    "prestart": "npm run prisma:sync",
+    "prestart:dev": "npm run prisma:sync",
     "prebuild": "npx prisma generate",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",

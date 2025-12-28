@@ -86,4 +86,146 @@ export class ArticleService {
 
         return result;
     }
+
+    async update(id: string, data: { title?: string; summary?: string; content?: string; category?: string; cover?: string; author?: string }) {
+        const existing = await this.prisma.article.findUnique({ where: { id } });
+
+        const result = await this.prisma.article.update({
+            where: { id },
+            data,
+        });
+
+        // Invalidate caches
+        await this.cacheManager.del(cacheKeys.articles.byId(id));
+        if (existing) {
+            await this.cacheManager.del(cacheKeys.articles.listByCategory(existing.category));
+        }
+        if (data.category) {
+            await this.cacheManager.del(cacheKeys.articles.listByCategory(data.category));
+        }
+        await this.cacheManager.del(cacheKeys.articles.listByCategory('all'));
+
+        return result;
+    }
+
+    async delete(id: string, adminId?: string) {
+        const existing = await this.prisma.article.findUnique({ where: { id } });
+
+        if (!existing) {
+            return;
+        }
+
+        // Soft delete
+        await this.prisma.article.update({
+            where: { id },
+            data: {
+                deletedAt: new Date(),
+                deletedBy: adminId,
+            },
+        });
+
+        // Invalidate caches
+        await this.cacheManager.del(cacheKeys.articles.byId(id));
+        await this.cacheManager.del(cacheKeys.articles.listByCategory(existing.category));
+        await this.cacheManager.del(cacheKeys.articles.listByCategory('all'));
+    }
+
+    async restore(id: string) {
+        const existing = await this.prisma.article.findUnique({ where: { id } });
+
+        if (!existing || !existing.deletedAt) {
+            return null;
+        }
+
+        const result = await this.prisma.article.update({
+            where: { id },
+            data: {
+                deletedAt: null,
+                deletedBy: null,
+            },
+        });
+
+        // Invalidate caches
+        await this.cacheManager.del(cacheKeys.articles.byId(id));
+        await this.cacheManager.del(cacheKeys.articles.listByCategory(result.category));
+        await this.cacheManager.del(cacheKeys.articles.listByCategory('all'));
+
+        return result;
+    }
+
+    async permanentDelete(id: string) {
+        const existing = await this.prisma.article.findUnique({ where: { id } });
+
+        if (!existing) {
+            return;
+        }
+
+        await this.prisma.article.delete({ where: { id } });
+
+        // Invalidate caches
+        await this.cacheManager.del(cacheKeys.articles.byId(id));
+        await this.cacheManager.del(cacheKeys.articles.listByCategory(existing.category));
+        await this.cacheManager.del(cacheKeys.articles.listByCategory('all'));
+    }
+
+    async findAllAdmin(category: string | undefined, search: string | undefined, pagination: PaginationResult, includeDeleted = false) {
+        const where: any = {};
+
+        // By default, exclude deleted articles
+        if (!includeDeleted) {
+            where.deletedAt = null;
+        }
+
+        if (category && category !== 'all') {
+            where.category = category;
+        }
+
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { summary: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [articles, total] = await Promise.all([
+            this.prisma.article.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: pagination.skip,
+                take: pagination.take,
+            }),
+            this.prisma.article.count({ where }),
+        ]);
+
+        return {
+            items: articles,
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+        };
+    }
+
+    async getDeletedArticles(pagination: PaginationResult) {
+        const where = { deletedAt: { not: null } };
+
+        const [articles, total] = await Promise.all([
+            this.prisma.article.findMany({
+                where,
+                orderBy: { deletedAt: 'desc' },
+                skip: pagination.skip,
+                take: pagination.take,
+            }),
+            this.prisma.article.count({ where }),
+        ]);
+
+        return {
+            items: articles,
+            total,
+            page: pagination.page,
+            limit: pagination.limit,
+            totalPages: Math.ceil(total / pagination.limit),
+        };
+    }
 }
+

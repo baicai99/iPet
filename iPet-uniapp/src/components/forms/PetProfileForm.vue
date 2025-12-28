@@ -232,6 +232,7 @@ import { ref, computed } from 'vue'
 import { DOG_BREEDS, CAT_BREEDS, OTHER_BREEDS } from '@/config/petBreeds'
 import PinyinMatch from 'pinyin-match'
 import AvatarUploader from './AvatarUploader.vue'
+import { getLocalDayKey } from '@/utils/common/timeKey'
 interface PetProfile {
     avatar: string;
     name: string;
@@ -295,7 +296,7 @@ const rules = {
                     return callback(new Error('到家日期不能早于出生日期'))
                 }
 
-                const today = new Date().toISOString().split('T')[0]
+                const today = getLocalDayKey(Date.now())
                 if (value > today) {
                     return callback(new Error('到家日期不能是未来时间'))
                 }

@@ -4,7 +4,7 @@
       <view class="logo-section">
         <image class="logo" :src="'/static/logo.png'" mode="aspectFit"></image>
         <text class="app-name">iPet</text>
-        <text class="version">Version 0.0.1</text>
+        <text class="version">Version {{ appVersion }}</text>
       </view>
 
       <view class="menu-group">
@@ -23,6 +23,10 @@
 </template>
 
 <script setup>
+import packageJson from '../../../package.json'
+
+const appVersion = packageJson.version || '0.0.1'
+
 const handleRate = () => {
   // In a real app, this would open the app store
   uni.showToast({

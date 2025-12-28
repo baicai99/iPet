@@ -17,6 +17,7 @@ import {
     TREND_WINDOW_SIZE,
     TREND_WEEKS_FOR_WEEKLY_MODE
 } from './trendConstants'
+import { getLocalDayKey } from '@/utils/common/timeKey'
 
 // ============================================================================
 // Types
@@ -100,7 +101,7 @@ function aggregateByDate(records: MetricRecord[]): number[] {
     const groups = new Map<string, number[]>()
 
     for (const record of records) {
-        const dateKey = record.date?.split('T')[0] || ''
+        const dateKey = getLocalDayKey(record.date)
         if (!dateKey) continue
 
         if (!groups.has(dateKey)) {
