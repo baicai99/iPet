@@ -8,12 +8,15 @@ import { AdminUsersService } from './admin-users.service';
 import { AdminArticlesController } from './admin-articles.controller';
 import { ArticleModule } from '../article/article.module';
 import { AdminSystemController } from './admin-system.controller';
+import { AdminInitController } from './admin-init.controller';
 import { SystemHealthModule } from '../system-health/system-health.module';
 import { StorageModule } from '../storage/storage.module';
 import { UsersModule } from '../users/users.module';
 import { AdminLoginProtectionService } from './admin-login-protection.service';
 import { AuditLogService } from './audit-log.service';
 import { RolesGuard } from './roles.guard';
+import { AdminInitService } from './admin-init.service';
+import { AdminAuditLogsController } from './admin-audit-logs.controller';
 
 @Module({
     imports: [
@@ -28,6 +31,8 @@ import { RolesGuard } from './roles.guard';
         AdminUsersController,
         AdminArticlesController,
         AdminSystemController,
+        AdminInitController,
+        AdminAuditLogsController,
     ],
     providers: [
         AdminService,
@@ -36,6 +41,7 @@ import { RolesGuard } from './roles.guard';
         AdminLoginProtectionService,
         AuditLogService,
         RolesGuard,
+        AdminInitService,
     ],
     exports: [AdminService, AdminAuthGuard, AuditLogService, RolesGuard],
 })

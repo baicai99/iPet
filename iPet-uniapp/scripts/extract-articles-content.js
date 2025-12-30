@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ARTICLES_FILE = path.resolve(__dirname, '../src/data/articles.ts')
-const OUTPUT_DIR = path.resolve(__dirname, '../src/articles/source/md')
+const OUTPUT_DIR = path.resolve(__dirname, '../../articles-source/md')
 
 // 确保输出目录存在
 if (!fs.existsSync(OUTPUT_DIR)) {

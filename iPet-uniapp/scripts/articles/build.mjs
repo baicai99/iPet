@@ -9,7 +9,7 @@ import sharp from 'sharp'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '../..')
-const SOURCE_ROOT = path.resolve(ROOT, 'src/articles/source')
+const SOURCE_ROOT = path.resolve(ROOT, '../articles-source')
 const CONTENT_DIR = path.resolve(SOURCE_ROOT, 'md')
 const SOURCE_IMAGES_DIR = path.resolve(SOURCE_ROOT, 'images')
 const STATIC_IMAGES_DIR = path.resolve(ROOT, 'src/static/images/articles')

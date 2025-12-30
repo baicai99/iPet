@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { PaginationInfo } from '@/api/types';
 import { getUsers, type UserListParams } from '@/api/contracts/users';
+import { queryKeys } from '@/api/queryKeys';
 
 const DEFAULT_PAGINATION: PaginationInfo = {
     page: 1,
@@ -14,15 +15,13 @@ export const useUsers = () => {
     const [params, setParams] = useState<UserListParams>({
         page: DEFAULT_PAGINATION.page,
         limit: DEFAULT_PAGINATION.limit,
+        sortBy: 'lastActiveAt',
+        sortOrder: 'desc',
     });
 
-    const queryKey = useMemo(() => ['users', params], [params]);
-
     const query = useQuery({
-        queryKey,
+        queryKey: queryKeys.users.list(params),
         queryFn: () => getUsers(params),
-        staleTime: 30 * 1000,
-        gcTime: 5 * 60 * 1000,
         placeholderData: (previousData) => previousData,
     });
 

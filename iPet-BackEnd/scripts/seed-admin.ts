@@ -10,7 +10,7 @@ async function main() {
     const username = process.env.ADMIN_USERNAME || 'admin';
     const password = process.env.ADMIN_PASSWORD;
     const displayName = process.env.ADMIN_DISPLAY_NAME || '系统管理员';
-    const role = 'super_admin';
+    const role = 'admin';
 
     // Security check for production
     if (process.env.NODE_ENV === 'production' && !password) {

@@ -3,8 +3,8 @@
  * 处理认证、错误映射和响应解包
  */
 
-import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosRequestHeaders } from 'axios';
-import { getToken, triggerTokenExpired } from './token';
+import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig, type AxiosRequestHeaders } from 'axios';
+import { getToken, clearToken } from '@/core/auth/tokenStore';
 import { AppError } from '@/core/errors';
 import type { ErrorCode } from './types';
 
@@ -37,6 +37,7 @@ function mapHttpStatusToErrorCode(status: number): ErrorCode {
 interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
     _requestId?: string;
     _skipAuth?: boolean;
+    _rawResponse?: boolean;
 }
 
 type HeadersWithSet = {
@@ -49,7 +50,7 @@ const hasSetMethod = (headers: AxiosRequestHeaders): headers is AxiosRequestHead
 
 const ensureHeaders = (config: ExtendedAxiosRequestConfig): AxiosRequestHeaders => {
     if (!config.headers) {
-        config.headers = {};
+        config.headers = new axios.AxiosHeaders() as AxiosRequestHeaders;
     }
     return config.headers as AxiosRequestHeaders;
 };
@@ -93,14 +94,26 @@ export function setupInterceptors(client: AxiosInstance): void {
     // ============ 响应拦截器 ============
     client.interceptors.response.use(
         (response) => {
-            // 成功响应：解包 data
+            // 成功响应：解包 data 并保留 meta
             const responseData = response.data;
+            const config = response.config as ExtendedAxiosRequestConfig;
 
             // 如果响应是标准格式 { success, data, ... }
             if (responseData && typeof responseData === 'object' && 'success' in responseData) {
                 if (responseData.success) {
-                    // 返回 data 字段内容
-                    return responseData.data;
+                    // 如果请求配置要求原始响应，直接返回
+                    if (config._rawResponse) {
+                        return responseData;
+                    }
+
+                    // 默认：返回带 meta 的响应  
+                    return {
+                        data: responseData.data,
+                        meta: {
+                            requestId: responseData.requestId,
+                            timestamp: responseData.timestamp,
+                        }
+                    };
                 } else {
                     // 业务错误
                     const error = responseData.error || {};
@@ -119,9 +132,18 @@ export function setupInterceptors(client: AxiosInstance): void {
         (error: AxiosError) => {
             const config = error.config as ExtendedAxiosRequestConfig | undefined;
             const requestId = config?._requestId;
+            const method = config?.method?.toUpperCase() || 'UNKNOWN';
+            const url = config?.url || 'unknown';
+            const baseURL = config?.baseURL || '';
 
             // 网络错误
             if (!error.response) {
+                console.error('[HTTP Error]', {
+                    requestId,
+                    method,
+                    url: baseURL ? `${baseURL}${url}` : url,
+                    message: 'NETWORK_ERROR',
+                });
                 throw new AppError(
                     'NETWORK_ERROR',
                     '网络连接失败，请检查网络设置',
@@ -131,17 +153,12 @@ export function setupInterceptors(client: AxiosInstance): void {
             }
 
             const { status, data } = error.response;
-
-            // 401 未授权 - Token 过期或无效
-            if (status === 401) {
-                triggerTokenExpired();
-                throw new AppError(
-                    'UNAUTHORIZED',
-                    '登录已过期，请重新登录',
-                    requestId,
-                    { status }
-                );
-            }
+            console.error('[HTTP Error]', {
+                requestId,
+                method,
+                url: baseURL ? `${baseURL}${url}` : url,
+                status,
+            });
 
             // 尝试从响应中提取错误信息
             const responseData = data as Record<string, unknown> | undefined;
@@ -151,6 +168,17 @@ export function setupInterceptors(client: AxiosInstance): void {
                 || getDefaultErrorMessage(status);
 
             const errorCode = (errorInfo?.code as ErrorCode) || mapHttpStatusToErrorCode(status);
+
+            // 401 未授权 - Token 过期或无效
+            if (status === 401 && !config?._skipAuth) {
+                clearToken(); // 清除 token，订阅机制会自动触发 UI 更新和跳转
+                throw new AppError(
+                    'UNAUTHORIZED',
+                    '登录已过期，请重新登录',
+                    requestId,
+                    { status }
+                );
+            }
 
             throw new AppError(errorCode, message, requestId, { status });
         }

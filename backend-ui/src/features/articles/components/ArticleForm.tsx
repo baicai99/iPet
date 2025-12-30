@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { Form, Input, Button, Select, Card, Space } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Form, Input, Button, Select, Card, Space, Upload, App } from 'antd';
+import type { RcFile } from 'antd/es/upload';
 import { UploadOutlined } from '@ant-design/icons';
 import type { CreateArticleRequest, UpdateArticleRequest } from '@/api/contracts/articles';
 import type { ArticleCategory } from '@/api/types';
@@ -26,24 +27,99 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     isEdit = false,
     onCancel,
 }) => {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
+    const [coverPreview, setCoverPreview] = useState<string>('');
+    const coverValue = Form.useWatch('cover', form) as string | undefined;
 
     useEffect(() => {
         if (initialValues) {
             form.setFieldsValue(initialValues);
+            if (typeof initialValues.cover === 'string') {
+                setCoverPreview(initialValues.cover);
+            }
         }
     }, [initialValues, form]);
+
+    useEffect(() => {
+        if (coverValue && coverValue !== coverPreview) {
+            setCoverPreview(coverValue);
+        }
+        if (!coverValue && coverPreview) {
+            setCoverPreview('');
+        }
+    }, [coverValue, coverPreview]);
+
+    const uploadHint = useMemo(() => '请在这里上传封面', []);
+
+    const compressImageToJpeg = async (file: RcFile, maxSize = 1600, quality = 0.8): Promise<string> => {
+        const url = URL.createObjectURL(file);
+        try {
+            const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('图片加载失败'));
+                img.src = url;
+            });
+
+            const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+            const targetWidth = Math.max(1, Math.round(image.width * scale));
+            const targetHeight = Math.max(1, Math.round(image.height * scale));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                throw new Error('图片压缩失败');
+            }
+            ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            const blob = await new Promise<Blob | null>((resolve) =>
+                canvas.toBlob((result) => resolve(result), 'image/jpeg', quality)
+            );
+            if (!blob) {
+                throw new Error('图片压缩失败');
+            }
+
+            return await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('图片读取失败'));
+                reader.readAsDataURL(blob);
+            });
+        } finally {
+            URL.revokeObjectURL(url);
+        }
+    };
+
+    const handleCoverUpload = async (file: RcFile) => {
+        try {
+            const compressed = await compressImageToJpeg(file);
+            form.setFieldsValue({ cover: compressed });
+            setCoverPreview(compressed);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : '封面处理失败';
+            message.error(errorMessage);
+        }
+        return false;
+    };
+
+    const handleCoverRemove = () => {
+        form.setFieldsValue({ cover: undefined });
+        setCoverPreview('');
+    };
 
     const handleFinish = async (values: CreateArticleRequest | UpdateArticleRequest) => {
         try {
             await onSubmit(values);
-        } catch (error) {
-            console.error('Submit failed:', error);
+        } catch {
+            // Error already handled by parent component and API interceptors
         }
     };
 
     return (
-        <Card title={isEdit ? '编辑文章' : '新增文章'} bordered={false}>
+        <Card title={isEdit ? '编辑文章' : '新增文章'} variant="borderless">
             <Form
                 form={form}
                 layout="vertical"
@@ -78,10 +154,57 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <Form.Item
                     label="封面图片"
                     name="cover"
-                    extra="支持 JPG/PNG 格式，建议尺寸 16:9"
+                    extra="支持任意图片格式，自动转换为 JPG 并压缩；建议尺寸 16:9"
                 >
-                    {/* 暂时使用 Input 输入 URL，需后续集成实际上传组件 */}
-                    <Input placeholder="请输入封面图片 URL" prefix={<UploadOutlined />} />
+                    <Upload
+                        accept="image/*"
+                        showUploadList={false}
+                        beforeUpload={handleCoverUpload}
+                    >
+                        <div
+                            style={{
+                                border: '1px dashed #d9d9d9',
+                                borderRadius: 8,
+                                padding: 16,
+                                textAlign: 'center',
+                                background: '#fafafa',
+                                cursor: 'pointer',
+                                minHeight: 180,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                overflow: 'hidden',
+                            }}
+                        >
+                            {coverPreview ? (
+                                <img
+                                    src={coverPreview}
+                                    alt="封面预览"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        maxHeight: 220,
+                                        objectFit: 'cover',
+                                        borderRadius: 6,
+                                    }}
+                                />
+                            ) : (
+                                <span style={{ color: '#8c8c8c', fontSize: 14 }}>
+                                    <UploadOutlined style={{ marginRight: 8 }} />
+                                    {uploadHint}
+                                </span>
+                            )}
+                        </div>
+                    </Upload>
+                    {coverPreview && (
+                        <Button
+                            type="link"
+                            onClick={handleCoverRemove}
+                            style={{ padding: 0, marginTop: 8 }}
+                        >
+                            移除封面
+                        </Button>
+                    )}
                 </Form.Item>
 
                 <Form.Item

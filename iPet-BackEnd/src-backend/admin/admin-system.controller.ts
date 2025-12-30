@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AdminAuthGuard } from './admin-auth.guard';
 import { RolesGuard } from './roles.guard';
-import { SuperAdminOnly } from './decorators/roles.decorator';
+import { Roles } from './decorators/roles.decorator';
 import { SystemHealthService } from '../system-health/system-health.service';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -16,7 +16,7 @@ export class AdminSystemController {
     ) { }
 
     @Get('info')
-    @SuperAdminOnly() // System info only for super_admin
+    @Roles('admin')
     async getSystemInfo() {
         const healthInfo = this.systemHealthService.getHealthInfo();
 
@@ -40,7 +40,7 @@ export class AdminSystemController {
     }
 
     @Get('storage')
-    @SuperAdminOnly() // Storage info only for super_admin
+    @Roles('admin')
     async getStorageStats() {
         const dataRoot = this.configService.get<string>('dataRoot', './data');
         const uploadsDir = `${dataRoot}/uploads`;

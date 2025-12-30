@@ -27,6 +27,24 @@ export interface ApiErrorResponse {
 /** API 响应联合类型 */
 export type ApiResult<T> = ApiResponse<T> | ApiErrorResponse;
 
+/** API 响应元信息 */
+export interface ApiResponseMeta {
+    requestId: string;
+    timestamp: number;
+}
+
+/** 带元信息的 API 响应（拦截器返回格式） */
+export interface ApiResponseWithMeta<T> {
+    data: T;
+    meta: ApiResponseMeta;
+}
+
+/** 请求配置扩展 */
+export interface ApiRequestConfig {
+    /** 返回原始响应（不解包，用于特殊场景） */
+    _rawResponse?: boolean;
+}
+
 // ============ 分页类型 ============
 
 /** 分页请求参数 */
@@ -97,7 +115,7 @@ export class ApiError extends Error {
 // ============ 管理员类型 ============
 
 /** 管理员角色 */
-export type AdminRole = 'admin' | 'super_admin';
+export type AdminRole = 'admin';
 
 /** 管理员信息 */
 export interface AdminInfo {
@@ -110,7 +128,7 @@ export interface AdminInfo {
 // ============ 用户类型 ============
 
 /** 用户列表项 */
-export interface User {
+export interface User extends Record<string, unknown> {
     id: string;
     email: string;
     displayName: string;
@@ -154,7 +172,7 @@ export interface GuestStats {
 export type ArticleCategory = 'education' | 'health' | 'care' | 'nutrition' | string;
 
 /** 文章列表项 */
-export interface Article {
+export interface Article extends Record<string, unknown> {
     id: string;
     title: string;
     summary: string;
@@ -226,7 +244,7 @@ export interface SystemDetails {
     platform: string;
     arch: string;
     nodeVersion: string;
-    hostname: string;
+    hostname?: string;
     uptime: number;
     memoryUsage: MemoryUsage;
     cpuUsage: number[];
@@ -250,9 +268,23 @@ export interface StorageBreakdown {
 
 /** 存储统计 */
 export interface StorageStats {
-    uploadsDir: string;
     totalFiles: number;
     totalSize: number;
     totalSizeFormatted: string;
     breakdown: StorageBreakdown;
+}
+
+// ============ 审计日志类型 ============
+
+/** 审计日志操作类型 */
+export type AuditLogAction = string;
+
+/** 审计日志 */
+export interface AuditLog {
+    id: string;
+    action: AuditLogAction;
+    user: string;
+    timestamp: string;
+    details: string;
+    ip?: string;
 }

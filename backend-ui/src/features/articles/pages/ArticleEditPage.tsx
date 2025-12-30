@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { message, Spin } from 'antd';
+import { App, Spin } from 'antd';
 import ArticleForm from '../components/ArticleForm';
 import { getArticleById, createArticle, updateArticle, type CreateArticleRequest, type UpdateArticleRequest } from '@/api/contracts/articles';
+import { ROUTES } from '@/router/routes';
 
 const ArticleEditPage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+    const { id, entryPath } = useParams<{ id: string; entryPath?: string }>();
     const navigate = useNavigate();
     const isEdit = !!id;
+    const basePath = entryPath ? `/${entryPath}` : '';
+    const { message } = App.useApp();
 
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -28,11 +31,11 @@ const ArticleEditPage: React.FC = () => {
             });
         } catch {
             message.error('获取文章详情失败');
-            navigate('/articles');
+            navigate(`${basePath}/${ROUTES.ARTICLES}`);
         } finally {
             setLoading(false);
         }
-    }, [navigate]);
+    }, [basePath, navigate]);
 
     useEffect(() => {
         if (isEdit && id) {
@@ -50,7 +53,7 @@ const ArticleEditPage: React.FC = () => {
                 await createArticle(values as CreateArticleRequest);
                 message.success('发布成功');
             }
-            navigate('/articles');
+            navigate(`${basePath}/${ROUTES.ARTICLES}`);
         } catch {
             message.error(isEdit ? '更新失败' : '发布失败');
         } finally {
@@ -67,13 +70,13 @@ const ArticleEditPage: React.FC = () => {
     }
 
     return (
-        <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ padding: 0, margin: 0 }}>
             <ArticleForm
                 initialValues={initialValues}
                 onSubmit={handleSubmit}
                 loading={submitting}
                 isEdit={isEdit}
-                onCancel={() => navigate('/articles')}
+                onCancel={() => navigate(`${basePath}/${ROUTES.ARTICLES}`)}
             />
         </div>
     );

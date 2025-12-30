@@ -25,11 +25,6 @@ export class RolesGuard implements CanActivate {
             throw new ForbiddenException('无权访问此资源');
         }
 
-        // super_admin has access to everything
-        if (admin.role === 'super_admin') {
-            return true;
-        }
-
         // Check if the admin's role is in the required roles
         const hasRole = requiredRoles.includes(admin.role as AdminRole);
 

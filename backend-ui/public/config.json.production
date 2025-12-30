@@ -1,0 +1,5 @@
+{
+  "apiBaseUrl": "https://api.zhengjiyuan.top/api",
+  "mockEnabled": false,
+  "environment": "production"
+}

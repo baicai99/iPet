@@ -1,10 +1,47 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Table, Grid, Drawer, Dropdown, Button, Descriptions } from 'antd';
 import { MoreOutlined, EyeOutlined } from '@ant-design/icons';
 import type { DataTableProps, ColumnType } from './types';
 import type { TablePaginationConfig } from 'antd';
+import { useContainerHeight } from '@/shared/hooks';
 
 const { useBreakpoint } = Grid;
+
+// 抽屉内容组件 - memo 化防止不必要渲染
+interface DrawerContentProps<T extends Record<string, unknown>> {
+    record: T;
+    columns: ColumnType<T>[];
+}
+
+const DrawerContent = <T extends Record<string, unknown>>({
+    record,
+    columns,
+}: DrawerContentProps<T>) => {
+    const items = useMemo(
+        () =>
+            columns.map((col, index) => ({
+                key: (col.key as string) || (col.dataIndex as string) || `col-${index}`,
+                label: col.title as React.ReactNode,
+                children: col.render
+                    ? col.render(record[col.dataIndex as keyof T], record, 0)
+                    : (record[col.dataIndex as keyof T] as React.ReactNode),
+            })),
+        [record, columns]
+    );
+
+    return (
+        <Descriptions column={1} layout="vertical" bordered size="small">
+            {items.map((item) => (
+                <Descriptions.Item key={item.key} label={item.label}>
+                    {item.children as React.ReactNode}
+                </Descriptions.Item>
+            ))}
+        </Descriptions>
+    );
+};
+
+// memo 化组件，保留泛型类型
+const MemoizedDrawerContent = React.memo(DrawerContent) as typeof DrawerContent;
 
 export const DataTable = <T extends Record<string, unknown>>({
     columns,
@@ -13,14 +50,23 @@ export const DataTable = <T extends Record<string, unknown>>({
     drawerContent,
     rowKey = 'id',
     onRow,
+    size,
     ...tableProps
 }: DataTableProps<T>) => {
     const screens = useBreakpoint();
     const isMobile = !screens.sm; // xs
+    const tableRef = useRef<HTMLDivElement>(null);
 
     // State for detail drawer
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [currentRow, setCurrentRow] = useState<T | null>(null);
+
+    // 动态计算表格高度
+    const containerHeight = useContainerHeight(tableRef, {
+        minHeight: 300,
+        maxHeight: 800,
+        bottomOffset: 120,
+    });
 
     // Filter columns for mobile
     const responsiveColumns = useMemo(() => {
@@ -44,7 +90,7 @@ export const DataTable = <T extends Record<string, unknown>>({
 
     // Add "More" action column for mobile if enabled
     const finalColumns = useMemo(() => {
-        if (!isMobile || disableMobileMore) return responsiveColumns;
+        if (!isMobile || disableMobileMore || !enableDrawerDetails) return responsiveColumns;
 
         const actionColumn: ColumnType<T> = {
             title: '操作',
@@ -74,43 +120,55 @@ export const DataTable = <T extends Record<string, unknown>>({
         return [...responsiveColumns, actionColumn];
     }, [responsiveColumns, isMobile, disableMobileMore, handleViewDetails]);
 
-    // Default Drawer Content Generator
-    const renderDefaultDrawerContent = (record: T) => {
-        const items = columns.map((col) => ({
-            key: col.key as string || col.dataIndex as string || Math.random().toString(),
-            label: col.title as React.ReactNode,
-            children: col.render
-                ? col.render(record[col.dataIndex as keyof T], record, 0)
-                : (record[col.dataIndex as keyof T] as React.ReactNode),
-        }));
 
-        return (
-            <Descriptions column={1} layout="vertical" bordered size="small">
-                {items.map((item) => (
-                    <Descriptions.Item key={item.key} label={item.label}>
-                        {item.children as React.ReactNode}
-                    </Descriptions.Item>
-                ))}
-            </Descriptions>
-        );
-    };
+
+    // 智能虚拟化配置
+    const virtualConfig = useMemo(() => {
+        const dataSource = tableProps.dataSource || [];
+
+        // 动态阈值
+        const baseThreshold = isMobile ? 20 : 50;
+        const estimatedRowHeight = 50;
+        const visibleRows = containerHeight ? Math.floor(containerHeight / estimatedRowHeight) : 10;
+        const dynamicThreshold = Math.ceil(visibleRows * 1.5);
+        const threshold = Math.max(baseThreshold, dynamicThreshold);
+
+        // 小数据量：不启用虚拟化
+        if (dataSource.length < threshold) {
+            return {
+                scroll: { x: 'max-content' },
+                virtual: false,
+            };
+        }
+
+        // 大数据量：启用虚拟化
+        return {
+            scroll: {
+                y: containerHeight || 500,
+                x: 'max-content',
+            },
+            virtual: true,
+        };
+    }, [tableProps.dataSource, isMobile, containerHeight]);
 
     const mergedPagination: TablePaginationConfig | false | undefined =
         tableProps.pagination === false || tableProps.pagination == null
             ? tableProps.pagination
             : {
-                position: ['bottomCenter'] as TablePaginationConfig['position'],
+                placement: ['bottomCenter'] as TablePaginationConfig['placement'],
                 showQuickJumper: true,
                 ...tableProps.pagination,
             };
 
+    const tableSize = size ?? (isMobile ? 'small' : 'middle');
+
     return (
-        <>
+        <div ref={tableRef}>
             <Table<T>
                 columns={finalColumns}
                 rowKey={rowKey}
-                scroll={{ x: 'max-content' }}
-                size={isMobile ? 'small' : 'middle'}
+                {...virtualConfig}
+                size={tableSize}
                 onRow={(record, index) => {
                     const existingOnRow = onRow ? onRow(record, index) : {};
                     return {
@@ -128,17 +186,22 @@ export const DataTable = <T extends Record<string, unknown>>({
                 pagination={mergedPagination}
             />
 
-            <Drawer
-                title="详细信息"
-                placement="bottom"
-                height="80vh"
-                onClose={() => setDrawerOpen(false)}
-                open={drawerOpen}
-            >
-                {currentRow && (
-                    drawerContent ? drawerContent(currentRow) : renderDefaultDrawerContent(currentRow)
-                )}
-            </Drawer>
-        </>
+            {enableDrawerDetails && (
+                <Drawer
+                    title="详细信息"
+                    placement="bottom"
+                    size="large"
+                    onClose={() => setDrawerOpen(false)}
+                    open={drawerOpen}
+                >
+                    {currentRow &&
+                        (drawerContent ? (
+                            drawerContent(currentRow)
+                        ) : (
+                            <MemoizedDrawerContent record={currentRow} columns={columns} />
+                        ))}
+                </Drawer>
+            )}
+        </div>
     );
 };

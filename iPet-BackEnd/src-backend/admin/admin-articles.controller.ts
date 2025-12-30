@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Ht
 import { AdminAuthGuard } from './admin-auth.guard';
 import type { AdminAuthenticatedRequest } from './admin-auth.guard';
 import { RolesGuard } from './roles.guard';
-import { Roles, SuperAdminOnly } from './decorators/roles.decorator';
+import { Roles } from './decorators/roles.decorator';
 import { ArticleService } from '../article/article.service';
 import { AuditLogService } from './audit-log.service';
 import { CreateArticleDto, UpdateArticleDto } from './dto/article.dto';
@@ -28,7 +28,7 @@ export class AdminArticlesController {
     ) { }
 
     @Get()
-    @Roles('admin', 'super_admin')
+    @Roles('admin')
     async findAll(@Query() query: ArticleListQueryDto) {
         const pagination = {
             page: query.page || 1,
@@ -40,13 +40,13 @@ export class AdminArticlesController {
     }
 
     @Get(':id')
-    @Roles('admin', 'super_admin')
+    @Roles('admin')
     async findOne(@Param('id') id: string) {
         return this.articleService.findOne(id);
     }
 
     @Post()
-    @Roles('admin', 'super_admin')
+    @Roles('admin')
     async create(
         @Body() dto: CreateArticleDto,
         @Req() req: AdminAuthenticatedRequest,
@@ -66,7 +66,7 @@ export class AdminArticlesController {
     }
 
     @Patch(':id')
-    @Roles('admin', 'super_admin')
+    @Roles('admin')
     @HttpCode(HttpStatus.OK)
     async update(
         @Param('id') id: string,
@@ -88,7 +88,7 @@ export class AdminArticlesController {
     }
 
     @Delete(':id')
-    @SuperAdminOnly() // Only super_admin can delete articles
+    @Roles('admin')
     @HttpCode(HttpStatus.OK)
     async delete(
         @Param('id') id: string,
@@ -111,4 +111,3 @@ export class AdminArticlesController {
         return { message: '文章已删除' };
     }
 }
-

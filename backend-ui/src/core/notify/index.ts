@@ -1,5 +1,6 @@
-import { message, notification } from 'antd';
+import { message as staticMessage, notification as staticNotification } from 'antd';
 import { isAppError } from '../errors';
+import { getNotifyApp } from './notifyStore';
 
 const formatErrorMessage = (error: unknown, fallback: string) => {
     if (isAppError(error)) {
@@ -17,13 +18,23 @@ const formatErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export const notify = {
-    success: (text: string) => message.success(text),
-    info: (text: string) => message.info(text),
-    warning: (text: string) => message.warning(text),
+    success: (text: string) => {
+        const app = getNotifyApp();
+        (app?.message ?? staticMessage).success(text);
+    },
+    info: (text: string) => {
+        const app = getNotifyApp();
+        (app?.message ?? staticMessage).info(text);
+    },
+    warning: (text: string) => {
+        const app = getNotifyApp();
+        (app?.message ?? staticMessage).warning(text);
+    },
     error: (error: unknown, fallback = '操作失败，请稍后重试') => {
         const { message: text, requestId } = formatErrorMessage(error, fallback);
-        notification.error({
-            message: text,
+        const app = getNotifyApp();
+        (app?.notification ?? staticNotification).error({
+            title: text,
             description: requestId ? `RequestId: ${requestId}` : undefined,
         });
     },

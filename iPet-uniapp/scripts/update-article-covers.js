@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
-const CONTENT_DIR = path.resolve(ROOT, 'src/articles/source/md')
+const CONTENT_DIR = path.resolve(ROOT, '../articles-source/md')
 
 const colors = {
     green: '\x1b[32m',

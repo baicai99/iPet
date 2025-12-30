@@ -13,10 +13,6 @@ const ROLE_CAPABILITIES: Record<AdminRole, Capability[]> = {
     [AdminRole.ADMIN]: [
         'user:ban',
         'user:unban',
-    ],
-    [AdminRole.SUPER_ADMIN]: [
-        'user:ban',
-        'user:unban',
         'user:delete',
         'user:trash:view',
         'article:delete',

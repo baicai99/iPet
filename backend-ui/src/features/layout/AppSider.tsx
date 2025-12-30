@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Menu, Grid } from 'antd';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '@/core/auth';
 import { AdminRole } from '@/core/config';
 import { menuItems, filterMenuByRole } from './menuConfig';
@@ -21,6 +21,7 @@ const AppSider: React.FC<AppSiderProps> = ({ collapsed, onCollapse }) => {
     const { admin } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const { entryPath } = useParams();
     const screens = useBreakpoint();
 
     // 移动端隐藏侧边栏
@@ -33,8 +34,14 @@ const AppSider: React.FC<AppSiderProps> = ({ collapsed, onCollapse }) => {
     const visibleMenuItems = filterMenuByRole(menuItems, userRole);
 
     // 转换为 Ant Design Menu items 格式
+    const buildRoutePath = (path: string) => {
+        const normalized = path.replace(/^\/+/, '');
+        if (entryPath) return `/${entryPath}/${normalized}`;
+        return `/${normalized}`;
+    };
+
     const antdMenuItems = visibleMenuItems.map(item => ({
-        key: item.path,
+        key: buildRoutePath(item.path),
         icon: item.icon,
         label: item.label,
     }));

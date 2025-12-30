@@ -1,16 +1,14 @@
 import { ArticleRepository } from './repository'
 import type { ArticleRepositoryConfig } from './types'
-import { localArticleProvider } from '../providers/localProvider'
-import { remoteArticleProvider } from '../providers/remoteProvider'
+import { emptyArticleProvider } from '../providers/emptyProvider'
+import { backendArticleProvider } from '../providers/backendProvider'
 
 const DEFAULT_CONFIG: ArticleRepositoryConfig = {
-    remoteBaseUrl: '/static/articles',
     enableLogging: true
 }
 
 export const articleRepository = new ArticleRepository(
-    localArticleProvider,
-    remoteArticleProvider,
+    emptyArticleProvider,
+    backendArticleProvider,
     DEFAULT_CONFIG
 )
-

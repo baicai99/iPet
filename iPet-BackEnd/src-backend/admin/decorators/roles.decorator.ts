@@ -1,16 +1,15 @@
 import { SetMetadata } from '@nestjs/common';
 
 export const ROLES_KEY = 'roles';
-export type AdminRole = 'admin' | 'super_admin';
+export type AdminRole = 'admin';
 
 /**
  * Decorator to specify which admin roles can access an endpoint
- * @example @Roles('super_admin') - Only super admins can access
- * @example @Roles('admin', 'super_admin') - Both roles can access
+ * @example @Roles('admin') - Only admins can access
  */
 export const Roles = (...roles: AdminRole[]) => SetMetadata(ROLES_KEY, roles);
 
 /**
- * Decorator for super_admin only endpoints
+ * Decorator for admin-only endpoints
  */
-export const SuperAdminOnly = () => Roles('super_admin');
+export const SuperAdminOnly = () => Roles('admin');

@@ -3,6 +3,7 @@ import { Descriptions, Table, Tag, Typography, Spin, Empty, Badge } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import type { User, UserDetail } from '@/api/types';
 import { getUserById } from '@/api/contracts/users';
+import { queryKeys } from '@/api/queryKeys';
 
 interface UserDetailDrawerProps {
     user: User;
@@ -10,7 +11,7 @@ interface UserDetailDrawerProps {
 
 export const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({ user }) => {
     const { data: detail, isLoading } = useQuery<UserDetail>({
-        queryKey: ['user', user.id],
+        queryKey: queryKeys.users.detail(user.id),
         queryFn: () => getUserById(user.id),
         enabled: Boolean(user.id),
         staleTime: 2 * 60 * 1000,
@@ -37,7 +38,7 @@ export const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({ user }) => {
                 <Descriptions.Item label="昵称">{detail.displayName}</Descriptions.Item>
                 <Descriptions.Item label="邮箱">{detail.email}</Descriptions.Item>
                 <Descriptions.Item label="角色">
-                    <Tag color={detail.isGuest ? 'default' : 'blue'}>
+                    <Tag color="default">
                         {detail.isGuest ? '游客' : '注册用户'}
                     </Tag>
                 </Descriptions.Item>

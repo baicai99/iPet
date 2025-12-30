@@ -19,10 +19,19 @@ export const FilterBar: React.FC<FilterBarProps> = ({ children, actions }) => {
     return (
         <div style={{ marginBottom: 16 }}>
             <Row gutter={[16, 16]} justify="space-between" align="middle">
-                <Col xs={24} sm={24} md={16} lg={18}>
-                    <Space direction={isMobile ? 'vertical' : 'horizontal'} wrap style={{ width: '100%' }}>
+                <Col xs={24} sm={24} md={actions ? 16 : 24} lg={actions ? 18 : 24}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: isMobile ? 'column' : 'row',
+                            flexWrap: 'wrap',
+                            gap: 16,
+                            alignItems: isMobile ? 'stretch' : 'center',
+                            width: '100%',
+                        }}
+                    >
                         {children}
-                    </Space>
+                    </div>
                 </Col>
 
                 {actions && (

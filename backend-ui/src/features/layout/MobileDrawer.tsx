@@ -1,6 +1,6 @@
 import React from 'react';
 import { Drawer, Menu } from 'antd';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '@/core/auth';
 import { AdminRole } from '@/core/config';
 import { menuItems, filterMenuByRole } from './menuConfig';
@@ -18,14 +18,21 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ open, onClose }) => {
     const { admin } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const { entryPath } = useParams();
 
     // 获取当前用户可见菜单
     const userRole = admin?.role || AdminRole.ADMIN;
     const visibleMenuItems = filterMenuByRole(menuItems, userRole);
 
     // 转换为 Ant Design Menu items 格式
+    const buildRoutePath = (path: string) => {
+        const normalized = path.replace(/^\/+/, '');
+        if (entryPath) return `/${entryPath}/${normalized}`;
+        return `/${normalized}`;
+    };
+
     const antdMenuItems = visibleMenuItems.map(item => ({
-        key: item.path,
+        key: buildRoutePath(item.path),
         icon: item.icon,
         label: item.label,
     }));

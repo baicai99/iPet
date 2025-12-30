@@ -7,8 +7,8 @@ import matter from 'gray-matter'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '../..')
-const CONTENT_DIR = path.resolve(ROOT, 'src/articles/source/md')
-const SOURCE_IMAGES_DIR = path.resolve(ROOT, 'src/articles/source/images')
+const CONTENT_DIR = path.resolve(ROOT, '../articles-source/md')
+const SOURCE_IMAGES_DIR = path.resolve(ROOT, '../articles-source/images')
 const METADATA_FILE = path.resolve(ROOT, 'src/data/metricMetadata.ts')
 const COVER_PUBLIC_ROOT = path.resolve(ROOT, 'public')
 const COVER_STATIC_ROOT = path.resolve(ROOT, 'src/static')

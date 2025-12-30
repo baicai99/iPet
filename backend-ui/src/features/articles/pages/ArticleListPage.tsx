@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Input, Select, Tag, Space, Modal, message, Typography } from 'antd';
+import { Button, Input, Select, Tag, Space, Modal, App, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import { getArticles, deleteArticle, type ArticleListParams } from '@/api/contracts/articles';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getArticles, deleteArticle } from '@/api/contracts/articles';
 import type { Article, ArticleCategory } from '@/api/types';
 import { DataTable } from '@/shared/components/DataTable';
 import { FilterBar } from '@/shared/components/FilterBar';
 import { usePermission } from '@/core/auth';
+import { ROUTES } from '@/router/routes';
+import { useDebouncedValue } from '@/shared/hooks';
 // import { AdminRoleContext } from '@/core/auth/context';
 
 const { Title } = Typography;
@@ -21,20 +23,30 @@ const CATEGORY_MAP: Record<string, { text: string; color: string }> = {
 
 const ArticleListPage: React.FC = () => {
     const navigate = useNavigate();
+    const { entryPath } = useParams();
+    const basePath = entryPath ? `/${entryPath}` : '';
+    const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<Article[]>([]);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-    const [filters, setFilters] = useState<ArticleListParams>({});
+
+    // 搜索和筛选状态
+    const [search, setSearch] = useState('');
+    const [category, setCategory] = useState<ArticleCategory | undefined>();
+
+    // 防抖搜索关键词（500ms）
+    const debouncedSearch = useDebouncedValue(search, 500);
 
     const { can } = usePermission();
 
-    const fetchData = useCallback(async (page = 1, pageSize = 10, currentFilters = filters) => {
+    const fetchData = useCallback(async (page = 1, pageSize = 10) => {
         setLoading(true);
         try {
             const res = await getArticles({
                 page,
                 limit: pageSize,
-                ...currentFilters,
+                search: debouncedSearch || undefined,
+                category,
             });
             setData(res.items);
             setPagination({
@@ -42,28 +54,32 @@ const ArticleListPage: React.FC = () => {
                 pageSize: res.pagination.limit,
                 total: res.pagination.total,
             });
-        } catch (err) {
-            console.error(err);
+        } catch (error) {
+            console.error('[ArticleList] Fetch failed', {
+                page,
+                pageSize,
+                search: debouncedSearch || undefined,
+                category,
+                error,
+            });
             message.error('获取文章列表失败');
         } finally {
             setLoading(false);
         }
-    }, [filters]);
+    }, [debouncedSearch, category]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
     const handleSearch = (value: string) => {
-        const newFilters = { ...filters, search: value };
-        setFilters(newFilters);
-        fetchData(1, pagination.pageSize, newFilters);
+        setSearch(value);
+        // fetchData 会自动通过 useEffect 触发（当 debouncedSearch 更新时）
     };
 
     const handleCategoryChange = (value: ArticleCategory) => {
-        const newFilters = { ...filters, category: value };
-        setFilters(newFilters);
-        fetchData(1, pagination.pageSize, newFilters);
+        setCategory(value);
+        // fetchData 会自动通过 useEffect 触发
     };
 
     const handleDelete = (id: string) => {
@@ -109,7 +125,7 @@ const ArticleListPage: React.FC = () => {
             key: 'stats',
             width: 150,
             render: (_value: unknown, record: Article) => (
-                <Space split="|">
+                <Space separator="|">
                     <span>👁 {record.views}</span>
                     <span>👍 {record.likes}</span>
                 </Space>
@@ -131,7 +147,7 @@ const ArticleListPage: React.FC = () => {
                     <Button
                         type="text"
                         icon={<EditOutlined />}
-                        onClick={() => navigate(`/articles/${record.id}/edit`)}
+                        onClick={() => navigate(`${basePath}/articles/${record.id}/edit`)}
                     >
                         编辑
                     </Button>
@@ -151,14 +167,14 @@ const ArticleListPage: React.FC = () => {
     ];
 
     return (
-        <div style={{ padding: 24 }}>
+        <div>
             <div style={{ marginBottom: 24 }}>
                 <Title level={2}>文章管理</Title>
             </div>
 
             <FilterBar
                 actions={
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/articles/new')}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(`${basePath}/${ROUTES.ARTICLES_NEW}`)}>
                         发布文章
                     </Button>
                 }
@@ -181,7 +197,7 @@ const ArticleListPage: React.FC = () => {
                 </Select>
             </FilterBar>
 
-            <DataTable
+            <DataTable<Article>
                 columns={columns}
                 dataSource={data}
                 loading={loading}

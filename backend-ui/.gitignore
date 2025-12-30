@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Environment files (敏感配置不提交)
+.env
+.env.local
+.env.dev
+
+# Runtime config (已弃用)
+/public/config.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

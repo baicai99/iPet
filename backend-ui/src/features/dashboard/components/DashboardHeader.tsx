@@ -15,7 +15,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ updatedAt, loading = 
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Space direction="vertical" size={4}>
+            <Space orientation="vertical" size={4}>
                 <Title level={4} style={{ margin: 0 }}>仪表盘</Title>
                 <Space size="small">
                     <ClockCircleOutlined style={{ color: '#64748b' }} />

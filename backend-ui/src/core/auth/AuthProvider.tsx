@@ -1,57 +1,66 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
+import { matchPath, useNavigate } from 'react-router-dom';
 import { AuthContext, type AuthContextType } from './AuthContext';
-import { type AdminInfo, AdminRole, type LoginResponse } from '../config';
-import { getAdminInfo, getToken, setAdminInfo, setToken, clearToken } from '@/api/token';
+import { AdminRole, type LoginResponse } from '../config';
+import { useToken, useAdminInfo, setToken, setAdminInfo, clearToken } from './tokenStore';
+import { ROUTES } from '@/router/routes';
+import { useInitState, refreshInitState } from '@/core/init';
+import { SKIP_INIT } from '@/core/config';
 
 interface AuthProviderProps {
     children: React.ReactNode;
 }
 
-const readStoredAuth = (): { admin: AdminInfo | null; isAuthenticated: boolean } => {
-    const token = getToken();
-    const adminInfo = getAdminInfo();
-
-    if (!token || !adminInfo) {
-        clearToken();
-        return { admin: null, isAuthenticated: false };
-    }
-
-    return { admin: adminInfo, isAuthenticated: true };
-};
-
 /**
  * 认证上下文 Provider
- * @description 管理登录状态、管理员信息、Token 存储
+ * @description 使用订阅式 Token Store 管理登录状态，实现响应式状态同步
  */
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [storedAuth] = useState(readStoredAuth);
-    const [isAuthenticated, setIsAuthenticated] = useState(storedAuth.isAuthenticated);
-    const [admin, setAdmin] = useState<AdminInfo | null>(storedAuth.admin);
+    const navigate = useNavigate();
+    const initState = useInitState();
+
+    // 订阅 token 和 admin 信息变化
+    const token = useToken();
+    const admin = useAdminInfo();
+
+    const isAuthenticated = !!token && !!admin;
     const isLoading = false;
+
+    // 当 token 被清除时，自动跳转登录页
+    useEffect(() => {
+        if (!SKIP_INIT) {
+            refreshInitState();
+        }
+    }, []);
+
+    useEffect(() => {
+        if (SKIP_INIT) return;
+        if (!token) {
+            const pathname = window.location.pathname;
+            if (pathname.startsWith('/init')) return;
+            if (matchPath(ROUTES.LOGIN, pathname)) return;
+            if (!initState.isInitialized) return;
+            if (!initState.entryPath) return;
+            navigate(`/${initState.entryPath}/login`, { replace: true });
+        }
+    }, [token, navigate, initState.isInitialized, initState.entryPath]);
 
     // 登录方法
     const login = useCallback((response: LoginResponse) => {
         setToken(response.accessToken);
         setAdminInfo(response.admin);
-        setAdmin(response.admin);
-        setIsAuthenticated(true);
+        // 状态会通过订阅机制自动更新
     }, []);
 
     // 登出方法
     const logout = useCallback(() => {
         clearToken();
-        setAdmin(null);
-        setIsAuthenticated(false);
+        // 状态会通过订阅机制自动更新，useEffect 会处理跳转
     }, []);
 
     // 角色检查
     const hasRole = useCallback((requiredRole: AdminRole): boolean => {
         if (!admin) return false;
-
-        // super_admin 拥有所有权限
-        if (admin.role === AdminRole.SUPER_ADMIN) return true;
-
-        // admin 只能访问 admin 级别的资源
         return requiredRole === AdminRole.ADMIN;
     }, [admin]);
 

@@ -12,7 +12,7 @@
     "articles:validate": "node scripts/articles/validate.mjs",
     "articles:build": "node scripts/articles/build.mjs",
     "articles:test": "node scripts/test-articles.js",
-    "articles:prepare": "npm run sync:version && npm run tokens:build && npm run articles:validate && npm run articles:build",
+    "articles:prepare": "npm run sync:version && npm run tokens:build",
     "dev:app": "npm run articles:prepare && uni -p app",
     "dev:app-android": "npm run articles:prepare && uni -p app-android",
     "dev:app-ios": "npm run articles:prepare && uni -p app-ios",

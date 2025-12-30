@@ -12,11 +12,11 @@ import { fileURLToPath } from 'url'
 import matter from 'gray-matter'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const CONTENT_DIR = path.resolve(__dirname, '../src/articles/source/md')
+const CONTENT_DIR = path.resolve(__dirname, '../../articles-source/md')
 const MANIFEST_JSON = path.resolve(__dirname, '../public/static/articles/articles-manifest.json')
 const MD_OUTPUT_DIR = path.resolve(__dirname, '../public/static/articles/md')
 const STATIC_ROOT = path.resolve(__dirname, '../src/static')
-const SOURCE_IMAGES_DIR = path.resolve(__dirname, '../src/articles/source/images')
+const SOURCE_IMAGES_DIR = path.resolve(__dirname, '../../articles-source/images')
 
 let totalTests = 0
 let passedTests = 0

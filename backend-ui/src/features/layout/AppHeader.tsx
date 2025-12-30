@@ -32,8 +32,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     const screens = useBreakpoint();
 
     // 角色标签颜色
-    const roleColor = admin?.role === AdminRole.SUPER_ADMIN ? 'gold' : 'blue';
-    const roleLabel = admin?.role === AdminRole.SUPER_ADMIN ? '超级管理员' : '管理员';
+    const roleColor = 'blue';
+    const roleLabel = '管理员';
 
     // 用户下拉菜单
     const userMenuItems: MenuProps['items'] = [

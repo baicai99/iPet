@@ -61,9 +61,10 @@ model User {
 model Admin {
   id             String   @id @default(cuid())
   username       String   @unique
+  email          String?  @unique
   passwordHash   String
   displayName    String?
-  role           String   @default("admin")  // admin, super_admin
+  role           String   @default("admin")  // admin
   isActive       Boolean  @default(true)
   tokenRevokedAt DateTime?  // Tokens issued before this time are invalid
   lastLoginAt    DateTime?
@@ -76,8 +77,8 @@ model Admin {
 // Admin audit log for tracking all admin actions
 model AdminAuditLog {
   id          String   @id @default(cuid())
-  adminId     String
-  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId     String?
+  admin       Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
   
   action      String   // login, ban_user, unban_user, delete_user, create_article, update_article, delete_article, etc.
   targetType  String?  // user, article, pet, system

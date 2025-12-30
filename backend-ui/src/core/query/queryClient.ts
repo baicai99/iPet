@@ -1,8 +1,9 @@
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
 import { notify } from '@/core/notify';
 
-const DEFAULT_STALE_TIME = 30 * 1000;
-const DEFAULT_RETRY = 1;
+// 缓存配置常量
+const DEFAULT_STALE_TIME = 5 * 60 * 1000;  // 5分钟（数据新鲜度）
+const DEFAULT_GC_TIME = 10 * 60 * 1000;    // 10分钟（垃圾回收时间）
 
 const queryCache = new QueryCache({
     onError: (error) => {
@@ -22,7 +23,19 @@ export const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             staleTime: DEFAULT_STALE_TIME,
-            retry: DEFAULT_RETRY,
+            gcTime: DEFAULT_GC_TIME,
+            retry: (failureCount, error) => {
+                // 智能重试策略
+                const errorStatus = (error as { status?: number })?.status;
+
+                // 401/403 不重试（认证/权限问题）
+                if (errorStatus === 401 || errorStatus === 403) {
+                    return false;
+                }
+
+                // 最多重试2次
+                return failureCount < 2;
+            },
             refetchOnWindowFocus: false,
         },
     },

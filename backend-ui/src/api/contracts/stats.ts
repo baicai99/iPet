@@ -3,8 +3,8 @@
  * 仪表盘统计数据
  */
 
-import httpClient from '../client';
-import type { DashboardStats, TrendPoint } from '../types';
+import getHttpClient from '../client';
+import type { ApiResponseWithMeta, DashboardStats, TrendPoint } from '../types';
 
 // ============ 请求类型 ============
 
@@ -20,8 +20,8 @@ export interface TrendParams {
  * GET /api/admin/stats/dashboard
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-    const response = await httpClient.get<DashboardStats>('/admin/stats/dashboard');
-    return response as unknown as DashboardStats;
+    const response = await getHttpClient().get<ApiResponseWithMeta<DashboardStats>>('/admin/stats/dashboard') as unknown as ApiResponseWithMeta<DashboardStats>;
+    return response.data;
 }
 
 /**
@@ -29,10 +29,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
  * GET /api/admin/stats/users/trend
  */
 export async function getUsersTrend(params?: TrendParams): Promise<TrendPoint[]> {
-    const response = await httpClient.get<TrendPoint[]>('/admin/stats/users/trend', {
+    const response = await getHttpClient().get<ApiResponseWithMeta<TrendPoint[]>>('/admin/stats/users/trend', {
         params,
-    });
-    return response as unknown as TrendPoint[];
+    }) as unknown as ApiResponseWithMeta<TrendPoint[]>;
+    return response.data;
 }
 
 /**
@@ -40,8 +40,8 @@ export async function getUsersTrend(params?: TrendParams): Promise<TrendPoint[]>
  * GET /api/admin/stats/records/trend
  */
 export async function getRecordsTrend(params?: TrendParams): Promise<TrendPoint[]> {
-    const response = await httpClient.get<TrendPoint[]>('/admin/stats/records/trend', {
+    const response = await getHttpClient().get<ApiResponseWithMeta<TrendPoint[]>>('/admin/stats/records/trend', {
         params,
-    });
-    return response as unknown as TrendPoint[];
+    }) as unknown as ApiResponseWithMeta<TrendPoint[]>;
+    return response.data;
 }

@@ -4,39 +4,57 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "vite --mode dev",
+    "prebuild": "node scripts/check-mock.mjs && npm run typecheck && npm run lint && npm run test:unit",
+    "build": "tsc -b && vite build && node scripts/generate-build-meta.cjs",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:e2e": "playwright test",
+    "test:unit": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "create-feature": "node scripts/create-feature.cjs"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.90.1",
     "@ant-design/icons": "^6.1.0",
+    "@tanstack/react-query": "^5.90.1",
+    "ahooks": "^3.9.6",
     "antd": "^6.1.2",
     "axios": "^1.13.2",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.11.0"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.11.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.57.0",
+    "@tanstack/react-query-devtools": "^5.91.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.10.4",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/ui": "^4.0.16",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jsdom": "^27.4.0",
     "msw": "^2.12.6",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^4.0.16"
   },
   "msw": {
     "workerDirectory": [

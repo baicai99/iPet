@@ -31,7 +31,7 @@ export const useLogin = (onSuccess: () => void): UseLoginResult => {
             authLogin(response);
             onSuccess();
         } catch (err) {
-            const messageText = err instanceof Error ? err.message : 'Login failed';
+            const messageText = err instanceof Error ? err.message : '登录失败';
             setError(messageText);
         } finally {
             setLoading(false);

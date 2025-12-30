@@ -3,7 +3,7 @@
 > **模块说明**: 本文档描述 iPet-Backend 的管理后台 API，用于后台管理系统调用。
 > **认证方式**: 独立的管理员 JWT Token，与普通用户 Token 分离。
 > **全局前缀**: `/api/admin`
-> **文档版本**: v1.1.0 (2025-12-27)
+> **文档版本**: v1.2.0 (2025-12-30)
 
 ---
 
@@ -40,12 +40,10 @@
   "success": true,
   "data": {
     "items": [...],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 100,
-      "totalPages": 5
-    }
+    "total": 100,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 5
   },
   "requestId": "...",
   "timestamp": 1703680000000
@@ -78,11 +76,11 @@
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "expiresIn": 86400,
-    "admin": {
+      "admin": {
       "id": "clx1234567890",
       "username": "admin",
       "displayName": "系统管理员",
-      "role": "super_admin"
+      "role": "admin"
     }
   },
   "requestId": "...",
@@ -95,7 +93,7 @@
 {
   adminId: string;     // 管理员ID
   username: string;    // 用户名
-  role: string;        // 角色 (admin, super_admin)
+  role: string;        // 角色 (admin)
   isAdmin: true;       // 管理员标识
 }
 ```
@@ -116,6 +114,8 @@
 | `search` | string | 搜索关键词（邮箱、昵称、姓名） |
 | `isGuest` | boolean | 筛选游客/正式用户 |
 | `isBanned` | boolean | 筛选封禁状态 |
+| `sortBy` | string | 排序字段（createdAt/lastActiveAt/petsCount） |
+| `sortOrder` | string | 排序方向（asc/desc） |
 | `page` | number | 页码，从1开始 |
 | `limit` | number | 每页数量，默认20，最大100 |
 
@@ -224,7 +224,68 @@
 
 ---
 
-### 2.6 游客统计
+### 2.6 批量封禁用户
+
+**端点**: `PATCH /api/admin/users/batch/ban`
+
+**请求**:
+```json
+{
+  "ids": ["user_1", "user_2"],
+  "reason": "违反社区规定"
+}
+```
+
+**响应**:
+```json
+{
+  "count": 2
+}
+```
+
+---
+
+### 2.7 批量解封用户
+
+**端点**: `PATCH /api/admin/users/batch/unban`
+
+**请求**:
+```json
+{
+  "ids": ["user_1", "user_2"]
+}
+```
+
+**响应**:
+```json
+{
+  "count": 2
+}
+```
+
+---
+
+### 2.8 批量删除用户
+
+**端点**: `PATCH /api/admin/users/batch/delete`
+
+**请求**:
+```json
+{
+  "ids": ["user_1", "user_2"]
+}
+```
+
+**响应**:
+```json
+{
+  "count": 2
+}
+```
+
+---
+
+### 2.9 游客统计
 
 **端点**: `GET /api/admin/users/guests/stats`
 
@@ -404,7 +465,6 @@
     "platform": "darwin",
     "arch": "arm64",
     "nodeVersion": "v20.10.0",
-    "hostname": "server-1",
     "uptime": 3600,
     "memoryUsage": {
       "total": 17179869184,
@@ -426,7 +486,6 @@
 **响应**:
 ```json
 {
-  "uploadsDir": "./data/uploads",
   "totalFiles": 1500,
   "totalSize": 524288000,
   "totalSizeFormatted": "500 MB",
@@ -440,7 +499,49 @@
 
 ---
 
-## 六、错误响应
+## 六、审计日志 API
+
+### 6.1 审计日志列表
+
+**端点**: `GET /api/admin/audit-logs`
+
+**查询参数**:
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `page` | number | 页码，从1开始 |
+| `limit` | number | 每页数量，默认20，最大100 |
+
+**响应**:
+```json
+{
+  "items": [
+    {
+      "id": "log_123",
+      "action": "login",
+      "user": "admin",
+      "timestamp": "2025-01-01T00:00:00.000Z",
+      "details": "",
+      "ip": "127.0.0.1"
+    },
+    {
+      "id": "log_124",
+      "action": "login_failed",
+      "user": "unknown",
+      "timestamp": "2025-01-01T00:01:00.000Z",
+      "details": "{\"username\":\"admin\",\"reason\":\"密码错误\",\"remaining\":2}",
+      "ip": "127.0.0.1"
+    }
+  ],
+  "total": 100,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 5
+}
+```
+
+---
+
+## 七、错误响应
 
 ### 6.1 认证错误
 
@@ -501,9 +602,85 @@ bannedReason String?
 
 ---
 
-## 八、部署说明
+## 八、系统设置
 
-### 8.1 自动同步 Prisma/DB
+### 8.1 获取设置
+
+**端点**: `GET /api/admin/settings`
+
+**认证**: 需要管理员 Token
+
+**响应**:
+```json
+{
+  "username": "admin",
+  "email": "admin@example.com",
+  "port": 5173,
+  "entryPath": "admin"
+}
+```
+
+### 8.2 更新设置
+
+**端点**: `PUT /api/admin/settings`
+
+**认证**: 需要管理员 Token
+
+**请求**:
+```json
+{
+  "username": "admin",
+  "email": "admin@example.com",
+  "currentPassword": "old-password",
+  "password": "new-password",
+  "port": 5173,
+  "entryPath": "admin"
+}
+```
+
+**说明**:
+- `password` 可选，未提交则不修改密码
+- 提交 `password` 时必须同时提交 `currentPassword`
+- `port` 范围 `1-65535`
+- `entryPath` 规则：小写字母开头，仅小写字母与数字，1-16 位
+
+**响应**:
+```json
+{
+  "username": "admin",
+  "email": "admin@example.com",
+  "port": 5173,
+  "entryPath": "admin"
+}
+```
+
+---
+
+### 8.3 验证旧密码
+
+**端点**: `POST /api/admin/settings/verify-password`
+
+**认证**: 需要管理员 Token
+
+**请求**:
+```json
+{
+  "currentPassword": "old-password"
+}
+```
+
+**响应**:
+```json
+{
+  "valid": true
+}
+```
+
+---
+
+## 九、部署说明
+
+### 9.1 自动同步 Prisma/DB
 
 启动后端时会自动检查 Prisma 客户端和数据库迁移状态：
 
@@ -516,14 +693,14 @@ npm run start:dev  # 自动执行 prisma:sync
 npm run prisma:sync
 ```
 
-### 8.2 数据库迁移
+### 9.2 数据库迁移
 
 ```bash
 cd iPet-BackEnd
 npx prisma migrate dev --name add_admin_and_user_ban
 ```
 
-### 8.3 创建初始管理员
+### 9.3 创建初始管理员
 
 ```bash
 # 开发环境
@@ -539,6 +716,5 @@ ADMIN_PASSWORD=your_secure_password npx ts-node scripts/seed-admin.ts
 
 ---
 
-**最后更新**: 2025-12-27  
-**文档版本**: v1.1.0
-
+**最后更新**: 2025-12-30  
+**文档版本**: v1.2.0

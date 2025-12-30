@@ -11,19 +11,19 @@ export class StatsController {
     constructor(private readonly statsService: StatsService) { }
 
     @Get('dashboard')
-    @Roles('admin', 'super_admin')
+    @Roles('admin')
     async getDashboardStats() {
         return this.statsService.getDashboardStats();
     }
 
     @Get('users/trend')
-    @Roles('admin', 'super_admin')
+    @Roles('admin')
     async getUserTrend(@Query() query: TrendQueryDto) {
         return this.statsService.getUserTrend(query.days || 30);
     }
 
     @Get('records/trend')
-    @Roles('admin', 'super_admin')
+    @Roles('admin')
     async getRecordTrend(@Query() query: TrendQueryDto) {
         return this.statsService.getRecordTrend(query.days || 30);
     }

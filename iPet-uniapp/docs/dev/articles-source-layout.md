@@ -1,7 +1,7 @@
 # 文章源文件目录规范
 
 ## 规范背景
-文章内容存在“源文件/构建产物”并存的情况，容易误改生成物。为降低混淆并统一管理，建立清晰的源文件目录与同步规则。
+文章内容已由后端服务统一托管，iPet-uniapp 不再打包本地文章与封面。为保留可追溯的素材来源，文章 Markdown 与封面图仅作为上传源文件保存在仓库根目录。
 
 ## 适用对象
 - 文章内容维护者
@@ -10,29 +10,22 @@
 
 ## 约束规则
 - **源文件唯一入口**：
-  - Markdown 源文件：`iPet-uniapp/src/articles/source/md/`
-  - 封面图片源文件：`iPet-uniapp/src/articles/source/images/`
-- **构建产物不可手改**：
-  - `iPet-uniapp/public/static/articles/articles-manifest.json`
-  - `iPet-uniapp/public/static/articles/md/*.md`
-  - `iPet-uniapp/src/modules/articles/domain/generated/builtinManifest.ts`
-- **同步机制**：
-  - `scripts/articles/build.mjs` 会在构建时将 `src/articles/source/images/` 同步到 `src/static/images/articles/`，供运行时与构建使用。
-  - 构建时会将封面输出为 JPG，保证真机兼容性。
-- **封面路径约束**：
-  - frontmatter 的 `cover` 字段必须保持 `/static/images/articles/xxx.jpg` 形式。
+  - Markdown 源文件：`articles-source/md/`
+  - 封面图片源文件：`articles-source/images/`
+- **前端不再产出文章构建物**：
+  - `public/static/articles/*` 与 `builtinManifest` 不再作为运行时数据源
+- **上传规则**：
+  - 封面 URL 由后端生成，前端仅使用后端返回的地址
 
 ## 示例
 
 ### 新增文章
 ```bash
-touch iPet-uniapp/src/articles/source/md/new_article.md
-cp ./cover.jpg iPet-uniapp/src/articles/source/images/
-npm run articles:build
+touch articles-source/md/new_article.md
+cp ./cover.jpg articles-source/images/
 ```
 
 ### 修改文章内容
 ```bash
-vim iPet-uniapp/src/articles/source/md/weight.md
-npm run articles:build
+vim articles-source/md/weight.md
 ```

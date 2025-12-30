@@ -9,7 +9,7 @@ enabled when the environment flag is explicitly set.
 - Mock entrypoint: `src/main.tsx`
 
 ## Rules
-- Mock is enabled only when `VITE_MOCK=1`.
+- Mock is enabled only when `VITE_MOCK=true`.
 - When mock is on, API base must stay same-origin (e.g. `/api`) so MSW can intercept.
 - Do not keep inline mock logic in features (e.g. login hardcoded credentials).
 - Mock data lives under `backend-ui/src/mocks/fixtures`.
@@ -17,5 +17,5 @@ enabled when the environment flag is explicitly set.
 
 ## Example
 ```
-VITE_MOCK=1 npm run dev
+VITE_MOCK=true npm run dev
 ```

@@ -1,7 +1,7 @@
 # 图片格式规范（文章封面 & 头像）
 
 ## 规范背景
-微信小程序真机对 WebP 的支持存在差异，导致包内 WebP 封面无法稳定展示。为降低兼容风险，统一改为 JPG 输出，并限制头像上传格式。
+微信小程序真机对 WebP 的支持存在差异。文章封面已迁移为后端托管资源，前端不再打包本地封面素材，统一要求上传 JPG 以降低兼容风险，并限制头像上传格式。
 
 ## 适用对象
 - 文章内容与封面维护者
@@ -9,9 +9,9 @@
 - 构建与发布维护者
 
 ## 约束规则
-- **文章封面输出**：
-  - frontmatter 的 `cover` 必须为 `/static/images/articles/*.jpg`。
-  - 构建脚本会将 `src/articles/source/images/` 中的封面图片同步并输出为 JPG 到 `src/static/images/articles/`。
+- **文章封面上传**：
+  - 封面图片上传到后端，URL 由后端返回并在客户端直接使用。
+  - 封面素材仍要求 JPG 优先。
 - **头像上传**：
   - 头像上传仅接受 JPG/JPEG。
   - 客户端需在上传前确保输出为 JPG，后端会拒绝非 JPG 的头像文件。
@@ -20,7 +20,7 @@
 
 ### 文章封面
 ```md
-cover: "/static/images/articles/weight-management.jpg"
+cover: "https://api.example.com/uploads/articles/weight-management.jpg"
 ```
 
 ### 头像上传

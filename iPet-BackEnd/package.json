@@ -9,6 +9,8 @@
     "prisma:sync": "node scripts/prisma-sync.js",
     "prestart": "npm run prisma:sync",
     "prestart:dev": "npm run prisma:sync",
+    "prestart:debug": "npm run prisma:sync",
+    "prestart:prod": "npm run prisma:sync",
     "prebuild": "npx prisma generate",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",

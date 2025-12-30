@@ -8,7 +8,7 @@ const RecycleBinPage: React.FC = () => {
             <Result
                 icon={<DeleteOutlined />}
                 title="回收站"
-                subTitle="该功能用于超级管理员恢复软删除用户，接口尚未接入。"
+                subTitle="该功能用于管理员恢复软删除用户，接口尚未接入。"
                 extra={<Button type="primary" disabled>恢复用户</Button>}
             />
         </Card>

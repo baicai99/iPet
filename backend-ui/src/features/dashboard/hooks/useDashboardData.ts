@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import type { DashboardStats, TrendPoint } from '@/api/types';
 import { getDashboardStats, getRecordsTrend, getUsersTrend } from '@/api/contracts/stats';
+import { queryKeys } from '@/api/queryKeys';
 
 const RANGE_TO_DAYS: Record<string, number> = {
     '7d': 7,
@@ -13,28 +14,27 @@ export const useDashboardData = () => {
     const [userRange, setUserRange] = useState<string>('7d');
     const [recordRange, setRecordRange] = useState<string>('7d');
 
-    const statsQuery = useQuery<DashboardStats>({
-        queryKey: ['dashboard', 'stats'],
-        queryFn: () => getDashboardStats(),
-        staleTime: 60 * 1000,
-        gcTime: 5 * 60 * 1000,
+    // 使用 useQueries 并行请求所有数据
+    const queries = useQueries({
+        queries: [
+            {
+                queryKey: queryKeys.dashboard.stats(),
+                queryFn: () => getDashboardStats(),
+            },
+            {
+                queryKey: queryKeys.dashboard.usersTrend(userRange),
+                queryFn: () => getUsersTrend({ days: RANGE_TO_DAYS[userRange] || 30 }),
+                placeholderData: (previousData: TrendPoint[] | undefined) => previousData,
+            },
+            {
+                queryKey: queryKeys.dashboard.recordsTrend(recordRange),
+                queryFn: () => getRecordsTrend({ days: RANGE_TO_DAYS[recordRange] || 30 }),
+                placeholderData: (previousData: TrendPoint[] | undefined) => previousData,
+            },
+        ],
     });
 
-    const userTrendQuery = useQuery<TrendPoint[]>({
-        queryKey: ['dashboard', 'users-trend', userRange],
-        queryFn: () => getUsersTrend({ days: RANGE_TO_DAYS[userRange] || 30 }),
-        staleTime: 60 * 1000,
-        gcTime: 5 * 60 * 1000,
-        placeholderData: (previousData) => previousData,
-    });
-
-    const recordTrendQuery = useQuery<TrendPoint[]>({
-        queryKey: ['dashboard', 'records-trend', recordRange],
-        queryFn: () => getRecordsTrend({ days: RANGE_TO_DAYS[recordRange] || 30 }),
-        staleTime: 60 * 1000,
-        gcTime: 5 * 60 * 1000,
-        placeholderData: (previousData) => previousData,
-    });
+    const [statsQuery, userTrendQuery, recordTrendQuery] = queries;
 
     const refreshAll = useCallback(async () => {
         await Promise.all([
@@ -44,16 +44,17 @@ export const useDashboardData = () => {
         ]);
     }, [statsQuery, userTrendQuery, recordTrendQuery]);
 
-    const errorMessage = useMemo(() => {
+    // 计算错误信息
+    const errorMessage = (() => {
         const error = statsQuery.error || userTrendQuery.error || recordTrendQuery.error;
         if (!error) return null;
         return error instanceof Error ? error.message : '数据加载失败，请稍后重试';
-    }, [recordTrendQuery.error, statsQuery.error, userTrendQuery.error]);
+    })();
 
     return {
-        stats: statsQuery.data ?? null,
-        userTrend: userTrendQuery.data ?? [],
-        recordTrend: recordTrendQuery.data ?? [],
+        stats: statsQuery.data as DashboardStats | undefined ?? null,
+        userTrend: userTrendQuery.data as TrendPoint[] | undefined ?? [],
+        recordTrend: recordTrendQuery.data as TrendPoint[] | undefined ?? [],
         userRange,
         setUserRange,
         recordRange,

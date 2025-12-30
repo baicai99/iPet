@@ -3,8 +3,10 @@ import { ConfigProvider, App as AntdApp } from 'antd';
 import AppRouter from './router/AppRouter';
 import { AuthProvider } from './core/auth';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './core/query';
 import { ErrorBoundary } from './core/errors';
+import { NotifyBridge } from './core/notify/NotifyBridge';
 import './App.css';
 
 function App() {
@@ -17,14 +19,16 @@ function App() {
       }}
     >
       <QueryClientProvider client={queryClient}>
+        <ReactQueryDevtools initialIsOpen={false} />
         <AntdApp>
-          <AuthProvider>
-            <ErrorBoundary>
-              <BrowserRouter>
+          <NotifyBridge />
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <AuthProvider>
+              <ErrorBoundary>
                 <AppRouter />
-              </BrowserRouter>
-            </ErrorBoundary>
-          </AuthProvider>
+              </ErrorBoundary>
+            </AuthProvider>
+          </BrowserRouter>
         </AntdApp>
       </QueryClientProvider>
     </ConfigProvider>

@@ -3,9 +3,9 @@
  * 管理员登录/登出
  */
 
-import httpClient from '../client';
+import getHttpClient from '../client';
 import { setToken, setAdminInfo, clearToken } from '../token';
-import type { AdminInfo } from '../types';
+import type { AdminInfo, ApiResponseWithMeta } from '../types';
 
 // ============ 请求类型 ============
 
@@ -29,13 +29,13 @@ export interface LoginResponse {
  * POST /api/admin/login
  */
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await httpClient.post<LoginResponse>('/admin/login', data, {
+    const response = await getHttpClient().post<ApiResponseWithMeta<LoginResponse>>('/admin/login', data, {
         // 登录请求不需要携带 Token
         _skipAuth: true,
-    } as never);
+    } as never) as unknown as ApiResponseWithMeta<LoginResponse>;
 
     // 存储 Token 和管理员信息
-    const result = response as unknown as LoginResponse;
+    const result = response.data;
     setToken(result.accessToken);
     setAdminInfo(result.admin);
 

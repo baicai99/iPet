@@ -9,6 +9,11 @@ export interface UserListFilter {
     isBanned?: boolean;
 }
 
+export interface UserListSort {
+    sortBy?: 'createdAt' | 'lastActiveAt' | 'petsCount';
+    sortOrder?: 'asc' | 'desc';
+}
+
 @Injectable()
 export class AdminUsersService {
     constructor(
@@ -16,7 +21,7 @@ export class AdminUsersService {
         private readonly storageService: StorageService,
     ) { }
 
-    async findAll(filter: UserListFilter, pagination: PaginationResult) {
+    async findAll(filter: UserListFilter, pagination: PaginationResult, sort?: UserListSort) {
         const where: any = {};
 
         if (filter.search) {
@@ -34,6 +39,13 @@ export class AdminUsersService {
         if (filter.isBanned !== undefined) {
             where.isBanned = filter.isBanned;
         }
+
+        const sortBy = sort?.sortBy || 'createdAt';
+        const sortOrder = sort?.sortOrder || 'desc';
+        const orderBy =
+            sortBy === 'petsCount'
+                ? { pets: { _count: sortOrder } }
+                : { [sortBy]: sortOrder };
 
         const [users, total] = await Promise.all([
             this.prisma.user.findMany({
@@ -58,7 +70,7 @@ export class AdminUsersService {
                         },
                     },
                 },
-                orderBy: { createdAt: 'desc' },
+                orderBy,
                 skip: pagination.skip,
                 take: pagination.take,
             }),
@@ -300,5 +312,39 @@ export class AdminUsersService {
 
         return { total, last7Days, last30Days };
     }
-}
 
+    async batchBanUsers(ids: string[], reason?: string) {
+        const result = await this.prisma.user.updateMany({
+            where: { id: { in: ids }, deletedAt: null, isBanned: false },
+            data: {
+                isBanned: true,
+                bannedAt: new Date(),
+                bannedReason: reason || '违反社区规定',
+            },
+        });
+        return { count: result.count };
+    }
+
+    async batchUnbanUsers(ids: string[]) {
+        const result = await this.prisma.user.updateMany({
+            where: { id: { in: ids }, deletedAt: null, isBanned: true },
+            data: {
+                isBanned: false,
+                bannedAt: null,
+                bannedReason: null,
+            },
+        });
+        return { count: result.count };
+    }
+
+    async batchDeleteUsers(ids: string[], adminId: string) {
+        const result = await this.prisma.user.updateMany({
+            where: { id: { in: ids }, deletedAt: null },
+            data: {
+                deletedAt: new Date(),
+                deletedBy: adminId,
+            },
+        });
+        return { count: result.count };
+    }
+}

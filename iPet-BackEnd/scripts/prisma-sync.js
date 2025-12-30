@@ -82,6 +82,15 @@ function checkMigrationStatus() {
     }
 }
 
+function hasMigrations() {
+    try {
+        const entries = fs.readdirSync(path.join(PRISMA_DIR, 'migrations'), { withFileTypes: true });
+        return entries.some(entry => entry.isDirectory());
+    } catch {
+        return false;
+    }
+}
+
 function runPrismaGenerate() {
     log('🔄', colors.cyan('Generating Prisma Client...'));
     try {
@@ -97,10 +106,14 @@ function runPrismaGenerate() {
     }
 }
 
-function runMigrateDev() {
-    log('🔄', colors.cyan('Applying database migrations...'));
+function runMigrate() {
+    const isProd = process.env.NODE_ENV === 'production';
+    const command = isProd
+        ? 'npx prisma migrate deploy'
+        : 'npx prisma migrate dev --skip-generate';
+    log('🔄', colors.cyan(`Applying database migrations (${isProd ? 'deploy' : 'dev'})...`));
     try {
-        execSync('npx prisma migrate dev --skip-generate', {
+        execSync(command, {
             cwd: path.join(__dirname, '..'),
             stdio: 'inherit',
         });
@@ -108,6 +121,21 @@ function runMigrateDev() {
         return true;
     } catch (error) {
         log('❌', colors.red('Failed to apply migrations'));
+        return false;
+    }
+}
+
+function runDbPush() {
+    log('🔄', colors.cyan('Pushing schema to database (db push)...'));
+    try {
+        execSync('npx prisma db push', {
+            cwd: path.join(__dirname, '..'),
+            stdio: 'inherit',
+        });
+        log('✅', colors.green('Database schema pushed successfully'));
+        return true;
+    } catch (error) {
+        log('❌', colors.red('Failed to push schema'));
         return false;
     }
 }
@@ -135,6 +163,7 @@ async function main() {
 
     // 检查数据库迁移状态
     const migrationStatus = checkMigrationStatus();
+    const migrationsPresent = hasMigrations();
 
     switch (migrationStatus) {
         case 'up-to-date':
@@ -150,14 +179,28 @@ async function main() {
             break;
         default:
             log('⚠️', colors.yellow('Could not determine migration status'));
+            if (!migrationsPresent) {
+                log('ℹ️', colors.cyan('No migrations found, will use db push in development'));
+                needsMigrate = true;
+            } else if (process.env.NODE_ENV !== 'production') {
+                log('ℹ️', colors.cyan('Falling back to db push in development'));
+                needsMigrate = true;
+            }
     }
 
     // 执行必要的同步操作
     if (needsMigrate) {
-        if (!runMigrateDev()) {
-            process.exit(1);
+        if (process.env.NODE_ENV !== 'production' && (!migrationsPresent || migrationStatus === 'unknown' || migrationStatus === 'error')) {
+            if (!runDbPush()) {
+                process.exit(1);
+            }
+            needsGenerate = true;
+        } else {
+            if (!runMigrate()) {
+                process.exit(1);
+            }
+            needsGenerate = true; // 迁移后需要重新生成
         }
-        needsGenerate = true; // 迁移后需要重新生成
     }
 
     if (needsGenerate) {

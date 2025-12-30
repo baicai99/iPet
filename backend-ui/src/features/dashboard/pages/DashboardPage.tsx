@@ -36,7 +36,7 @@ const DashboardPage: React.FC = () => {
             {error && (
                 <Alert
                     type="warning"
-                    message="部分数据加载失败"
+                    title="部分数据加载失败"
                     description={error}
                     showIcon
                 />

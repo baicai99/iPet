@@ -35,32 +35,79 @@ export class AdminService {
     }
 
     async login(dto: AdminLoginDto, ip?: string, userAgent?: string) {
-        // Check login protection before anything else
-        await this.loginProtection.assertNotLocked(dto.username, ip || 'unknown');
+        const identifier = dto.username.trim().toLowerCase();
+        const ipAddress = ip || 'unknown';
 
-        const admin = await this.prisma.admin.findUnique({
-            where: { username: dto.username },
+        // Check login protection before anything else
+        try {
+            await this.loginProtection.assertNotLocked(dto.username, ipAddress);
+        } catch (error: any) {
+            await this.auditLogService.logLoginFailure({
+                username: identifier,
+                reason: error?.message || '登录失败次数过多',
+                ip: ipAddress,
+                ua: userAgent,
+            });
+            throw error;
+        }
+
+        const admin = await this.prisma.admin.findFirst({
+            where: {
+                OR: [
+                    { username: identifier },
+                    { email: identifier },
+                ],
+            },
         });
 
         if (!admin) {
             // Record failure even for non-existent users (prevent enumeration)
-            await this.loginProtection.recordFailure(dto.username, ip || 'unknown');
+            await this.loginProtection.recordFailure(dto.username, ipAddress);
+            await this.auditLogService.logLoginFailure({
+                username: identifier,
+                reason: '管理员账号不存在',
+                ip: ipAddress,
+                ua: userAgent,
+            });
             throw new NotFoundException('管理员账号不存在');
         }
 
+        if (admin.role !== 'admin') {
+            await this.prisma.admin.update({
+                where: { id: admin.id },
+                data: { role: 'admin' },
+            });
+            admin.role = 'admin';
+        }
+
         if (!admin.isActive) {
-            await this.loginProtection.recordFailure(dto.username, ip || 'unknown');
+            await this.loginProtection.recordFailure(dto.username, ipAddress);
+            await this.auditLogService.logLoginFailure({
+                adminId: admin.id,
+                username: identifier,
+                reason: '管理员账号已被禁用',
+                ip: ipAddress,
+                ua: userAgent,
+            });
             throw new UnauthorizedException('该管理员账号已被禁用');
         }
 
         if (!(await compare(dto.password, admin.passwordHash))) {
-            await this.loginProtection.recordFailure(dto.username, ip || 'unknown');
-            const remaining = await this.loginProtection.getRemainingAttempts(dto.username, ip || 'unknown');
+            await this.loginProtection.recordFailure(dto.username, ipAddress);
+            const remaining = await this.loginProtection.getRemainingAttempts(dto.username, ipAddress);
+            await this.auditLogService.logLoginFailure({
+                adminId: admin.id,
+                username: identifier,
+                reason: '密码错误',
+                remaining,
+                ip: ipAddress,
+                ua: userAgent,
+            });
             throw new UnauthorizedException(`密码错误，剩余尝试次数: ${remaining}`);
         }
 
         // Reset failure count on successful login
-        await this.loginProtection.reset(dto.username, ip || 'unknown');
+        await this.loginProtection.reset(dto.username, ipAddress);
 
         // Update last login time
         await this.prisma.admin.update({
@@ -69,7 +116,7 @@ export class AdminService {
         });
 
         // Audit log
-        await this.auditLogService.logLogin(admin.id, ip, userAgent);
+        await this.auditLogService.logLogin(admin.id, ipAddress, userAgent);
 
         return this.generateToken(admin);
     }
@@ -151,12 +198,13 @@ export class AdminService {
         });
     }
 
-    async createAdmin(username: string, password: string, displayName?: string, role = 'admin') {
+    async createAdmin(username: string, email: string | undefined, password: string, displayName?: string, role = 'admin') {
         const passwordHash = await hash(password, this.saltRounds);
 
         return this.prisma.admin.create({
             data: {
                 username,
+                email,
                 passwordHash,
                 displayName,
                 role,
@@ -167,6 +215,42 @@ export class AdminService {
                 displayName: true,
                 role: true,
                 createdAt: true,
+            },
+        });
+    }
+
+    async updateAdminSettings(adminId: string, updates: {
+        username?: string;
+        email?: string | null;
+        password?: string;
+    }) {
+        const data: {
+            username?: string;
+            email?: string | null;
+            passwordHash?: string;
+        } = {};
+
+        if (updates.username !== undefined) {
+            data.username = updates.username;
+        }
+
+        if (updates.email !== undefined) {
+            data.email = updates.email;
+        }
+
+        if (updates.password) {
+            data.passwordHash = await hash(updates.password, this.saltRounds);
+        }
+
+        return this.prisma.admin.update({
+            where: { id: adminId },
+            data,
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                displayName: true,
+                role: true,
             },
         });
     }

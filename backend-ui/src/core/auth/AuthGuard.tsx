@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useAuth } from './useAuth';
 
@@ -14,6 +14,7 @@ interface AuthGuardProps {
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const { isAuthenticated, isLoading } = useAuth();
     const location = useLocation();
+    const { entryPath } = useParams();
 
     // 加载中显示 loading
     if (isLoading) {
@@ -31,7 +32,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
     // 未登录重定向到登录页
     if (!isAuthenticated) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        const loginPath = entryPath ? `/${entryPath}/login` : '/init';
+        return <Navigate to={loginPath} state={{ from: location }} replace />;
     }
 
     return <>{children}</>;

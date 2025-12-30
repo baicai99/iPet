@@ -4,6 +4,8 @@ import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
+const STAT_CARD_MIN_HEIGHT = 140;
+
 interface StatCardProps {
     title: string;
     value: string | number;
@@ -19,7 +21,7 @@ interface StatCardProps {
 
 export const StatCard: React.FC<StatCardProps> = ({ title, value, prefix, suffix, trend, loading = false }) => {
     return (
-        <Card loading={loading} hoverable>
+        <Card loading={loading} hoverable style={{ minHeight: STAT_CARD_MIN_HEIGHT }}>
             <Statistic title={title} value={value} prefix={prefix} suffix={suffix} />
             {trend && (
                 <div style={{ marginTop: 8 }}>

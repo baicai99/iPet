@@ -26,7 +26,13 @@ rsync -av . "$TEMP_DIR/iPet-BackEnd" \
     --exclude .git \
     --exclude .DS_Store \
     --exclude .env \
+    --exclude .env.* \
     --exclude deploy.zip \
+    --exclude docs \
+    --exclude perf \
+    --exclude AGENTS.md \
+    --exclude verify_fix.sh \
+    --exclude 后端架构总结.md \
     --exclude coverage \
     --exclude test \
     --exclude "$TEMP_DIR"
