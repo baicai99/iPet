@@ -1,6 +1,14 @@
 import { existsSync, mkdirSync } from 'fs';
 import { join, resolve } from 'path';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+
+const resolveEnvFilePath = (): string | undefined => {
+  const envPath = resolve(process.cwd(), '.env');
+  return existsSync(envPath) ? envPath : undefined;
+};
+
+const envFilePath = resolveEnvFilePath();
+dotenv.config(envFilePath ? { path: envFilePath } : undefined);
 
 const ensureDirectory = (dirPath: string): void => {
   if (!existsSync(dirPath)) {

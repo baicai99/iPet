@@ -7,7 +7,7 @@
  * - 支持脏标记，只重算脏数据
  */
 
-import type { AggregationMethod } from '@shared/types/health'
+import type { AggregationMethod } from '@/types/health'
 import { dayKey, startOfDayMs, weekKey, monthKey } from '@/utils/fastTime'
 
 // ============================================================================

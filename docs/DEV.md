@@ -12,20 +12,17 @@ This document defines the minimal bootstrap steps and regression path for the ba
 
 ## Environment Variables
 Primary entrypoint (dev mode):
-- `backend-ui/.env.dev` (committed)
-- Optional overrides: `backend-ui/.env.dev.local` (not committed)
-- Shared defaults: `backend-ui/.env`, `backend-ui/.env.local`
+- `backend-ui/.env` (committed)
+- Optional overrides: `backend-ui/.env.local` (not committed)
 
 Required keys (dev):
 ```
-VITE_API_BASE_URL=/api
-VITE_API_PROXY_TARGET=http://localhost:3000
+VITE_API_BASE_URL=http://localhost:3000/api
 VITE_MOCK=false
 ```
 
 Notes:
-- When `VITE_API_PROXY_TARGET` is set, Vite proxies `/api/*` to the target to avoid CORS in dev.
-- For remote API, set `VITE_API_PROXY_TARGET=https://api.zhengjiyuan.top`.
+- Set `VITE_API_BASE_URL` to the single API endpoint you want to use.
 
 To enable mock mode locally:
 ```

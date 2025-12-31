@@ -1,5 +1,5 @@
 import request from '@/utils/common/request'
-import type { AccountInfo } from '@shared/types/user'
+import type { AccountInfo } from '@/types/user'
 
 export interface UpdateProfilePayload {
     displayName: string;

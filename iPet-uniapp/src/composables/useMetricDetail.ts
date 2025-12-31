@@ -14,7 +14,7 @@
 import { ref, computed, provide, inject, nextTick } from 'vue'
 import type { InjectionKey, Ref, ComputedRef } from 'vue'
 import dayjs from 'dayjs'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import { useHealthStore } from '@/stores/healthStore'
 import { usePetStore } from '@/stores/petStore'
 import { useMetricProcessor } from '@/composables/useMetricProcessor'

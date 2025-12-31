@@ -1,6 +1,6 @@
 import type { RequestConfig } from './request'
-import type { HealthRecord } from '@shared/types/health'
-import type { Pet } from '@shared/types/pet'
+import type { HealthRecord } from '@/types/health'
+import type { Pet } from '@/types/pet'
 import { getLocalDayKey } from './timeKey'
 
 const DAY_MS = 24 * 60 * 60 * 1000

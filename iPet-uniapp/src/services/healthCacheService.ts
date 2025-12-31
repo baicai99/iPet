@@ -14,7 +14,7 @@ import {
     HEALTH_CACHE_SCHEMA_VERSION,
     type HealthCacheKey,
     type CacheEntry
-} from '@shared/types/health'
+} from '@/types/health'
 import { performanceMonitor } from '@/utils/performance/performanceMonitor'
 
 // ============================================================================

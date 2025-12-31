@@ -8,7 +8,7 @@
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 
-import type { MetricRange } from '@shared/types/health'
+import type { MetricRange } from '@/types/health'
 import type {
     ChartModel,
     ChartModelOptions,

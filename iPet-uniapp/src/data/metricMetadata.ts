@@ -34,7 +34,7 @@ export type MetricKey =
     | 'vomiting'
     | 'tooth_brushing'
 
-import type { MetricDomain, MissingPolicy, AggregationMethod } from '@shared/types/health'
+import type { MetricDomain, MissingPolicy, AggregationMethod } from '@/types/health'
 import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 export interface MetricEnumOption {

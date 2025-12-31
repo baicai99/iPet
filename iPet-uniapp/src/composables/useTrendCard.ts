@@ -11,7 +11,7 @@
 
 import { computed, ref, type Ref, type ComputedRef } from 'vue'
 import { useHealthStore } from '@/stores/healthStore'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import { getTrendCopywriting, type TrendSentiment } from '@/config/trendCopywriting'
 import { getLocalDayKey } from '@/utils/common/timeKey'
 import {

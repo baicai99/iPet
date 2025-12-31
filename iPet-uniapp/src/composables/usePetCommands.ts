@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { Pet } from '@shared/types/pet'
+import type { Pet } from '@/types/pet'
 import { usePetStore } from '@/stores/petStore'
 
 export const usePetCommands = () => {

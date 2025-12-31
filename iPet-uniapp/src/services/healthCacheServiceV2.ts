@@ -6,10 +6,10 @@
 
 import {
     HEALTH_CACHE_SCHEMA_VERSION
-} from '@shared/types/health'
+} from '@/types/health'
 
 /**
- * 本地缓存条目类型（独立于 CacheManager 和 @shared/types/health）
+ * 本地缓存条目类型（独立于 CacheManager 和 @/types/health）
  */
 interface HealthCacheEntry<T> {
     data: T

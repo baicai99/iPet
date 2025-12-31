@@ -4,8 +4,8 @@
 - `src-backend/` contains the NestJS application code, organized by feature modules (for example `auth/`, `users/`, `pets/`, `health/`, `health-schedule/`). Entry points live in `src-backend/main.ts` and `src-backend/app.module.ts`.
 - `prisma/` holds the database schema and migrations (`schema.prisma`, `migrations/`, `seed.ts`).
 - `dist/` is the compiled output from `nest build` (do not edit by hand).
-- `scripts/` provides operational utilities (CI gates, data seed/backfills, packaging).
-- `docs/` (currently `docs/ops/`) stores operational documentation.
+- `scripts/` provides operational utilities (data seed/backfills, packaging).
+- `docs/` stores operational documentation.
 
 ## Build, Test, and Development Commands
 - `npm run start`: run the Nest app in standard mode.
@@ -23,7 +23,7 @@
 
 ## Testing Guidelines
 - No automated test scripts are currently defined in `package.json`.
-- If you introduce tests, align with NestJS defaults (Jest) and add explicit `test`/`test:e2e` scripts so CI can run them.
+- If you introduce tests, align with NestJS defaults (Jest) and add explicit `test`/`test:e2e` scripts.
 
 ## Commit & Pull Request Guidelines
 - Commits follow Conventional Commits (for example `feat: ...`, `fix: ...`). Keep the scope clear and concise; Chinese summaries are already used in history and are acceptable.

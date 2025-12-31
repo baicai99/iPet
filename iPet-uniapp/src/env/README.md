@@ -6,7 +6,7 @@ This module provides validated, type-safe access to environment variables for th
 
 The environment variable system has two validation points:
 
-1. **Build-time validation** (`scripts/check-env.mjs`): Validates `.env` files before the build starts
+1. **Build-time validation** (`scripts/check-env.mjs`): Validates `.env` before the build starts
 2. **Runtime validation** (`src/env/index.ts`): Validates `import.meta.env` when the app initializes
 
 Both use the same validation schema defined in [`schema.ts`](file:///Users/zhengjiyuan/Desktop/iPet/iPet-uniapp/src/env/schema.ts).
@@ -91,7 +91,7 @@ console.log(Env.VITE_AUTH_BOOTSTRAP) // 'guest' | 'login' | 'none'
 
 ### Build-time Validation
 
-Run the validation script to check your `.env` files:
+Run the validation script to check your `.env` file:
 
 ```bash
 # Validate production environment
@@ -115,20 +115,12 @@ node scripts/check-env.mjs --mode development
    - VITE_API_BASE_URL is required in production mode
    - VITE_API_BASE_URL_MP should end with /api, got: "https://api.example.com"
 
-Please fix the errors in .env.production and try again.
+Please fix the errors in .env and try again.
 ```
 
-### CI/CD Integration
+### Local Integration
 
-Add the validation script to your CI pipeline:
-
-```yaml
-# .github/workflows/ci.yml
-- name: Validate Environment
-  run: node scripts/check-env.mjs --mode production
-```
-
-Or as an npm script:
+Add validation as an npm script:
 
 ```json
 {
@@ -142,23 +134,15 @@ Or as an npm script:
 
 ## Example .env Files
 
-### `.env.development`
+### `.env`
 
 ```bash
-# Development environment
+# Unified environment file
+# 开发建议使用 /api 走代理；生产请改为绝对地址
 VITE_API_BASE_URL=/api
-VITE_API_BASE_URL_MP=http://localhost:3000/api
-VITE_AUTH_BOOTSTRAP=guest
-VITE_MOCK=false
-```
-
-### `.env.production`
-
-```bash
-# Production environment
-VITE_API_BASE_URL=https://api.zhengjiyuan.top/api
 VITE_API_BASE_URL_MP=https://api.zhengjiyuan.top/api
 VITE_AUTH_BOOTSTRAP=login
+VITE_MOCK=false
 ```
 
 ## Validation Rules Summary
@@ -173,7 +157,7 @@ VITE_AUTH_BOOTSTRAP=login
 
 ### "VITE_API_BASE_URL is required in production mode"
 
-Make sure `.env.production` contains `VITE_API_BASE_URL` with an absolute URL:
+Make sure `.env` contains `VITE_API_BASE_URL` with an absolute URL:
 
 ```bash
 VITE_API_BASE_URL=https://api.example.com/api

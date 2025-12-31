@@ -15,7 +15,7 @@
 
 import { ref, onUnmounted } from 'vue'
 import { defineStore } from 'pinia'
-import type { MetricSeriesResponse, MetricSeriesParams } from '@shared/types/health'
+import type { MetricSeriesResponse, MetricSeriesParams } from '@/types/health'
 import { getMetricSeries, getMetricSeriesV2 } from '@/utils/business/healthDataHelper'
 import { processPinnedMetrics, processTrendMetrics } from '@/utils/business/healthSummaryHelper'
 import { healthSummaryService } from '@/services/healthSummaryService'

@@ -7,13 +7,13 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **Config**: 简化环境配置为纯环境变量方式
   - 移除 runtime config (`/config.json`) 机制
-  - 仅保留 `.env.dev`（开发）和 `.env`（生产）两个配置文件
-  - 修改 `npm run dev` 使用 `--mode dev` 读取 `.env.dev`
-  - `npm run build` 直接从 `.env` 读取配置
+  - 仅保留 `.env` 作为所有环境的统一配置文件
+  - `npm run dev` 与 `npm run build` 均直接读取 `.env`
+  - 移除 `VITE_API_PROXY_TARGET` 代理配置
   - 删除 `scripts/generate-config.mjs`（不再需要）
   - 简化 `runtimeConfig.ts` 直接使用环境变量
   - 更新 README.md 环境配置章节，说明新的配置方式
-  - dev 和 prod 环境配置完全独立，互不干扰
+  - dev 和 prod 共用同一份环境配置入口
 
 
 ### Fixed
@@ -79,7 +79,6 @@ All notable changes to this project will be documented in this file.
 - **System (Agent-8)**: Implemented `SystemMonitor` page with CPU/Memory/Disk stats (Mocked).
 - **Audit (Agent-8)**: Implemented `AuditLogs` page with mocked data table.
 - **Infrastructure (Agent-8)**: Setup MSW (Mock Service Worker) for development.
-- **Infrastructure (Agent-8)**: Setup basic Playwright E2E configuration and `login.spec.ts`.
 - **Articles (Agent-7)**: Implemented Article List, Create, Edit, and Delete features with responsive design.
 - **Users (Agent-6)**: Implemented Users Module with List, Visitor Statistics, and Detail Drawer.
 - **Users**: Implemented `UserTable` with mobile responsiveness and "More" action dropdown.

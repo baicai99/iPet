@@ -1,5 +1,5 @@
 import request from '@/utils/common/request'
-import type { Pet } from '@shared/types/pet'
+import type { Pet } from '@/types/pet'
 
 export const petService = {
     async getPets(): Promise<Pet[]> {

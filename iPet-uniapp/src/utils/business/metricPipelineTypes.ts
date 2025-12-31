@@ -11,7 +11,7 @@ import type {
     AggregationMethod,
     MetricRange,
     MetricBucket
-} from '@shared/types/health'
+} from '@/types/health'
 
 // ============================================================================
 // Stage 1: Normalized Records

@@ -1,6 +1,6 @@
 /**
  * Sensitive word filtering configuration
- * Re-exports from shared module for backward compatibility
+ * Re-exports from local validation module for backward compatibility
  */
 
 export {
@@ -8,4 +8,4 @@ export {
     containsSensitiveWord,
     findSensitiveWord,
     filterSensitiveWords
-} from '@shared/validation/sensitiveWords';
+} from '@/validation/sensitiveWords';

@@ -5,7 +5,7 @@
  * Mini Charts (SVG) 和 Detail Charts (ECharts) 共享同一套模型。
  */
 
-import type { MetricDomain, MissingPolicy, MetricRange } from '@shared/types/health'
+import type { MetricDomain, MissingPolicy, MetricRange } from '@/types/health'
 
 // ============================================================================
 // Axis Configuration

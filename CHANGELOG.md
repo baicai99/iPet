@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.0.24 (2025-12-31)
+
+### 🔧 Tooling
+- 清空后端 `.env.example` 示例值并补充变量注释（范围：iPet-BackEnd；模块：env；行为变更：否）
+- `.env.example` 注释切换为中文（范围：iPet-BackEnd；模块：env；行为变更：否）
+- 对齐 `.env` 变量键并补齐缺失项（范围：iPet-BackEnd；模块：env；行为变更：否）
+- 后端改为仅使用 `.env` 并移除 `.env.dev` 引用（范围：iPet-BackEnd；模块：env,config；行为变更：是）
+- 新增后端 `.env.dev` 作为开发环境配置版本（范围：iPet-BackEnd；模块：env；行为变更：否）
+- 后端启动按环境优先加载 `.env.dev`（开发）与 `.env`（生产）（范围：iPet-BackEnd；模块：config；行为变更：否）
+- 开发环境仅加载 `.env.dev`，不再回退到 `.env`（范围：iPet-BackEnd；模块：config；行为变更：否）
+- 后台管理端开发环境改为仅使用单一 API 地址配置（范围：backend-ui；模块：env；行为变更：是）
+- 后台管理端统一使用 `.env` 并移除 `VITE_API_PROXY_TARGET` 代理配置（范围：backend-ui；模块：env,vite,scripts；行为变更：是）
+- 移除运维配置目录 `ops`（范围：ops；模块：nginx,monitoring；行为变更：否）
+- 移除 Playwright 相关测试脚本与配置（范围：backend-ui,tests；模块：e2e,tooling；行为变更：是）
+- 移除 GitHub Actions 工作流与 CI 脚本（范围：.github,iPet-BackEnd,scripts；模块：workflows,ci-gate,contract-validate；行为变更：是）
+- 删除根目录 `shared/`（范围：shared；模块：types,validation；行为变更：是）
+- 移除前后端对根目录 `shared/` 共享目录的依赖，类型/校验规则改为各自项目内维护（范围：iPet-uniapp,iPet-BackEnd；模块：types,validation,config；行为变更：是）
+- iPet-uniapp 仅保留 `.env` 并统一校验脚本/构建流程读取该文件（范围：iPet-uniapp；模块：env,scripts,package；行为变更：是）
+- 后端 CORS 响应头支持从环境变量配置（范围：iPet-BackEnd；模块：config,main,env；行为变更：是）
+- 后端 CORS 配置仅保留 `CORS_ORIGINS`，移除 `CLIENT_ORIGIN`（范围：iPet-BackEnd；模块：config,env；行为变更：是）
+- 后端 CORS 运行时不再内置默认地址，完全由环境配置控制（范围：iPet-BackEnd；模块：main；行为变更：是）
+
+### 📝 Docs
+- 更新后台管理端开发指南，改为单一 API 地址配置说明（范围：docs；模块：DEV；行为变更：否）
+- 更新后台管理端开发指南，说明统一使用 `.env`（范围：docs；模块：DEV；行为变更：否）
+- 新增后台管理端 Nginx 部署规范（范围：backend-ui/docs；模块：backend-ui/nginx；行为变更：否）
+- 更新运维与可观测性文档，移除 `ops` 路径引用（范围：docs,iPet-uniapp/docs,iPet-BackEnd；模块：ops/production-topology,backend/observability,backend/performance-ci,AGENTS；行为变更：否）
+- 移除 CI 相关文档与引用（范围：docs,iPet-uniapp/docs,iPet-BackEnd；模块：frontend/安全与合规层,frontend/性能与稳定性层,backend/工程化与质量保障,env/README,backend/README；行为变更：否）
+- 补充前后端类型与校验归属规范，并更新前端数据/安全/架构文档引用（范围：iPet-uniapp/docs,docs；模块：dev/shared-removal,frontend/数据层,frontend/安全与合规层,frontend/架构与代码组织层；行为变更：否）
+- 更新 iPet-uniapp 环境变量文档与示例，说明仅使用 `.env`（范围：iPet-uniapp/docs；模块：env,build-meta,npm-scripts-ci-matrix,env/README；行为变更：否）
+
 ## 0.0.23 (2025-12-30)
 
 ### ✨ Features
@@ -40,6 +71,7 @@
 - 修复登录接口 401 被统一映射为“登录过期”导致的语义错误提示（范围：backend-ui；模块：api/interceptors；行为变更：否）
 - 修复审计日志记录在管理员为空时的类型报错（范围：iPet-BackEnd；模块：admin；行为变更：否）
 - 修复管理员角色无法看到审计日志入口的问题（范围：backend-ui；模块：features/layout；行为变更：是）
+- 修复后台管理端统计卡片与抽屉的 AntD 弃用警告，并补充系统设置邮箱自动填充提示（范围：backend-ui；模块：features/users,features/dashboard,features/system；行为变更：否）
 
 ### 🎨 Frontend
 - 文章封面上传改为卡片式占位与预览，自动转 JPG 并压缩（范围：backend-ui；模块：features/articles；行为变更：是）
@@ -140,7 +172,6 @@
 
 ### 🧪 Tests
 - 用户 Schema 单测对齐真实 API 字段与访客统计键名
-- Vitest 限定单测目录，避免收集 Playwright E2E spec
 
 ### 🛡️ Security
 - 移除后台管理端密码与初始化流程的 console.log
@@ -387,6 +418,15 @@
 ### 🐛 Bug Fixes
 - 统一解包 API `success/data` 响应，避免登录后 token 解析为空导致停留在登录页
 - 修复后台仪表盘因全局样式导致的布局挤压/黑边问题，并重构仪表盘模块
+
+---
+
+## 0.0.5 (2025-12-31)
+
+### 🐛 Bug Fixes
+- backend-ui: 移除未使用的配置/类型引用以通过 typecheck
+- backend-ui: 菜单权限过滤使用当前用户角色
+- backend-ui: 清理 Vite 配置中未使用的构建参数
 
 ---
 

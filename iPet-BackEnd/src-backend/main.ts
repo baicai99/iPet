@@ -40,27 +40,23 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const bodyLimit = configService.get<string>('bodyLimit', '20mb');
   const port = configService.get<number>('port', 3000);
-  const clientOrigin = configService.get<string>(
-    'clientOrigin',
-    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173',
-  );
-  const origins = clientOrigin.split(',').map(origin => origin.trim());
+  const corsConfig = configService.get<{
+    origins: string[];
+    allowedHeaders: string[];
+    methods: string[];
+    exposedHeaders: string[];
+    credentials: boolean;
+    optionsSuccessStatus: number;
+    preflightContinue: boolean;
+  }>('cors');
   const corsOptions: CorsOptions = {
-    origin: origins,
-    credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'If-None-Match',
-      'X-Request-Id',
-      'Origin',
-      'Accept',
-      'X-Requested-With',
-    ],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    exposedHeaders: ['ETag', 'X-Request-Id'],
-    optionsSuccessStatus: 204,
-    preflightContinue: false,
+    origin: corsConfig?.origins,
+    credentials: corsConfig?.credentials,
+    allowedHeaders: corsConfig?.allowedHeaders,
+    methods: corsConfig?.methods,
+    exposedHeaders: corsConfig?.exposedHeaders,
+    optionsSuccessStatus: corsConfig?.optionsSuccessStatus,
+    preflightContinue: corsConfig?.preflightContinue,
   };
 
   app.setGlobalPrefix('api');

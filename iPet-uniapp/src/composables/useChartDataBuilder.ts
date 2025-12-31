@@ -9,7 +9,7 @@
  */
 
 import dayjs from 'dayjs'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import { useUnitConverter } from '@/composables/useUnitConverter'
 import { parseTimestamp, buildChartData, aggregateDailyData } from '@/utils/business/healthDataHelper'
 

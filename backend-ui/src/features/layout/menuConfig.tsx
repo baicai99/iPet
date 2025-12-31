@@ -79,7 +79,6 @@ export const filterMenuByRole = (items: MenuItem[], userRole: AdminRole): MenuIt
         // 没有权限要求的菜单项所有人可见
         if (!item.requiredRole) return true;
 
-        // admin 可见所有菜单
-        return item.requiredRole === AdminRole.ADMIN;
+        return userRole === item.requiredRole;
     });
 };

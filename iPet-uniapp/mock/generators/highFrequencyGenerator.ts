@@ -4,7 +4,7 @@
  * Covers 2-year time span for metrics like meal, water, walk_duration
  */
 
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import {
     TimeSlot,
     TIME_SLOTS,

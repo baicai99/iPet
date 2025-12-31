@@ -30,11 +30,14 @@ import { InfraModule } from './infra/infra.module';
 import { AdminModule } from './admin/admin.module';
 import { StatsModule } from './stats/stats.module';
 
+const envFilePath = '.env';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
+      envFilePath,
     }),
     ServeStaticModule.forRoot({
       rootPath: ensureDataSubdir('uploads'),

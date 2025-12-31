@@ -316,7 +316,7 @@ export const UserTable: React.FC<UserTableProps> = ({
             />
             <Drawer
                 title="用户详情"
-                width={720}
+                size="large"
                 onClose={closeDrawer}
                 open={detailOpen}
                 destroyOnClose

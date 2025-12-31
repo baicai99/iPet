@@ -195,7 +195,7 @@ User reports: "App is calling the wrong API"
 curl https://your-domain.com/build-meta.json | jq .
 
 # Compare with expected configuration
-# If apiBaseUrl is wrong, rebuild with correct .env.production
+# If apiBaseUrl is wrong, rebuild with correct .env
 ```
 
 ### Scenario 3: Version Correlation
@@ -283,7 +283,7 @@ git rev-parse HEAD
 npm run build:h5 -- --mode production
 
 # Check loaded env
-cat .env.production | grep VITE_API_BASE_URL
+cat .env | grep VITE_API_BASE_URL
 
 # Explicitly set during build
 VITE_API_BASE_URL=https://api.example.com/api npm run build:h5

@@ -8,7 +8,7 @@
  * - 纯函数风格：便于测试
  */
 
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 
 export type TrendDirection = 'up' | 'down' | 'stable' | 'none'
 

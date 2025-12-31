@@ -6,7 +6,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { hash } from 'bcrypt';
 import { normalizeEmail } from '../utils/sanitizers';
-import { AccountInfo } from '@shared/types/user';
+import type { AccountInfo } from '../types/user';
 
 @Injectable()
 export class UsersService {

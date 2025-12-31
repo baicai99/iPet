@@ -1,22 +1,10 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import fs from 'fs'
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, __dirname, '')
-  const apiProxyTarget = env.VITE_API_PROXY_TARGET
-  const proxy = apiProxyTarget
-    ? {
-        '/api': {
-          target: apiProxyTarget,
-          changeOrigin: true,
-          secure: apiProxyTarget.startsWith('https'),
-        },
-      }
-    : undefined
-
+export default defineConfig(() => {
   return {
     plugins: [
       react(),
@@ -38,7 +26,6 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    server: proxy ? { proxy } : undefined,
     build: {
       rollupOptions: {
         output: {

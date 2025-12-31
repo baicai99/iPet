@@ -2,19 +2,15 @@
     "name": "ipet-monorepo",
     "version": "1.0.0",
     "private": true,
-    "description": "iPet monorepo - E2E testing and shared tooling",
+    "description": "iPet monorepo - shared tooling",
     "scripts": {
         "sync:version": "node scripts/sync-version.mjs",
         "typecheck": "npm --prefix backend-ui run typecheck",
         "lint": "npm --prefix backend-ui run lint",
-        "build": "npm --prefix backend-ui run build",
-        "test:e2e": "playwright test",
-        "test:e2e:ui": "playwright test --ui",
-        "test:e2e:report": "playwright show-report"
+        "build": "npm --prefix backend-ui run build"
     },
     "devDependencies": {
         "@apidevtools/swagger-parser": "^12.1.0",
-        "@playwright/test": "^1.48.0",
         "yaml": "^2.8.2"
     }
 }

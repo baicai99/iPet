@@ -85,10 +85,11 @@ yarn install
 │   ├── services/        # ✨ 业务逻辑服务层 (解耦 Store 和 API/Mock)
 │   ├── static/          # 静态资源 (图片、Tab图标)
 │   ├── stores/          # Pinia 状态仓库
+│   ├── types/           # 前端类型定义
+│   ├── validation/      # 校验规则与错误码
 │   ├── uni_modules/     # 插件市场模块 (如 uView Plus)
 │   ├── utils/           # 工具函数 (request.ts, formatHelper.js)
 │   └── uni.scss         # 全局样式变量与 Mixins
-└── ../shared            # (Alias: @shared) 前后端共享类型定义与工具
 ```
 
 -----

@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
-import type { Pet } from '@shared/types/pet'
-import type { HealthRecord } from '@shared/types/health'
+import type { Pet } from '@/types/pet'
+import type { HealthRecord } from '@/types/health'
 
 const WALKING_SPEED_KMH = 4
 const MINUTES_PER_HOUR = 60

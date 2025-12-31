@@ -71,8 +71,6 @@ backend-ui/
 │   ├── test/             # 测试工具
 │   ├── App.tsx
 │   └── main.tsx
-├── tests/
-│   └── e2e/              # E2E 测试
 ├── public/
 │   └── mockServiceWorker.js  # MSW worker
 ├── docs/                 # 文档
@@ -82,7 +80,6 @@ backend-ui/
 │   ├── create-feature.js       # Feature 生成器
 │   └── generate-build-meta.js  # 构建元信息
 ├── vitest.config.ts      # Vitest 配置
-└── playwright.config.ts  # Playwright 配置
 ```
 
 详见 [目录结构规范](./docs/directory-structure.md)
@@ -93,30 +90,29 @@ backend-ui/
 
 ### 环境配置
 
-项目使用**环境变量**进行配置，dev 和 prod 环境完全独立。
+项目使用**环境变量**进行配置，统一使用 `.env` 作为配置入口。
 
 #### 配置文件
 
 | 文件 | 用途 | 何时使用 |
 |------|------|---------|
-| `.env.dev` | 开发环境配置 | `npm run dev` |
-| `.env` | 生产环境配置 | `npm run build` |
+| `.env` | 通用环境配置 | `npm run dev` / `npm run build` |
 
-> 这两个文件都在 `.gitignore` 中，不会提交到 Git
+> `.env` 默认在 `.gitignore` 中，如需提交请手动跟踪
 
 #### 开发环境
 
 **快速开始**：
 ```bash
-# 启动开发服务器（自动使用 .env.dev）
+# 启动开发服务器（自动使用 .env）
 npm run dev
 ```
 
 **配置说明**：
 
-`.env.dev` 文件内容：
+`.env` 文件内容：
 ```bash
-# 开发环境配置
+# 通用环境配置
 VITE_API_BASE_URL=http://localhost:3000/api
 VITE_MOCK=true
 VITE_SKIP_INIT=true
@@ -129,8 +125,8 @@ VITE_SKIP_INIT=true
 
 **切换本地/线上 API**：
 ```bash
-# 修改 .env.dev
-cat > .env.dev << EOF
+# 修改 .env
+cat > .env << EOF
 VITE_API_BASE_URL=https://api.zhengjiyuan.top/api
 VITE_MOCK=false
 VITE_SKIP_INIT=true
@@ -152,7 +148,7 @@ npm run build
 
 `.env` 文件内容：
 ```bash
-# 生产环境配置（npm run build 使用）
+# 通用环境配置（npm run dev / build 使用）
 VITE_API_BASE_URL=https://api.zhengjiyuan.top/api
 VITE_MOCK=false
 VITE_SKIP_INIT=false
@@ -184,13 +180,13 @@ npm run preview
 
 **启用 Mock**：
 ```bash
-# .env.dev
+# .env
 VITE_MOCK=true
 ```
 
 **禁用 Mock**（测试真实后端）：
 ```bash
-# .env.dev
+# .env
 VITE_MOCK=false
 VITE_API_BASE_URL=https://api.zhengjiyuan.top/api
 ```
@@ -297,19 +293,6 @@ npm run test:ui
 npm run test:coverage
 ```
 
-### E2E 测试
-
-```bash
-# 运行 E2E
-npm run test
-
-# 指定浏览器
-npx playwright test --project=chromium
-
-# 移动端
-npx playwright test --project=mobile
-```
-
 ---
 
 ## 📖 规范约定
@@ -387,7 +370,7 @@ npm run build -- --force
 ### Mock 不生效
 
 1. 检查 `public/mockServiceWorker.js` 是否存在
-2. 确认 `.env.development` 中 `VITE_MOCK=true`
+2. 确认 `.env` 中 `VITE_MOCK=true`
 3. 查看浏览器 Console 确认 MSW 启动
 
 ### API 报错

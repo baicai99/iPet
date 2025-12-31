@@ -6,15 +6,14 @@
  */
 
 // ============================================================================
-// 从共享包导入统一错误码
+// 从本地校验模块导入统一错误码
 // ============================================================================
 
 import {
     ErrorCode as SharedErrorCode,
     ERROR_MESSAGES as SHARED_ERROR_MESSAGES,
-    mapHttpStatusToErrorCode as sharedMapHttpStatusToErrorCode,
     getErrorMessage,
-} from '../../../shared/validation/error-codes';
+} from '@/validation/error-codes';
 
 // Re-export for convenience
 export { SharedErrorCode, SHARED_ERROR_MESSAGES, getErrorMessage };

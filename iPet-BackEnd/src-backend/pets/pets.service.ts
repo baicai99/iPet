@@ -4,7 +4,7 @@ import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 import { StorageService } from '../storage/storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { Pet } from '@shared/types/pet';
+import type { Pet } from '../types/pet';
 import type { PaginationResult } from '../utils/pagination';
 
 @Injectable()

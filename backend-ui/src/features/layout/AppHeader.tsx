@@ -9,7 +9,6 @@ import {
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useAuth } from '@/core/auth';
-import { AdminRole } from '@/core/config';
 
 const { Header } = Layout;
 const { useBreakpoint } = Grid;

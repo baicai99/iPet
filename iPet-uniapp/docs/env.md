@@ -4,10 +4,9 @@ This document describes all environment variables used in the iPet UniApp projec
 
 ## Environment Files
 
-- `.env.development` - Development environment configuration
-- `.env.production` - Production environment configuration
+- `.env` - Single source of truth for all environments
 
-Environment variables are loaded by Vite based on the build mode (`--mode development` or `--mode production`).
+Environment variables are loaded from `.env` regardless of the build mode. Adjust values in `.env` before building for different environments.
 
 ## API Configuration
 
@@ -320,29 +319,19 @@ Production builds will **throw errors** if critical variables are missing or inv
 
 ## Examples
 
-### .env.development
+### .env
 
 ```bash
 # API Configuration
+# 开发建议使用 /api 走代理；生产请改为绝对地址
 VITE_API_BASE_URL=/api
-VITE_API_BASE_URL_MP=http://localhost:3000/api
+VITE_API_BASE_URL_MP=https://api.zhengjiyuan.top/api
 VITE_PROXY_TARGET=http://localhost:3000
 
 # Mock & Auth
 VITE_MOCK=false
 VITE_AUTH_BOOTSTRAP=guest
 VITE_DEV_BYPASS_AUTH=false
-```
-
-### .env.production
-
-```bash
-# API Configuration
-VITE_API_BASE_URL=https://api.zhengjiyuan.top/api
-VITE_API_BASE_URL_MP=https://api.zhengjiyuan.top/api
-
-# Auth
-VITE_AUTH_BOOTSTRAP=login
 ```
 
 ---
@@ -355,8 +344,8 @@ VITE_AUTH_BOOTSTRAP=login
 
 **Solution:**
 ```bash
-# Check .env.production
-cat .env.production | grep VITE_API_BASE_URL
+# Check .env
+cat .env | grep VITE_API_BASE_URL
 
 # Or set explicitly
 VITE_API_BASE_URL=https://api.example.com/api npm run build:h5
@@ -366,7 +355,7 @@ VITE_API_BASE_URL=https://api.example.com/api npm run build:h5
 
 **Cause:** Using relative path (e.g., `/api`) in production
 
-**Solution:** Use absolute URL in `.env.production`:
+**Solution:** Use absolute URL in `.env`:
 ```bash
 VITE_API_BASE_URL=https://api.zhengjiyuan.top/api
 ```
@@ -376,7 +365,7 @@ VITE_API_BASE_URL=https://api.zhengjiyuan.top/api
 **Cause:** Using localhost URL in production build
 
 **Solutions:**
-1. Use real domain in `.env.production`
+1. Use real domain in `.env`
 2. For local testing only: `VITE_ALLOW_LOCALHOST_PROD=true npm run build:h5`
 
 ### Mini Program "invalid url" error

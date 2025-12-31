@@ -160,8 +160,10 @@ sudo apt install nginx -y
 ### 2. 部署 Nginx 配置
 
 ```bash
-cd /path/to/iPet/ops/nginx
-sudo bash deploy.sh
+sudo vi /etc/nginx/sites-available/ipet
+sudo ln -s /etc/nginx/sites-available/ipet /etc/nginx/sites-enabled/ipet
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
 ### 3. 配置 TLS 证书
@@ -284,7 +286,6 @@ NODE_ENV="production"
 - [部署手册](./deploy-playbook.md)
 - [发布清单](./release-checklist.md)
 - [健康检查与版本](./health-and-version.md)
-- [Nginx 配置说明](../../ops/nginx/README.md)
 
 ---
 

@@ -11,7 +11,7 @@
 
 import { computed, type Ref, type ComputedRef } from 'vue'
 import dayjs from 'dayjs'
-import type { MetricSeriesResponse, MetricStats } from '@shared/types/health'
+import type { MetricSeriesResponse, MetricStats } from '@/types/health'
 
 // ============================================================================
 // Types

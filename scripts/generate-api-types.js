@@ -12,7 +12,7 @@ const path = require('path');
 
 // Paths
 const CONTRACT_PATH = path.join(__dirname, '..', 'docs', 'contracts', 'openapi.yaml');
-const OUTPUT_PATH = path.join(__dirname, '..', 'shared', 'api-types.ts');
+const OUTPUT_PATH = path.join(__dirname, '..', 'iPet-uniapp', 'src', 'types', 'api-types.ts');
 
 async function main() {
     console.log('🔧 Generating TypeScript types from OpenAPI...\n');

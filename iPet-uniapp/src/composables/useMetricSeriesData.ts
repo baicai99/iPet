@@ -16,7 +16,7 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { useHealthStore } from '@/stores/healthStore'
 import { getMetricMetadata, type MetricKey } from '@/data/metricMetadata'
-import type { MetricSeriesResponse, HealthRecord } from '@shared/types/health'
+import type { MetricSeriesResponse, HealthRecord } from '@/types/health'
 
 // ============================================================================
 // Types

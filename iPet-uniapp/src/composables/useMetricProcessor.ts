@@ -17,7 +17,7 @@
  */
 
 import dayjs from 'dayjs'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import type { ThemeColor } from '@/types/ui'
 import { useMetricConfig, type MetricStaticConfig } from '@/composables/useMetricConfig'
 import { useMetricData } from '@/composables/useMetricData'

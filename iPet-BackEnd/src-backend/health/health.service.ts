@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateHealthRecordDto } from './dto/create-health-record.dto';
 import { UpdateHealthRecordDto } from './dto/update-health-record.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { HealthRecord } from '@shared/types/health';
+import type { HealthRecord } from '../types/health';
 import { CACHE_TTL_MS } from '../common/cache/cache.constants';
 import { cacheKeys } from '../common/cache/cache.keys';
 import { ttlWithJitter } from '../common/cache/cache.utils';

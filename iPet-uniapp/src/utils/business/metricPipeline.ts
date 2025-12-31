@@ -21,7 +21,7 @@ import type {
     PipelineResult
 } from './metricPipelineTypes'
 
-import type { MetricRange, AggregationMethod, MissingPolicy, MetricDomain } from '@shared/types/health'
+import type { MetricRange, AggregationMethod, MissingPolicy, MetricDomain } from '@/types/health'
 import { getMetricProcessingConfig } from '@/data/metricMetadata'
 
 dayjs.extend(isoWeek)

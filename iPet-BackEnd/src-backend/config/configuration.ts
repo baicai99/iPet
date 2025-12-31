@@ -1,6 +1,11 @@
 import { join } from 'path';
 import { ensureDataSubdir, getDataRoot } from './data-paths';
 
+const DEFAULT_CORS_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173';
+const DEFAULT_CORS_ALLOWED_HEADERS = 'Content-Type,Authorization,If-None-Match,X-Request-Id,Origin,Accept,X-Requested-With';
+const DEFAULT_CORS_METHODS = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
+const DEFAULT_CORS_EXPOSED_HEADERS = 'ETag,X-Request-Id';
+
 const resolveJwtSecret = (): string => {
   const secret = process.env.JWT_SECRET;
   const nodeEnv = process.env.NODE_ENV || 'development';
@@ -26,13 +31,34 @@ const syncDirectory = process.env.SYNC_DIR || ensureDataSubdir('sync');
 const dbDirectory = ensureDataSubdir('db');
 const defaultDbUrl = `file:${join(dbDirectory, 'ipet.db')}`;
 
+const parseCsv = (value: string | undefined, fallback: string): string[] => {
+  const source = value?.trim() ? value : fallback;
+  return source.split(',').map(item => item.trim()).filter(Boolean);
+};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (!value?.trim()) {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  return ['true', '1', 'yes', 'on'].includes(normalized);
+};
+
 export default () => ({
   port: parseInt(process.env.PORT || '3000', 10),
   jwtSecret: resolveJwtSecret(),
   bodyLimit: process.env.BODY_LIMIT || '20mb',
   syncDirectory,
   maxBackups: parseInt(process.env.SYNC_MAX_BACKUPS || '3', 10),
-  clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173',
+  cors: {
+    origins: parseCsv(process.env.CORS_ORIGINS, DEFAULT_CORS_ORIGINS),
+    allowedHeaders: parseCsv(process.env.CORS_ALLOWED_HEADERS, DEFAULT_CORS_ALLOWED_HEADERS),
+    methods: parseCsv(process.env.CORS_METHODS, DEFAULT_CORS_METHODS),
+    exposedHeaders: parseCsv(process.env.CORS_EXPOSED_HEADERS, DEFAULT_CORS_EXPOSED_HEADERS),
+    credentials: parseBoolean(process.env.CORS_CREDENTIALS, true),
+    optionsSuccessStatus: parseInt(process.env.CORS_OPTIONS_SUCCESS_STATUS || '204', 10),
+    preflightContinue: parseBoolean(process.env.CORS_PREFLIGHT_CONTINUE, false),
+  },
   databaseUrl: process.env.DATABASE_URL || defaultDbUrl,
   dataRoot: getDataRoot(),
   redisUrl: process.env.REDIS_URL,

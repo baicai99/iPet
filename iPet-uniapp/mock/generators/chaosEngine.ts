@@ -3,7 +3,7 @@
  * Injects edge cases like data voids, outliers, null fields, and network delays
  */
 
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 
 /**
  * Chaos engineering configuration

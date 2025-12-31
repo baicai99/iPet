@@ -1,18 +1,18 @@
 /**
  * 认证相关表单验证工具
  * 
- * 统一登录/注册页面的验证逻辑，使用共享校验规则
+ * 统一登录/注册页面的验证逻辑，使用本地校验规则
  */
 
 // ============================================================================
-// 从共享包导入
+// 从本地校验模块导入
 // ============================================================================
 
 import {
     isValidEmail as sharedIsValidEmail,
     validatePassword as sharedValidatePassword,
     VALIDATION_MESSAGES,
-} from '../../../../shared/validation';
+} from '@/validation';
 
 // ============================================================================
 // 类型定义
@@ -23,8 +23,8 @@ export interface ValidationResult {
     message?: string
 }
 
-// Re-export shared regex for backward compatibility
-export { EMAIL_REGEX, PASSWORD_REGEX } from '../../../../shared/validation';
+// Re-export regex for backward compatibility
+export { EMAIL_REGEX, PASSWORD_REGEX } from '@/validation';
 
 // ============================================================================
 // 验证函数

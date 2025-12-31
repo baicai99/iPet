@@ -21,7 +21,7 @@ import { healthService } from '@/services/health.service'
 import { healthRecordService } from '@/services/healthRecordService'
 import healthCacheService from '@/services/healthCacheService'
 import { healthCacheServiceV2 } from '@/services/healthCacheServiceV2'  // ✅ NEW: V2 缓存
-import type { HealthRecord, MetricSeriesResponse, MetricSeriesParams } from '@shared/types/health'
+import type { HealthRecord, MetricSeriesResponse, MetricSeriesParams } from '@/types/health'
 import { parseTimestamp, sortRecordsByTime, getMetricSeries, getMetricSeriesV2 } from '@/utils/business/healthDataHelper'
 import { getLocalDayKey } from '@/utils/common/timeKey'
 import { processPinnedMetrics, processTrendMetrics } from '@/utils/business/healthSummaryHelper'

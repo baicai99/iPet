@@ -4,7 +4,7 @@
  * For metrics like bathing, deworming, vaccines
  */
 
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import {
     getDateRange,
     addRandomInterval,

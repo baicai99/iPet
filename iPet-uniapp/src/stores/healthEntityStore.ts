@@ -14,7 +14,7 @@
 
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import { parseTimestamp, sortRecordsByTime } from '@/utils/business/healthDataHelper'
 import { healthRecordService } from '@/services/healthRecordService'
 import { healthService } from '@/services/health.service'

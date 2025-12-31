@@ -82,7 +82,7 @@ HTTP 请求日志：
 
 ## 日常看板与告警（Prometheus + Grafana）
 
-- 监控栈位置：`ops/monitoring`
+- 监控栈位置：由部署环境提供
 - Grafana 预置看板：`iPet Backend Overview`（包含 P95、5xx 错误率、RPS、慢查询）
 - Prometheus 预置告警：
   - `IPetBackendHighLatencyP95`：P95 > 200ms（5m）

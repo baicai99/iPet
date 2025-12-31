@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { UserStats } from '@shared/types/user'
+import type { UserStats } from '@/types/user'
 import { useUnitConverter } from '@/composables/useUnitConverter'
 
 const props = defineProps<{

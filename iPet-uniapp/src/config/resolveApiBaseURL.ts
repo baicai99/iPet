@@ -111,7 +111,7 @@ export function resolveApiBaseURL(ctx: ResolveContext): ResolveResult {
             throw new Error(
                 formatError(
                     'Prod 环境必须配置 VITE_API_BASE_URL。' +
-                    '请检查 .env.production 或 CI/CD 配置。'
+                    '请检查 .env 或 CI/CD 配置。'
                 )
             );
         }
@@ -121,7 +121,7 @@ export function resolveApiBaseURL(ctx: ResolveContext): ResolveResult {
             throw new Error(
                 formatError(
                     '小程序环境必须配置 VITE_API_BASE_URL_MP 或 VITE_API_BASE_URL。\n' +
-                    '请在 .env.development 中设置绝对路径 (如 http://localhost:3000/api)。'
+                    '请在 .env 中设置绝对路径 (如 http://localhost:3000/api)。'
                 )
             );
         }

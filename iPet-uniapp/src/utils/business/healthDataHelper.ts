@@ -281,7 +281,7 @@ import type {
     MetricRange,
     MetricStats,
     AggregationMethod
-} from '@shared/types/health'
+} from '@/types/health'
 import isoWeek from 'dayjs/plugin/isoWeek'
 
 dayjs.extend(isoWeek)

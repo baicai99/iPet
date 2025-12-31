@@ -2,14 +2,14 @@ import { applyDecorators } from '@nestjs/common';
 import { IsEmail, IsNotEmpty, IsString, Matches, MinLength, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { normalizeEmail, sanitizeInput } from './sanitizers';
-// Use shared validation rules
+// Use backend validation rules
 import {
     EMAIL_REGEX,
     PASSWORD_REGEX,
     VERIFICATION_CODE_REGEX,
     PASSWORD_MIN_LENGTH,
     PASSWORD_MAX_LENGTH
-} from '@shared/validation/rules';
+} from '../validation/rules';
 
 // Re-export for backward compatibility
 export { EMAIL_REGEX, PASSWORD_REGEX, VERIFICATION_CODE_REGEX, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH };

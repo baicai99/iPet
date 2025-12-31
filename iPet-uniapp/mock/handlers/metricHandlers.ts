@@ -1,5 +1,5 @@
 import { RequestConfig, defineMock } from '../types/common'
-import type { HealthRecord } from '../../../shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import { SeededRandom } from '../utils/random'
 import { getMockStorage } from '../utils/mockStorage'
 import { pets } from '../pet.js'

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { Pet } from '@shared/types/pet'
+import type { Pet } from '@/types/pet'
 import { petService } from '@/services/pet.service'
 import { useUserStore } from './userStore'
 

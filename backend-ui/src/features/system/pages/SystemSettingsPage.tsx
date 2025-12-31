@@ -215,7 +215,7 @@ const SystemSettingsPage: React.FC = () => {
                             { type: 'email', message: '邮箱格式不正确' },
                         ]}
                     >
-                        <Input placeholder="name@example.com" size="large" />
+                        <Input placeholder="name@example.com" size="large" autoComplete="email" />
                     </Form.Item>
 
                     <Form.Item

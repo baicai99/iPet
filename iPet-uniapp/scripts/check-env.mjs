@@ -3,10 +3,11 @@
 /**
  * Environment Validation Script (Build-time)
  * 
- * Validates .env files before build to ensure all required variables are present
+ * Validates .env file before build to ensure all required variables are present
  * and correctly formatted. This prevents runtime errors caused by misconfiguration.
  * 
  * Usage:
+ *   node scripts/check-env.mjs
  *   node scripts/check-env.mjs --mode production
  *   node scripts/check-env.mjs --mode development
  * 
@@ -49,11 +50,9 @@ function parseBoolean(value, defaultValue) {
 function validateEnvSchema(rawEnv) {
     const errors = []
 
-    // 1. MODE validation
+    // 1. MODE validation (optional, defaults to development rules)
     const mode = rawEnv.MODE
-    if (!mode) {
-        errors.push('MODE is required')
-    } else if (mode !== 'development' && mode !== 'production') {
+    if (mode && mode !== 'development' && mode !== 'production') {
         errors.push(`MODE must be "development" or "production", got: "${mode}"`)
     }
     const isProd = mode === 'production'
@@ -163,18 +162,13 @@ function main() {
         }
     }
 
-    if (!mode) {
-        console.error('❌ Usage: node scripts/check-env.mjs --mode <development|production>')
-        process.exit(1)
-    }
-
-    if (mode !== 'development' && mode !== 'production') {
+    if (mode && mode !== 'development' && mode !== 'production') {
         console.error(`❌ Invalid mode: "${mode}". Must be "development" or "production"`)
         process.exit(1)
     }
 
     // Load .env file
-    const envFileName = `.env.${mode}`
+    const envFileName = '.env'
     const envFilePath = resolve(projectRoot, envFileName)
 
     const env = parseEnvFile(envFilePath)
@@ -186,13 +180,16 @@ function main() {
     }
 
     // Add MODE to env (it's typically set by Vite, not in .env file)
-    env.MODE = mode
+    if (mode) {
+        env.MODE = mode
+    }
 
     // Validate
     const result = validateEnvSchema(env)
 
     if (!result.success) {
-        console.error(`❌ Environment validation failed (mode: ${mode}):`)
+        const modeLabel = mode ?? 'default'
+        console.error(`❌ Environment validation failed (mode: ${modeLabel}):`)
         for (const error of result.errors) {
             console.error(`   - ${error}`)
         }
@@ -202,8 +199,10 @@ function main() {
     }
 
     // Success
-    console.log(`✅ Environment validation passed (mode: ${mode})`)
-    console.log(`   - MODE: ${env.MODE}`)
+    console.log(`✅ Environment validation passed (mode: ${env.MODE ?? 'default'})`)
+    if (env.MODE) {
+        console.log(`   - MODE: ${env.MODE}`)
+    }
     console.log(`   - VITE_API_BASE_URL: ${env.VITE_API_BASE_URL || '(unset, will use fallback)'}`)
     if (env.VITE_API_BASE_URL_MP) {
         console.log(`   - VITE_API_BASE_URL_MP: ${env.VITE_API_BASE_URL_MP}`)

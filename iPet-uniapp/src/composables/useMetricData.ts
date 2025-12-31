@@ -9,7 +9,7 @@
  */
 
 import dayjs from 'dayjs'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 import { useHealthStore } from '@/stores/healthStore'
 import { useMetricFormatter } from '@/composables/useMetricFormatter'
 import { parseTimestamp, getLatestRecord } from '@/utils/business/healthDataHelper'

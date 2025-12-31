@@ -15,7 +15,7 @@
 import { healthService } from './health.service'
 import { sortRecordsByTime } from '@/utils/business/healthDataHelper'
 import { shouldBlockOfflineHealthWrite, showOfflineToast } from '@/utils/common/networkUtils'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 
 // ============================================================================
 // Types

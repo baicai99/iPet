@@ -12,10 +12,6 @@ echo "📦 Packaging project for deployment..."
 # Create temp structure
 mkdir -p "$TEMP_DIR"
 
-# Copy shared folder
-# We copy the folder itself so it ends up as deploy_temp/shared
-cp -R ../shared "$TEMP_DIR/"
-
 # Copy backend files
 # We use rsync to exclude unwanted files
 # We copy current dir content to deploy_temp/iPet-BackEnd
@@ -47,7 +43,7 @@ rm -rf "$TEMP_DIR"
 
 echo "✅ Done! Created $OUTPUT_FILE"
 echo "👉 Upload this file to your server."
-echo "   It contains both 'iPet-BackEnd' and 'shared' folders."
+echo "   It contains the 'iPet-BackEnd' folder."
 echo "   1. Unzip it."
 echo "   2. cd iPet-BackEnd"
 echo "   3. npm install"

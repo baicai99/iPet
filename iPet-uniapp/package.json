@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/main.ts",
   "scripts": {
-    "check:env": "node scripts/check-env.mjs --mode",
+    "check:env": "node scripts/check-env.mjs",
     "check:env:development": "node scripts/check-env.mjs --mode development",
     "check:env:production": "node scripts/check-env.mjs --mode production",
     "sync:version": "node ../scripts/sync-version.mjs",

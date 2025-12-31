@@ -67,7 +67,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { formatPetAge } from '@/utils/common/formatHelper'
 import { useImageCacheStore } from '@/stores/imageCacheStore'
-import type { Pet } from '@shared/types/pet'
+import type { Pet } from '@/types/pet'
 import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 
 type SelectorMode = 'edit' | 'select'

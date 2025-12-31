@@ -37,7 +37,7 @@ const DashboardPage: React.FC = () => {
                             title="活跃用户"
                             value={567}
                             prefix={<TeamOutlined />}
-                            valueStyle={{ color: '#3f8600' }}
+                            styles={{ content: { color: '#3f8600' } }}
                         />
                     </Card>
                 </Col>
@@ -48,7 +48,7 @@ const DashboardPage: React.FC = () => {
                             title="健康记录"
                             value={8901}
                             prefix={<HeartOutlined />}
-                            valueStyle={{ color: '#cf1322' }}
+                            styles={{ content: { color: '#cf1322' } }}
                         />
                     </Card>
                 </Col>
@@ -69,7 +69,7 @@ const DashboardPage: React.FC = () => {
                             title="今日新增"
                             value={45}
                             prefix={<RiseOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
+                            styles={{ content: { color: '#1890ff' } }}
                         />
                     </Card>
                 </Col>

@@ -1,5 +1,5 @@
 import request from '@/utils/common/request'
-import type { HealthRecord } from '@shared/types/health'
+import type { HealthRecord } from '@/types/health'
 
 export const healthService = {
     async getHealthRecords(petId?: string, page?: number, limit?: number, metricKey?: string): Promise<HealthRecord[]> {
