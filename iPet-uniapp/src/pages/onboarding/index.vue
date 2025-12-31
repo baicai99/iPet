@@ -216,7 +216,6 @@ const handleFinish = async () => {
         const userPayload = {
             displayName: userData.value.nickname,
             avatar: userData.value.avatar,
-            gender: userData.value.gender,
             bio: userData.value.bio,
             mbti: userData.value.mbti,
             tags: userData.value.tags

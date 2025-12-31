@@ -9,11 +9,40 @@ export interface UpdateProfilePayload {
     tags?: string[];
 }
 
+const buildUpdateProfilePayload = (payload: UpdateProfilePayload) => {
+    const sanitized: Partial<UpdateProfilePayload> = {}
+
+    if (typeof payload.displayName === 'string') {
+        sanitized.displayName = payload.displayName.trim()
+    }
+
+    if (typeof payload.avatar === 'string') {
+        sanitized.avatar = payload.avatar.trim()
+    }
+
+    if (typeof payload.bio === 'string') {
+        sanitized.bio = payload.bio.trim()
+    }
+
+    if (typeof payload.mbti === 'string') {
+        sanitized.mbti = payload.mbti.trim()
+    }
+
+    if (Array.isArray(payload.tags)) {
+        sanitized.tags = payload.tags
+            .filter((tag) => typeof tag === 'string')
+            .map((tag) => tag.trim())
+            .filter((tag) => tag.length > 0)
+    }
+
+    return sanitized
+}
+
 export const updateUserProfile = (payload: UpdateProfilePayload) => {
     return request<AccountInfo>({
         url: '/users/profile',
         method: 'PUT',
-        data: payload
+        data: buildUpdateProfilePayload(payload)
     })
 }
 

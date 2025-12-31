@@ -427,6 +427,9 @@
 - backend-ui: 移除未使用的配置/类型引用以通过 typecheck
 - backend-ui: 菜单权限过滤使用当前用户角色
 - backend-ui: 清理 Vite 配置中未使用的构建参数
+- iPet-uniapp: 清理用户资料更新请求字段并过滤空值，避免 `/users/profile` 触发 400 校验错误
+- iPet-BackEnd: `/pets` 创建接口兼容前端补充字段并使用客户端 id（如提供）避免 400 校验错误
+- docs: 新增宠物创建接口字段约定说明
 
 ---
 

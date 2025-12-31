@@ -1,6 +1,10 @@
 import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsBoolean } from 'class-validator';
 
 export class CreatePetDto {
+    @IsOptional()
+    @IsString()
+    id?: string;
+
     @IsString()
     name: string;
 
@@ -25,12 +29,20 @@ export class CreatePetDto {
     gender?: string;
 
     @IsOptional()
+    @IsNumber()
+    height?: number;
+
+    @IsOptional()
     @IsString()
     avatar?: string;
 
     @IsOptional()
     @IsString()
     birthday?: string;
+
+    @IsOptional()
+    @IsNumber()
+    birthTimestamp?: number;
 
     @IsOptional()
     @IsString()
@@ -64,4 +76,16 @@ export class CreatePetDto {
     @IsOptional()
     @IsString()
     description?: string;
+
+    @IsOptional()
+    @IsString()
+    status?: string;
+
+    @IsOptional()
+    @IsNumber()
+    createdAt?: number;
+
+    @IsOptional()
+    @IsNumber()
+    updatedAt?: number;
 }

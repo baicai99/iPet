@@ -66,7 +66,6 @@ const handleSave = async () => {
     const payload = {
         displayName: localUser.value.nickname,
         avatar: localUser.value.avatar,
-        gender: localUser.value.gender as any, // Added
         bio: localUser.value.bio,
         mbti: localUser.value.mbti,
         tags: [...localUser.value.tags]

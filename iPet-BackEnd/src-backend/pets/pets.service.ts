@@ -15,12 +15,44 @@ export class PetsService {
     ) { }
 
     async create(userId: string, createPetDto: CreatePetDto) {
-        const { personality, ...rest } = createPetDto;
+        const {
+            id,
+            name,
+            type,
+            breed,
+            age,
+            weight,
+            gender,
+            avatar,
+            birthday,
+            arrivalDate,
+            personality,
+            isSterilized,
+            chipId,
+            toys,
+            allergens,
+            vaccineDate,
+            description,
+        } = createPetDto;
         return this.prisma.pet.create({
             data: {
-                id: uuidv4(),
+                id: id || uuidv4(),
                 userId,
-                ...rest,
+                name,
+                type,
+                breed,
+                age,
+                weight,
+                gender,
+                avatar,
+                birthday,
+                arrivalDate,
+                isSterilized,
+                chipId,
+                toys,
+                allergens,
+                vaccineDate,
+                description,
                 personality: personality ? JSON.stringify(personality) : undefined,
                 pinnedMetrics: {
                     create: [
@@ -75,11 +107,42 @@ export class PetsService {
             await this.storageService.deleteFile(currentPet.avatar);
         }
 
-        const { personality, ...rest } = updatePetDto;
+        const {
+            name,
+            type,
+            breed,
+            age,
+            weight,
+            gender,
+            avatar,
+            birthday,
+            arrivalDate,
+            personality,
+            isSterilized,
+            chipId,
+            toys,
+            allergens,
+            vaccineDate,
+            description,
+        } = updatePetDto;
         return this.prisma.pet.update({
             where: { id },
             data: {
-                ...rest,
+                name,
+                type,
+                breed,
+                age,
+                weight,
+                gender,
+                avatar,
+                birthday,
+                arrivalDate,
+                isSterilized,
+                chipId,
+                toys,
+                allergens,
+                vaccineDate,
+                description,
                 personality: personality ? JSON.stringify(personality) : undefined,
             },
         });
