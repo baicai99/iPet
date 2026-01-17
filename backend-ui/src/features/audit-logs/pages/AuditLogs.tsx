@@ -30,6 +30,12 @@ const ACTION_MAP: Record<string, { label: string; color: string }> = {
     create_article: { label: '发布文章', color: 'cyan' },
     update_article: { label: '更新文章', color: 'geekblue' },
     delete_article: { label: '删除文章', color: 'magenta' },
+    create_article_category: { label: '新增分类', color: 'cyan' },
+    update_article_category: { label: '编辑分类', color: 'geekblue' },
+    delete_article_category: { label: '删除分类', color: 'magenta' },
+    bulk_delete_article: { label: '批量删除文章', color: 'red' },
+    bulk_update_article_category: { label: '批量改分类', color: 'orange' },
+    bulk_update_article_pinned: { label: '批量置顶', color: 'gold' },
     login_failed: { label: '登录失败', color: 'volcano' },
 };
 

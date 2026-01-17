@@ -4,13 +4,14 @@
             <u-loading-page :loading="loading"></u-loading-page>
 
             <view v-if="article" class="content-wrapper">
-                <image v-if="article.cover" :src="resolveArticleCoverUrl(article.cover)" class="cover-image"
-                    mode="aspectFill"></image>
+                <u-image :src="resolveArticleCoverUrl(article.cover)" class="cover-image" mode="aspectFill"
+                    width="100%" height="400rpx"></u-image>
                 <view class="article-header">
                     <text class="title">{{ article.title }}</text>
                     <view class="meta">
                         <text class="author">{{ article.author || 'iPet' }}</text>
                         <text class="date">{{ formatDate(article.updateTime, 'YYYY年MM月DD日') }}</text>
+                        <text v-if="article.views !== undefined" class="views">阅读 {{ article.views }}</text>
                     </view>
                 </view>
 
@@ -31,13 +32,17 @@ import { formatDate } from '@/utils/common/formatHelper'
 import ArticleContentRenderer from '@/modules/articles/ui/ArticleContentRenderer.vue'
 import type { ArticleWithContent } from '@/modules/articles/domain/types'
 import { resolveArticleCoverUrl } from '@/modules/articles/services/resolveArticleCoverUrl'
+import UImage from 'uview-plus/components/u-image/u-image.vue'
+import { useArticleStore } from '@/modules/articles/store/articleStore'
 
 const loading = ref(true)
 const article = ref<ArticleWithContent | null>(null)
+const articleStore = useArticleStore()
 
 const fetchArticle = async (id: string) => {
     loading.value = true
     try {
+        await articleStore.ensureCategoriesLoaded()
         article.value = await getArticleDetail(id)
     } catch (error) {
         console.error('Failed to load recipe', error)
@@ -91,9 +96,14 @@ onLoad((options) => {
 
 .meta {
     display: flex;
+    flex-wrap: wrap;
     gap: 16rpx;
     font-size: 24rpx;
     color: #6b7280;
+}
+
+.views {
+    color: #94a3b8;
 }
 
 .article-body {

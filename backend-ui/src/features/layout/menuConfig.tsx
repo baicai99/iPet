@@ -3,6 +3,7 @@ import {
     DashboardOutlined,
     UserOutlined,
     FileTextOutlined,
+    TagsOutlined,
     SettingOutlined,
     AuditOutlined,
     DeleteOutlined,
@@ -48,6 +49,13 @@ export const menuItems: MenuItem[] = [
         label: '文章管理',
         icon: <FileTextOutlined />,
         path: 'articles',
+    },
+    {
+        key: 'article-categories',
+        label: '分类管理',
+        icon: <TagsOutlined />,
+        path: 'articles/categories',
+        requiredRole: AdminRole.ADMIN,
     },
     {
         key: 'settings',

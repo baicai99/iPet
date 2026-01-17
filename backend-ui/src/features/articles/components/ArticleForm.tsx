@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Form, Input, Button, Select, Card, Space, Upload, App } from 'antd';
+import { Form, Input, Button, Select, Card, Space, Upload, App, Checkbox } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import { UploadOutlined } from '@ant-design/icons';
 import type { CreateArticleRequest, UpdateArticleRequest } from '@/api/contracts/articles';
-import type { ArticleCategory } from '@/api/types';
+import { useArticleCategories } from '../hooks/useArticleCategories';
 
 interface ArticleFormProps {
     initialValues?: UpdateArticleRequest;
@@ -13,13 +13,6 @@ interface ArticleFormProps {
     onCancel?: () => void;
 }
 
-const CATEGORY_OPTIONS: { label: string; value: ArticleCategory }[] = [
-    { label: '教育科普', value: 'education' },
-    { label: '健康医疗', value: 'health' },
-    { label: '日常护理', value: 'care' },
-    { label: '营养饮食', value: 'nutrition' },
-];
-
 const ArticleForm: React.FC<ArticleFormProps> = ({
     initialValues,
     onSubmit,
@@ -28,6 +21,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     onCancel,
 }) => {
     const { message } = App.useApp();
+    const { categories } = useArticleCategories();
     const [form] = Form.useForm();
     const [coverPreview, setCoverPreview] = useState<string>('');
     const coverValue = Form.useWatch('cover', form) as string | undefined;
@@ -51,6 +45,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }, [coverValue, coverPreview]);
 
     const uploadHint = useMemo(() => '请在这里上传封面', []);
+    const categoryOptions = useMemo(
+        () => categories.map(category => ({ label: category.label, value: category.key })),
+        [categories]
+    );
 
     const compressImageToJpeg = async (file: RcFile, maxSize = 1600, quality = 0.8): Promise<string> => {
         const url = URL.createObjectURL(file);
@@ -140,7 +138,26 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     name="category"
                     rules={[{ required: true, message: '请选择文章分类' }]}
                 >
-                    <Select placeholder="请选择分类" options={CATEGORY_OPTIONS} />
+                    <Select placeholder="请选择分类" options={categoryOptions} />
+                </Form.Item>
+
+                <Form.Item
+                    label="标签"
+                    name="tags"
+                    rules={[
+                        { required: true, message: '请至少添加一个标签' },
+                        {
+                            validator: (_, value: string[]) => {
+                                if (!value || value.length === 0) {
+                                    return Promise.reject(new Error('请至少添加一个标签'));
+                                }
+                                return Promise.resolve();
+                            },
+                        },
+                    ]}
+                    extra="用于指标/场景关联与推荐，至少 1 个"
+                >
+                    <Select mode="tags" placeholder="输入标签后回车" />
                 </Form.Item>
 
                 <Form.Item
@@ -222,6 +239,18 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
                 <Form.Item label="作者" name="author">
                     <Input placeholder="请输入作者（选填）" />
+                </Form.Item>
+
+                <Form.Item name="sectionPinned" valuePropName="checked">
+                    <Checkbox>列表置顶（Summary/文章列表优先展示）</Checkbox>
+                </Form.Item>
+
+                <Form.Item
+                    label="类目置顶（指标 key）"
+                    name="pinnedMetrics"
+                    extra="在对应指标详情页的文章区域置顶展示"
+                >
+                    <Select mode="tags" placeholder="输入指标 key 后回车" />
                 </Form.Item>
 
                 <Form.Item>

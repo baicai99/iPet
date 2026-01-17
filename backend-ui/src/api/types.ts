@@ -171,6 +171,17 @@ export interface GuestStats {
 /** 文章分类 */
 export type ArticleCategory = 'education' | 'health' | 'care' | 'nutrition' | string;
 
+/** 文章置顶范围 */
+export type ArticlePinScope = 'section' | 'metric';
+
+/** 文章分类选项 */
+export interface ArticleCategoryOption {
+    key: string;
+    label: string;
+    order: number;
+    count?: number;
+}
+
 /** 文章列表项 */
 export interface Article extends Record<string, unknown> {
     id: string;
@@ -178,8 +189,12 @@ export interface Article extends Record<string, unknown> {
     summary: string;
     category: ArticleCategory;
     cover?: string;
+    tags: string[];
     views: number;
     likes: number;
+    sectionPinned: boolean;
+    sectionPinnedAt?: string | null;
+    pinnedMetrics: string[];
     createdAt: string;
     updatedAt?: string;
 }

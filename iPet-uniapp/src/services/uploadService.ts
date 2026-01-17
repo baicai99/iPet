@@ -1,5 +1,6 @@
 import { APP_CONFIG } from '@/utils/config';
 import { getAccessToken } from '@/utils/business/authStorage';
+import type { UploadBase64Dto } from '@/types/dto/upload';
 
 const BASE_URL = APP_CONFIG.API_BASE_URL;
 
@@ -141,7 +142,7 @@ const uploadViaBase64 = async (
 ): Promise<string> => {
     const fallbackUrl = `${uploadUrl}/base64`;
     const fileName = getFileNameFromPath(filePath);
-    const payload = {
+    const payload: UploadBase64Dto = {
         data: await readFileAsBase64(filePath),
         fileName,
         mimeType: guessMimeType(fileName)

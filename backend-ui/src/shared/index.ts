@@ -7,3 +7,4 @@ export * from './components/StatCard';
 export * from './components/FilterBar';
 export * from './components/DataTable';
 export * from './components/DataTable/types';
+export * from './components/SafeMarkdown';

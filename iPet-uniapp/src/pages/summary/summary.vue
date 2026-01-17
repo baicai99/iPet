@@ -77,7 +77,7 @@
                         <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id"
                             :title="article.title" :summary="article.summary" :cover="article.cover"
                             :category="article.category" :isNew="isArticleNew(article.updateTime, index)"
-                            :updateTime="article.updateTime" />
+                            :updateTime="article.updateTime" :views="article.views" />
                     </view>
                 </template>
                 <!-- State 2: No Articles - Show hint card -->

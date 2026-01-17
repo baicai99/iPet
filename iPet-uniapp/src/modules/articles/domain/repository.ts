@@ -26,6 +26,15 @@ export class ArticleRepository {
 
     private sortManifest(list: ArticleManifestItem[]): ArticleManifestItem[] {
         return [...list].sort((a, b) => {
+            const aPinned = Boolean(a.sectionPinned)
+            const bPinned = Boolean(b.sectionPinned)
+            if (aPinned !== bPinned) {
+                return aPinned ? -1 : 1
+            }
+            if (aPinned && bPinned) {
+                const pinnedDiff = (b.sectionPinnedAt || b.updateTime).localeCompare(a.sectionPinnedAt || a.updateTime)
+                if (pinnedDiff !== 0) return pinnedDiff
+            }
             const channelDiff = (CHANNEL_ORDER[a.channel] ?? 99) - (CHANNEL_ORDER[b.channel] ?? 99)
             if (channelDiff !== 0) return channelDiff
             if (b.priority !== a.priority) return b.priority - a.priority

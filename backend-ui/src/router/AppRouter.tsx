@@ -18,6 +18,7 @@ const UserListPage = React.lazy(() => import('@/features/users/pages/UserListPag
 const RecycleBinPage = React.lazy(() => import('@/features/users/pages/RecycleBinPage'));
 const ArticleListPage = React.lazy(() => import('@/features/articles/pages/ArticleListPage'));
 const ArticleEditPage = React.lazy(() => import('@/features/articles/pages/ArticleEditPage'));
+const ArticleCategoryListPage = React.lazy(() => import('@/features/articles/pages/ArticleCategoryListPage'));
 const SystemMonitor = React.lazy(() => import('@/features/system/pages/SystemMonitor'));
 const SystemSettingsPage = React.lazy(() => import('@/features/system/pages/SystemSettingsPage'));
 const AuditLogs = React.lazy(() => import('@/features/audit-logs/pages/AuditLogs'));
@@ -78,6 +79,14 @@ const AppRouter: React.FC = () => {
 
                             {/* 文章管理 */}
                             <Route path="articles" element={<ArticleListPage />} />
+                            <Route
+                                path="articles/categories"
+                                element={
+                                    <RoleGuard requiredRole={AdminRole.ADMIN}>
+                                        <ArticleCategoryListPage />
+                                    </RoleGuard>
+                                }
+                            />
                             <Route path="articles/new" element={<ArticleEditPage />} />
                             <Route path="articles/:id/edit" element={<ArticleEditPage />} />
 

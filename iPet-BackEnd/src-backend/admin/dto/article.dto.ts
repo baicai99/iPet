@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ArrayMinSize, IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateArticleDto {
     @IsString()
@@ -17,6 +17,11 @@ export class CreateArticleDto {
     @IsNotEmpty()
     category: string;
 
+    @IsArray()
+    @ArrayMinSize(1)
+    @IsString({ each: true })
+    tags: string[];
+
     @IsString()
     @IsOptional()
     cover?: string;
@@ -24,6 +29,15 @@ export class CreateArticleDto {
     @IsString()
     @IsOptional()
     author?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    sectionPinned?: boolean;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    pinnedMetrics?: string[];
 }
 
 export class UpdateArticleDto {
@@ -43,6 +57,12 @@ export class UpdateArticleDto {
     @IsOptional()
     category?: string;
 
+    @IsOptional()
+    @IsArray()
+    @ArrayMinSize(1)
+    @IsString({ each: true })
+    tags?: string[];
+
     @IsString()
     @IsOptional()
     cover?: string;
@@ -50,4 +70,13 @@ export class UpdateArticleDto {
     @IsString()
     @IsOptional()
     author?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    sectionPinned?: boolean;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    pinnedMetrics?: string[];
 }

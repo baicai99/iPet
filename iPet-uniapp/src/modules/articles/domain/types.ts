@@ -1,6 +1,13 @@
 export type ArticleSource = 'builtin' | 'remote'
 export type ArticleChannel = 'basic' | 'hot' | 'rumor' | 'hotfix'
+export type ArticlePinScope = 'section' | 'metric'
 export type ArticleCategory = 'education' | 'recipe' | 'mythbust' | 'news' | string
+
+export interface ArticleCategoryOption {
+    key: string
+    label: string
+    order: number
+}
 
 export interface ArticleFrontmatter {
     id: string
@@ -11,6 +18,10 @@ export interface ArticleFrontmatter {
     author: string
     tags: string[]
     updateTime: string
+    views?: number
+    sectionPinned?: boolean
+    sectionPinnedAt?: string
+    pinnedMetrics?: string[]
     metricKey?: string
     source?: ArticleSource
     channel?: ArticleChannel
@@ -18,12 +29,18 @@ export interface ArticleFrontmatter {
     overrideBuiltin?: boolean
 }
 
-export interface ArticleManifestItem extends Required<Omit<ArticleFrontmatter, 'metricKey' | 'overrideBuiltin' | 'source' | 'channel' | 'priority'>> {
+type RequiredFrontmatter = Required<Omit<ArticleFrontmatter, 'metricKey' | 'overrideBuiltin' | 'source' | 'channel' | 'priority' | 'views' | 'sectionPinned' | 'sectionPinnedAt' | 'pinnedMetrics'>>
+
+export interface ArticleManifestItem extends RequiredFrontmatter {
     metricKey?: string
     source: ArticleSource
     channel: ArticleChannel
     priority: number
     overrideBuiltin?: boolean
+    views?: number
+    sectionPinned?: boolean
+    sectionPinnedAt?: string
+    pinnedMetrics?: string[]
     contentPath: string
     hash: string
     size: number
@@ -51,4 +68,3 @@ export interface ArticleRepositoryConfig {
     remoteBaseUrl?: string
     enableLogging?: boolean
 }
-

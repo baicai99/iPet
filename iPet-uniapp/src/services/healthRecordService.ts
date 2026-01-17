@@ -16,6 +16,7 @@ import { healthService } from './health.service'
 import { sortRecordsByTime } from '@/utils/business/healthDataHelper'
 import { shouldBlockOfflineHealthWrite, showOfflineToast } from '@/utils/common/networkUtils'
 import type { HealthRecord } from '@/types/health'
+import type { CreateHealthRecordDto, UpdateHealthRecordDto } from '@/types/dto/health'
 
 // ============================================================================
 // Types
@@ -117,6 +118,32 @@ function buildPinnedMetricUpdate(
     }
 }
 
+function buildCreateHealthRecordDto(record: Partial<HealthRecord>): CreateHealthRecordDto {
+    return {
+        petId: record.petId as string,
+        type: record.type as string,
+        value: record.value as number,
+        unit: record.unit as string,
+        date: record.date as string,
+        notes: record.notes,
+        source: record.source,
+        metadata: record.metadata
+    }
+}
+
+function buildUpdateHealthRecordDto(record: Partial<HealthRecord>): UpdateHealthRecordDto {
+    const payload: UpdateHealthRecordDto = {}
+    if (record.petId !== undefined) payload.petId = record.petId
+    if (record.type !== undefined) payload.type = record.type
+    if (record.value !== undefined) payload.value = record.value
+    if (record.unit !== undefined) payload.unit = record.unit
+    if (record.date !== undefined) payload.date = record.date
+    if (record.notes !== undefined) payload.notes = record.notes
+    if (record.source !== undefined) payload.source = record.source
+    if (record.metadata !== undefined) payload.metadata = record.metadata
+    return payload
+}
+
 // ============================================================================
 // Main Service Functions
 // ============================================================================
@@ -151,7 +178,7 @@ export async function createRecord(
     }
 
     try {
-        const serverRecord = await healthService.createHealthRecord(record)
+        const serverRecord = await healthService.createHealthRecord(buildCreateHealthRecordDto(record))
         const mergedRecord = mergeServerRecord(serverRecord, record)
 
         return {
@@ -189,7 +216,7 @@ export async function updateRecord(
     }
 
     try {
-        const record = await healthService.updateHealthRecord(id, payload)
+        const record = await healthService.updateHealthRecord(id, buildUpdateHealthRecordDto(payload))
         return {
             success: true,
             record

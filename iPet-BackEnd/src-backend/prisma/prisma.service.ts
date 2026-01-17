@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { createId } from '@paralleldrive/cuid2';
 import { getRequestId } from '../observability/request-context';
 import { ObservabilityLogger } from '../observability/observability-logger.service';
@@ -28,20 +28,49 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     this.slowQueryMs = Math.max(0, configuredSlowQueryMs);
 
+    const modelFields = new Map(
+      Prisma.dmmf.datamodel.models.map(model => [
+        model.name,
+        new Set(model.fields.map(field => field.name)),
+      ]),
+    );
+
     // Middleware to auto-generate CUID2 for ID fields
     this.$use(async (params, next) => {
-      if (params.action === 'create') {
+      const fieldSet = params.model ? modelFields.get(params.model) : undefined;
+      const hasIdField = Boolean(fieldSet?.has('id'));
+
+      if (hasIdField && params.action === 'create') {
         if (params.model && !params.args.data.id) {
           params.args.data.id = createId();
         }
       }
-      if (params.action === 'createMany') {
+      if (hasIdField && params.action === 'createMany') {
         if (params.args.data && Array.isArray(params.args.data)) {
           params.args.data.forEach((item: any) => {
             if (!item.id) {
               item.id = createId();
             }
           });
+        } else if (params.args.data && typeof params.args.data === 'object' && !params.args.data.id) {
+          params.args.data.id = createId();
+        }
+      }
+
+      if (!hasIdField && params.action === 'create') {
+        if (params.args?.data && typeof params.args.data === 'object' && 'id' in params.args.data) {
+          delete params.args.data.id;
+        }
+      }
+      if (!hasIdField && params.action === 'createMany') {
+        if (params.args?.data && Array.isArray(params.args.data)) {
+          params.args.data.forEach((item: any) => {
+            if (item && typeof item === 'object' && 'id' in item) {
+              delete item.id;
+            }
+          });
+        } else if (params.args?.data && typeof params.args.data === 'object' && 'id' in params.args.data) {
+          delete params.args.data.id;
         }
       }
       return next(params);

@@ -1,13 +1,8 @@
 import request from '@/utils/common/request'
 import type { AccountInfo } from '@/types/user'
+import type { UpdateUserProfileDto, VerifyIdentityDto, UpdateSettingsDto } from '@/types/dto/user'
 
-export interface UpdateProfilePayload {
-    displayName: string;
-    avatar?: string | null;
-    bio?: string;
-    mbti?: string;
-    tags?: string[];
-}
+export type UpdateProfilePayload = UpdateUserProfileDto
 
 const buildUpdateProfilePayload = (payload: UpdateProfilePayload) => {
     const sanitized: Partial<UpdateProfilePayload> = {}
@@ -46,7 +41,7 @@ export const updateUserProfile = (payload: UpdateProfilePayload) => {
     })
 }
 
-export const verifyIdentity = (data: { realName: string; idCard: string }) => {
+export const verifyIdentity = (data: VerifyIdentityDto) => {
     return request({
         url: '/users/verify',
         method: 'POST',
@@ -54,9 +49,7 @@ export const verifyIdentity = (data: { realName: string; idCard: string }) => {
     })
 }
 
-
-
-export const updateSettings = (settings: any) => {
+export const updateSettings = (settings: UpdateSettingsDto['settings']) => {
     return request({
         url: '/users/settings',
         method: 'POST',

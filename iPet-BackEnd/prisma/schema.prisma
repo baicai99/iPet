@@ -171,9 +171,13 @@ model Article {
   content   String   // HTML or Markdown
   cover     String?
   category  String   // education, recipe, mythbust
+  tags      String[] @default([])
   author    String?
   views     Int      @default(0)
   likes     Int      @default(0)
+  sectionPinned   Boolean  @default(false)
+  sectionPinnedAt DateTime?
+  pinnedMetrics   String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -184,6 +188,16 @@ model Article {
   // TD-008: Index for category filtering with date ordering
   @@index([category, createdAt(sort: Desc)], name: "idx_article_category_created")
   @@index([deletedAt], name: "idx_article_deleted_at")
+}
+
+model ArticleCategory {
+  key       String   @id
+  label     String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order], name: "idx_article_category_order")
 }
 
 model PinnedMetric {

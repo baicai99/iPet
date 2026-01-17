@@ -1,13 +1,15 @@
 <template>
     <view class="article-card" @click="goToDetail">
         <view class="cover-wrapper">
-            <image :src="resolvedCover" class="cover-image" mode="aspectFill" lazy-load="true"></image>
+            <u-image :src="resolvedCover" class="cover-image" mode="aspectFill" width="100%" height="360rpx"
+                :lazy-load="true"></u-image>
             <view v-if="isNew" class="new-badge">最新</view>
         </view>
         <view class="info">
             <text class="title">{{ title }}</text>
             <text class="summary">{{ summary }}</text>
             <text v-if="updateTime" class="update-time">{{ formatUpdateTime(updateTime) }}</text>
+            <text v-if="views !== undefined" class="views">阅读 {{ views }}</text>
         </view>
     </view>
 </template>
@@ -15,6 +17,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { resolveArticleCoverUrl } from '@/modules/articles/services/resolveArticleCoverUrl'
+import UImage from 'uview-plus/components/u-image/u-image.vue'
 
 const loggedCovers = new Set()
 let loggedPngCheck = false
@@ -29,7 +32,9 @@ const props = defineProps({
     /** 是否显示"最新"标识 */
     isNew: { type: Boolean, default: false },
     /** 文章更新时间，格式 YYYY-MM-DD */
-    updateTime: { type: String, default: '' }
+    updateTime: { type: String, default: '' },
+    /** 阅读量 */
+    views: { type: Number, default: undefined }
 })
 
 const resolvedCover = computed(() => resolveArticleCoverUrl(props.cover))
@@ -153,5 +158,10 @@ const formatUpdateTime = (dateStr) => {
     font-size: 24rpx;
     color: #b0b0b0;
     margin-top: 4rpx;
+}
+
+.views {
+    font-size: 24rpx;
+    color: #94a3b8;
 }
 </style>

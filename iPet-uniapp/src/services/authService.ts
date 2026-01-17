@@ -1,10 +1,8 @@
 import request from '@/utils/common/request'
 import { setAuthToken, setRefreshToken, getRefreshToken } from '@/utils/business/authStorage'
+import type { CreateUserDto, LoginDto, UpgradeDto, GuestSessionRequestDto } from '@/types/dto/auth'
 
-export interface RegisterPayload {
-    email: string
-    password: string
-}
+export type RegisterPayload = CreateUserDto
 
 export interface RegisterResponse {
     accessToken: string
@@ -18,10 +16,7 @@ export interface RegisterResponse {
     }
 }
 
-export interface LoginPayload {
-    email: string
-    password: string
-}
+export type LoginPayload = LoginDto
 
 export interface LoginResponse {
     accessToken: string
@@ -57,7 +52,7 @@ const resolveExpiresAt = (expiresIn?: number): number | null => {
     return normalized ? Date.now() + normalized * 1000 : null
 }
 
-export const registerUser = async (payload: RegisterPayload): Promise<LoginResult> => {
+export const registerUser = async (payload: CreateUserDto): Promise<LoginResult> => {
     const result = await request<RegisterResponse>({
         url: '/users/register',
         method: 'POST',
@@ -81,7 +76,7 @@ export const registerUser = async (payload: RegisterPayload): Promise<LoginResul
     return { ...result, expiresAt }
 }
 
-export const loginUser = async (payload: LoginPayload): Promise<LoginResult> => {
+export const loginUser = async (payload: LoginDto): Promise<LoginResult> => {
     const result = await request<any>({
         url: '/auth/login',
         method: 'POST',
@@ -109,10 +104,11 @@ export const loginUser = async (payload: LoginPayload): Promise<LoginResult> => 
     return { ...result, expiresAt }
 }
 
-export const createGuestSession = async (): Promise<GuestAuthResult> => {
+export const createGuestSession = async (payload: GuestSessionRequestDto = {}): Promise<GuestAuthResult> => {
     const result = await request<any>({
         url: '/auth/guest',
         method: 'POST',
+        data: payload,
         skipAuthRefresh: true
     })
 
@@ -131,7 +127,7 @@ export const createGuestSession = async (): Promise<GuestAuthResult> => {
     return { ...result, expiresAt }
 }
 
-export const upgradeGuestAccount = async (payload: RegisterPayload): Promise<GuestAuthResult> => {
+export const upgradeGuestAccount = async (payload: UpgradeDto): Promise<GuestAuthResult> => {
     const result = await request<any>({
         url: '/auth/upgrade',
         method: 'POST',

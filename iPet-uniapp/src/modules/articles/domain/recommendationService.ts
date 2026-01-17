@@ -47,7 +47,7 @@ export function recommendByMetric(
 ): ArticleManifestItem[] {
     if (!metricKey) return []
     const matched = articles
-        .filter(article => article.id !== excludeId && article.metricKey === metricKey)
+        .filter(article => article.id !== excludeId && (article.metricKey === metricKey || article.tags.includes(metricKey)))
         .map(article => ({
             article,
             score: (CHANNEL_WEIGHT[article.channel] ?? 0) + article.priority
@@ -66,4 +66,3 @@ export function recommendLatest(
         .sort((a, b) => b.updateTime.localeCompare(a.updateTime))
         .slice(0, count)
 }
-

@@ -1,5 +1,6 @@
 import request from '@/utils/common/request'
 import type { HealthRecord } from '@/types/health'
+import type { CreateHealthRecordDto, UpdateHealthRecordDto, TogglePinDto } from '@/types/dto/health'
 
 export const healthService = {
     async getHealthRecords(petId?: string, page?: number, limit?: number, metricKey?: string): Promise<HealthRecord[]> {
@@ -18,7 +19,7 @@ export const healthService = {
         })
     },
 
-    async createHealthRecord(data: Partial<HealthRecord>): Promise<HealthRecord> {
+    async createHealthRecord(data: CreateHealthRecordDto): Promise<HealthRecord> {
         return request({
             url: '/health',
             method: 'POST',
@@ -26,7 +27,7 @@ export const healthService = {
         })
     },
 
-    async updateHealthRecord(id: string, data: Partial<HealthRecord>): Promise<HealthRecord> {
+    async updateHealthRecord(id: string, data: UpdateHealthRecordDto): Promise<HealthRecord> {
         return request({
             url: `/health/${id}`,
             method: 'PATCH' as any,
@@ -42,10 +43,11 @@ export const healthService = {
     },
 
     async toggleMetricPin(petId: string, metricKey: string, isPinned: boolean): Promise<void> {
+        const payload: TogglePinDto = { petId, metricKey, isPinned }
         return request({
             url: '/health/metrics/pin',
             method: 'POST',
-            data: { petId, metricKey, isPinned }
+            data: payload
         })
     },
 

@@ -14,6 +14,7 @@ export const ROUTES = {
     USERS_TRASH: 'users/trash',
     ARTICLES: 'articles',
     ARTICLES_NEW: 'articles/new',
+    ARTICLES_CATEGORIES: 'articles/categories',
     /** 编辑文章（动态路由） */
     ARTICLES_EDIT: (id: string) => `/articles/${id}/edit`,
 

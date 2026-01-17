@@ -6,6 +6,7 @@ export type Capability =
     | 'user:delete'
     | 'user:trash:view'
     | 'article:delete'
+    | 'article:category:manage'
     | 'system:manage'
     | 'audit:read';
 
@@ -16,6 +17,7 @@ const ROLE_CAPABILITIES: Record<AdminRole, Capability[]> = {
         'user:delete',
         'user:trash:view',
         'article:delete',
+        'article:category:manage',
         'system:manage',
         'audit:read',
     ],

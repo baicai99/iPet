@@ -9,6 +9,11 @@ interface BackendArticle {
     cover?: string | null
     category: string
     author?: string | null
+    tags?: string[] | null
+    views?: number | null
+    sectionPinned?: boolean | null
+    sectionPinnedAt?: string | null
+    pinnedMetrics?: string[] | null
     content?: string | null
     createdAt?: string
     updatedAt?: string
@@ -21,6 +26,11 @@ const resolveUpdateTime = (article: BackendArticle): string => {
     return article.updatedAt || article.createdAt || new Date().toISOString()
 }
 
+const resolveTags = (article: BackendArticle): string[] => {
+    const tags = (article.tags || []).map(tag => tag.trim()).filter(Boolean)
+    return tags.length ? tags : [article.category]
+}
+
 const toManifestItem = (article: BackendArticle): ArticleManifestItem => {
     const updateTime = resolveUpdateTime(article)
     return {
@@ -30,8 +40,12 @@ const toManifestItem = (article: BackendArticle): ArticleManifestItem => {
         cover: article.cover || '',
         category: article.category,
         author: article.author || 'iPet',
-        tags: [],
+        tags: resolveTags(article),
         updateTime,
+        views: article.views ?? 0,
+        sectionPinned: Boolean(article.sectionPinned),
+        sectionPinnedAt: article.sectionPinnedAt || updateTime,
+        pinnedMetrics: article.pinnedMetrics || [],
         metricKey: undefined,
         source: 'remote',
         channel: DEFAULT_CHANNEL,

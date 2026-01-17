@@ -4,6 +4,7 @@ import { App, Spin } from 'antd';
 import ArticleForm from '../components/ArticleForm';
 import { getArticleById, createArticle, updateArticle, type CreateArticleRequest, type UpdateArticleRequest } from '@/api/contracts/articles';
 import { ROUTES } from '@/router/routes';
+import { getErrorMessage } from '@/shared/utils/errorMessage';
 
 const ArticleEditPage: React.FC = () => {
     const { id, entryPath } = useParams<{ id: string; entryPath?: string }>();
@@ -29,8 +30,8 @@ const ArticleEditPage: React.FC = () => {
                 cover: data.cover,
                 author: data.author,
             });
-        } catch {
-            message.error('获取文章详情失败');
+        } catch (error) {
+            message.error(getErrorMessage(error, '获取文章详情失败'));
             navigate(`${basePath}/${ROUTES.ARTICLES}`);
         } finally {
             setLoading(false);
@@ -54,8 +55,8 @@ const ArticleEditPage: React.FC = () => {
                 message.success('发布成功');
             }
             navigate(`${basePath}/${ROUTES.ARTICLES}`);
-        } catch {
-            message.error(isEdit ? '更新失败' : '发布失败');
+        } catch (error) {
+            message.error(getErrorMessage(error, isEdit ? '更新失败' : '发布失败'));
         } finally {
             setSubmitting(false);
         }

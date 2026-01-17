@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.25 (2026-01-03)
+
+### 🐛 Bug Fixes
+- Prisma 自动补全 `id` 仅作用于 String 类型的 `id` 字段，并兼容 `createMany` 单对象写入（范围：iPet-BackEnd；模块：prisma；行为变更：是）
+- Prisma 写入不含 `id` 字段的模型时剔除多余 `id`，避免分类种子插入报错（范围：iPet-BackEnd；模块：prisma；行为变更：是）
+
 ## 0.0.24 (2025-12-31)
 
 ### 🔧 Tooling
@@ -22,6 +28,30 @@
 - 后端 CORS 配置仅保留 `CORS_ORIGINS`，移除 `CLIENT_ORIGIN`（范围：iPet-BackEnd；模块：config,env；行为变更：是）
 - 后端 CORS 运行时不再内置默认地址，完全由环境配置控制（范围：iPet-BackEnd；模块：main；行为变更：是）
 
+### ✨ Features
+- 文章管理新增标签强制、双层置顶（Section/类目）、后端分类下发与阅读量真实统计（范围：iPet-BackEnd,backend-ui,iPet-uniapp；模块：article,admin/articles,articles-ui；行为变更：是）
+- 文章分类升级为可治理实体并新增管理接口（范围：iPet-BackEnd；模块：article,admin/articles,prisma；行为变更：是）
+- 文章管理新增列表置顶筛选参数（范围：iPet-BackEnd；模块：admin/articles；行为变更：是）
+- 文章管理新增批量操作接口并记录批量审计日志（范围：iPet-BackEnd；模块：admin/articles,audit-log；行为变更：是）
+
+### 🎨 Frontend
+- 文章管理列表新增批量选择骨架、批量操作栏与移动端批量模式开关（范围：backend-ui；模块：features/articles,shared/components；行为变更：否）
+- 文章管理批量删除支持二次确认、逐条删除与失败提示（范围：backend-ui；模块：features/articles；行为变更：否）
+- 文章管理批量改分类支持分类选择、逐条更新与失败清单（范围：backend-ui；模块：features/articles；行为变更：否）
+- 新增文章分类管理入口与维护页面，支持新增/编辑/删除与迁移（范围：backend-ui；模块：features/articles,router,layout,api/contracts；行为变更：是）
+- 文章分类管理新增上移/下移排序操作，文章列表新增置顶筛选与批量置顶操作（范围：backend-ui；模块：features/articles；行为变更：否）
+- 文章管理批量操作改为后端批处理并统一错误提示（范围：backend-ui；模块：features/articles,shared/utils；行为变更：是）
+
+### 🛡️ Security
+- 新增安全的 Markdown 渲染组件，便于预览时防止 XSS（范围：backend-ui；模块：shared/components；行为变更：否）
+
+### 🧩 Types
+- 对齐 iPet-uniapp 请求 DTO 与后端最新定义（范围：iPet-uniapp；模块：types/dto,services；行为变更：否）
+
+### 🐛 Fixes
+- 创建/更新健康记录时仅提交 DTO 字段，避免后端白名单校验拒绝（范围：iPet-uniapp；模块：services/healthRecordService；行为变更：是）
+- 限制 Prisma 自动注入 `id` 仅作用于包含 `id` 字段的模型，避免文章分类种子写入报错（范围：iPet-BackEnd；模块：prisma；行为变更：是）
+
 ### 📝 Docs
 - 更新后台管理端开发指南，改为单一 API 地址配置说明（范围：docs；模块：DEV；行为变更：否）
 - 更新后台管理端开发指南，说明统一使用 `.env`（范围：docs；模块：DEV；行为变更：否）
@@ -30,6 +60,9 @@
 - 移除 CI 相关文档与引用（范围：docs,iPet-uniapp/docs,iPet-BackEnd；模块：frontend/安全与合规层,frontend/性能与稳定性层,backend/工程化与质量保障,env/README,backend/README；行为变更：否）
 - 补充前后端类型与校验归属规范，并更新前端数据/安全/架构文档引用（范围：iPet-uniapp/docs,docs；模块：dev/shared-removal,frontend/数据层,frontend/安全与合规层,frontend/架构与代码组织层；行为变更：否）
 - 更新 iPet-uniapp 环境变量文档与示例，说明仅使用 `.env`（范围：iPet-uniapp/docs；模块：env,build-meta,npm-scripts-ci-matrix,env/README；行为变更：否）
+- 新增文章管理规则文档，明确标签/置顶/分类/阅读量规范（范围：iPet-uniapp/docs；模块：dev/article-management；行为变更：否）
+- 补充文章管理边界规则（分类删除策略/批量操作范围/权限粒度）（范围：iPet-uniapp/docs；模块：dev/article-management；行为变更：否）
+- 更新文章管理文档，新增分类管理与迁移规则（范围：iPet-uniapp/docs；模块：dev/article-management；行为变更：是）
 
 ## 0.0.23 (2025-12-30)
 
@@ -441,6 +474,11 @@
 - 新增 5 阶段纯函数数据处理管线
 - 新增风险网格可视化功能
 - 新增文章推荐系统
+
+### 🐛 Bug Fixes
+- 修复 H5 下 qiun-data-charts 使用 canvas2d 导致 `ctx.draw` 报错的问题
+- 修复文章卡片与文章详情缺少封面时不显示占位图的问题
+- 修复文章详情封面图组件未正确注册导致顶部封面不展示的问题
 
 ---
 

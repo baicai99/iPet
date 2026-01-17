@@ -2,7 +2,7 @@
   <view class="canvas-chart-container" :style="{ height: containerHeight, width: containerWidth }">
     <!-- ✅ FIX: Only render when data is FULLY ready -->
     <qiun-data-charts v-if="isDataReady" :type="uchartsType" :opts="safeChartOpts" :chartData="safeChartData"
-      :canvas2d="true" :canvasId="canvasId" :ontouch="true" :animation="false" :optsWatch="false"
+      :canvas2d="canvas2dEnabled" :canvasId="canvasId" :ontouch="true" :animation="false" :optsWatch="false"
       style="width: 100%; height: 100%;" @complete="handleComplete" @getIndex="handleGetIndex" />
     <view v-else class="empty-state">
       <text class="empty-text">{{ hasData ? '数据加载中...' : '暂无数据' }}</text>
@@ -110,6 +110,13 @@ const uchartsType = computed(() => {
 })
 
 const showAxis = computed(() => props.showAxis !== false)
+
+const canvas2dEnabled = computed(() => {
+  // #ifdef MP
+  return true
+  // #endif
+  return false
+})
 
 /**
  * Convert ChartSpec or legacy echarts options to uCharts format

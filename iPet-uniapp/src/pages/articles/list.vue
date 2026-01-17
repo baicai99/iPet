@@ -14,7 +14,7 @@
                     <view class="articles-list">
                         <ArticleCard v-for="article in filteredArticles" :key="article.id" :id="article.id"
                             :title="article.title" :summary="article.summary" :cover="article.cover"
-                            :category="article.category" />
+                            :category="article.category" :views="article.views" />
                     </view>
                     <u-empty v-if="!loading && filteredArticles.length === 0" mode="data" text="暂无相关文章"></u-empty>
                 </view>
@@ -31,7 +31,7 @@ import { storeToRefs } from 'pinia'
 import { onLoad } from '@dcloudio/uni-app'
 
 const articleStore = useArticleStore()
-const { manifest } = storeToRefs(articleStore)
+const { manifest, categories } = storeToRefs(articleStore)
 
 const loading = ref(true)
 
@@ -42,7 +42,7 @@ onLoad(() => {
 const loadArticles = async () => {
     loading.value = true
     try {
-        await articleStore.fetchArticles(tabList[currentTab.value].value)
+        await articleStore.fetchArticles(tabList.value[currentTab.value]?.value || 'all')
     } catch (error) {
         console.error('Failed to load articles', error)
         uni.showToast({
@@ -56,15 +56,17 @@ const loadArticles = async () => {
 
 const currentTab = ref(0)
 
-const tabList = [
-    { name: '全部', value: 'all' },
-    { name: '科普', value: 'education' },
-    { name: '狗饭', value: 'recipe' },
-    { name: '辟谣', value: 'mythbust' }
-]
+const tabList = computed(() => {
+    const base = [{ name: '全部', value: 'all' }]
+    const dynamic = (categories.value || []).map(category => ({
+        name: category.label,
+        value: category.key
+    }))
+    return [...base, ...dynamic]
+})
 
 const filteredArticles = computed(() => {
-    const activeValue = tabList[currentTab.value].value
+    const activeValue = tabList.value[currentTab.value]?.value || 'all'
     const articles = manifest.value || []
     if (activeValue === 'all') {
         return articles

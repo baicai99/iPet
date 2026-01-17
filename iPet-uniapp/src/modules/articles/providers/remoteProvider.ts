@@ -6,6 +6,15 @@ interface RemoteProviderOptions {
     baseUrl?: string
 }
 
+const applyManifestDefaults = (article: ArticleManifestItem): ArticleManifestItem => ({
+    ...article,
+    tags: article.tags?.length ? article.tags : [article.category],
+    views: article.views ?? 0,
+    sectionPinned: article.sectionPinned ?? false,
+    sectionPinnedAt: article.sectionPinnedAt || article.updateTime,
+    pinnedMetrics: article.pinnedMetrics ?? [],
+})
+
 export class RemoteArticleProvider implements ArticleProvider {
     name = 'remote'
     private manifest: ArticleManifestItem[] = []
@@ -20,7 +29,7 @@ export class RemoteArticleProvider implements ArticleProvider {
 
     async list(): Promise<ArticleManifestItem[]> {
         if (this.manifest.length) {
-            return this.manifest.map(article => ({ ...article }))
+            return this.manifest.map(article => applyManifestDefaults(article))
         }
         if (this.loadingPromise) {
             return this.loadingPromise
@@ -29,13 +38,13 @@ export class RemoteArticleProvider implements ArticleProvider {
         this.loadingPromise = (async () => {
             const manifest = await fetchManifest(this.baseUrl)
             this.manifestVersion = manifest.contentVersion
-            this.manifest = manifest.articles.filter(item => item.source === 'remote')
+            this.manifest = manifest.articles.filter(item => item.source === 'remote').map(applyManifestDefaults)
             return this.manifest
         })()
 
         try {
             const result = await this.loadingPromise
-            return result.map(article => ({ ...article }))
+            return result.map(article => applyManifestDefaults(article))
         } finally {
             this.loadingPromise = null
         }

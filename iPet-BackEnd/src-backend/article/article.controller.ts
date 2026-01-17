@@ -16,14 +16,19 @@ export class ArticleController {
         return this.articleService.findAll(category, pagination);
     }
 
+    @Get('categories')
+    getCategories() {
+        return this.articleService.getCategories();
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
-        return this.articleService.findOne(id);
+        return this.articleService.findOneAndIncrementViews(id);
     }
 
     // Optional: Endpoint to create articles (for CMS or seeding)
     @Post()
-    create(@Body() body: { title: string; summary: string; content: string; category: string; cover?: string; author?: string }) {
+    create(@Body() body: { title: string; summary: string; content: string; category: string; cover?: string; author?: string; tags: string[]; sectionPinned?: boolean; pinnedMetrics?: string[] }) {
         return this.articleService.create(body);
     }
 }

@@ -7,7 +7,7 @@
         <view class="articles-list">
             <ArticleCard v-for="(article, index) in articles" :key="article.id" :id="article.id" :title="article.title"
                 :summary="article.summary" :cover="article.cover" :category="article.category" :isNew="index === 0"
-                :updateTime="article.updateTime" />
+                :updateTime="article.updateTime" :views="article.views" />
         </view>
     </view>
 </template>
@@ -39,7 +39,7 @@ articleStore.ensureLoaded().catch(err => console.error('[ArticleRecommendations]
  * 3. 避免父组件 re-render 时重复执行
  * 
  * 逻辑：
- * - F-04 强制置顶：优先展示 article.id === metricKey 的文章
+ * - F-04 类目置顶：优先展示 pinnedMetrics 含当前指标的文章
  * - F-05 模糊匹配：按 tags 交集匹配度排序
  */
 const articles = computed<ArticleManifestItem[]>(() => {
@@ -47,15 +47,17 @@ const articles = computed<ArticleManifestItem[]>(() => {
     if (!manifest.length || !props.metricKey) return []
 
     const relatedTags = [props.metricKey, ...(props.relatedMetrics || [])]
-    const pinnedArticle = manifest.find(article => article.id === props.metricKey)
-    const metricMatches = recommendByMetric(manifest, props.metricKey, props.metricKey, 1)
-    const tagMatches = recommendByTags(manifest, relatedTags, props.metricKey, 2)
-    const combined = [
-        ...metricMatches,
-        ...tagMatches.filter(article => !metricMatches.some(item => item.id === article.id))
-    ]
+    const pinnedArticles = manifest
+        .filter(article => article.pinnedMetrics?.includes(props.metricKey))
+        .sort((a, b) => (b.sectionPinnedAt || b.updateTime).localeCompare(a.sectionPinnedAt || a.updateTime))
+    const pinnedIds = new Set(pinnedArticles.map(article => article.id))
+    const metricMatches = recommendByMetric(manifest, props.metricKey, undefined, 2)
+        .filter(article => !pinnedIds.has(article.id))
+    const tagMatches = recommendByTags(manifest, relatedTags, undefined, 2)
+        .filter(article => !pinnedIds.has(article.id) && !metricMatches.some(item => item.id === article.id))
+    const combined = [...metricMatches, ...tagMatches]
 
-    return pinnedArticle ? [pinnedArticle, ...combined] : combined
+    return pinnedArticles.length ? [...pinnedArticles, ...combined] : combined
 })
 </script>
 

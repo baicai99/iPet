@@ -1,5 +1,6 @@
 import request from '@/utils/common/request'
 import type { Pet } from '@/types/pet'
+import type { CreatePetDto, UpdatePetDto } from '@/types/dto/pet'
 
 export const petService = {
     async getPets(): Promise<Pet[]> {
@@ -9,7 +10,7 @@ export const petService = {
         })
     },
 
-    async createPet(data: Partial<Pet>): Promise<Pet> {
+    async createPet(data: CreatePetDto): Promise<Pet> {
         return request({
             url: '/pets',
             method: 'POST',
@@ -17,7 +18,7 @@ export const petService = {
         })
     },
 
-    async updatePet(id: string, data: Partial<Pet>): Promise<Pet> {
+    async updatePet(id: string, data: UpdatePetDto): Promise<Pet> {
         return request({
             url: `/pets/${id}`,
             method: 'PATCH' as any,
