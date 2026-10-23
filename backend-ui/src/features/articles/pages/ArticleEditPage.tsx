@@ -36,7 +36,7 @@ const ArticleEditPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [basePath, navigate]);
+    }, [basePath, message, navigate]);
 
     useEffect(() => {
         if (isEdit && id) {

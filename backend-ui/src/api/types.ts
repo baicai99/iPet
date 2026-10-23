@@ -175,7 +175,7 @@ export type ArticleCategory = 'education' | 'health' | 'care' | 'nutrition' | st
 export type ArticlePinScope = 'section' | 'metric';
 
 /** 文章分类选项 */
-export interface ArticleCategoryOption {
+export interface ArticleCategoryOption extends Record<string, unknown> {
     key: string;
     label: string;
     order: number;

@@ -1,7 +1,8 @@
 <template>
     <view class="page-container">
         <view class="trends-page">
-            <view class="content">
+            <u-pull-refresh class="pull-refresh" :refreshing="isPullRefreshing" @refresh="handlePullRefresh">
+                <view class="content">
                 <!-- ============================================ -->
                 <!-- 判断逻辑：基于「是否有任何指标满足数据要求」 -->
                 <!-- ============================================ -->
@@ -69,13 +70,14 @@
                         </view>
                     </view>
                 </template>
-            </view>
+                </view>
+            </u-pull-refresh>
         </view>
     </view>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import TrendCard from '@/components/widgets/TrendCard.vue'
 import TrendHintCard from '@/components/widgets/TrendHintCard.vue'
 import { useHealthStore } from '@/stores/healthStore'
@@ -87,6 +89,7 @@ import { ICONFONT_UNICODE } from '@/utils/ui/iconfont'
 const healthStore = useHealthStore()
 const petViewModel = usePetViewModel()
 const { selectedPetId } = petViewModel
+const isPullRefreshing = ref(false)
 
 // ============================================================================
 // Trend Detection (from Store Getters)
@@ -161,12 +164,27 @@ watch(selectedPetId, async (newPetId) => {
         await healthStore.ensureDataLoaded(newPetId)
     }
 })
+
+const handlePullRefresh = async () => {
+    isPullRefreshing.value = true
+    try {
+        if (selectedPetId.value) {
+            await healthStore.ensureDataLoaded(selectedPetId.value)
+        }
+    } finally {
+        isPullRefreshing.value = false
+    }
+}
 </script>
 
 <style scoped>
 .trends-page {
     background-color: #f8f8f8;
     min-height: 100vh;
+}
+
+.pull-refresh {
+    height: 100vh;
 }
 
 .content {

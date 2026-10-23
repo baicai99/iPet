@@ -1,9 +1,10 @@
 <template>
-    <view class="content">
-        <!-- ✅ Lightweight Refresh Indicator (后台刷新时的轻量态) -->
-        <view v-if="isBackgroundRefreshing" class="refresh-indicator">
-            <u-loading-icon mode="circle" size="20" color="#ff6b35" />
-        </view>
+    <u-pull-refresh class="pull-refresh" :refreshing="isPullRefreshing" @refresh="handlePullRefresh">
+        <view class="content">
+            <!-- ✅ Lightweight Refresh Indicator (后台刷新时的轻量态) -->
+            <view v-if="isBackgroundRefreshing" class="refresh-indicator">
+                <u-loading-icon mode="circle" size="20" color="#ff6b35" />
+            </view>
 
         <!-- Pet Selector Carousel -->
         <PetSelectorBar v-if="activePets.length > 1" :pets="activePets" mode="select" @add="handleAddPet"
@@ -89,12 +90,13 @@
                     @click="goViewArticles"></u-button>
             </view>
         </view>
-    </view>
+        </view>
+    </u-pull-refresh>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, watch, ref, nextTick } from 'vue'  // ✅ Added ref for skeleton state, nextTick for reactivity timing
-import { onPullDownRefresh, onShow, onHide } from '@dcloudio/uni-app'
+import { onShow, onHide } from '@dcloudio/uni-app'
 import { useI18n } from 'vue-i18n'
 import PetSelectorBar from '@/components/profile/PetSelectorBar.vue'
 import PinnedMetricsWidget from '@/components/widgets/PinnedMetricsWidget.vue'
@@ -141,6 +143,7 @@ const articlesState = useSectionState() // 文章独立状态
 
 // ✅ 保留轻量刷新态（所有 section 共用）
 const isBackgroundRefreshing = ref(false)
+const isPullRefreshing = ref(false)
 
 // ============================================================================
 // Summary Data (via Composable)
@@ -490,16 +493,17 @@ watch(selectedPetId, async (newPetId, oldPetId) => {
     }
 }, { immediate: true })
 
-onPullDownRefresh(async () => {
+const handlePullRefresh = async () => {
+    isPullRefreshing.value = true
     try {
         await petViewModel.refresh()
         if (selectedPetId.value) {
             await refresh(selectedPetId.value)
         }
     } finally {
-        uni.stopPullDownRefresh()
+        isPullRefreshing.value = false
     }
-})
+}
 
 // ============================================================================
 // Navigation Handlers
@@ -556,6 +560,10 @@ page {
     display: flex;
     flex-direction: column;
     gap: 24rpx;
+}
+
+.pull-refresh {
+    height: 100vh;
 }
 
 .content {

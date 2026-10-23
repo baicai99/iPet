@@ -118,7 +118,7 @@ export const DataTable = <T extends Record<string, unknown>>({
         };
 
         return [...responsiveColumns, actionColumn];
-    }, [responsiveColumns, isMobile, disableMobileMore, handleViewDetails]);
+    }, [responsiveColumns, isMobile, disableMobileMore, enableDrawerDetails, handleViewDetails]);
 
 
 

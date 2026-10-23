@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useEffect, useRef } from 'react';
 import { Input, Select, Button, Form, Typography, Tag, Space, type FormProps } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { FilterBar } from '@/shared/components/FilterBar';
@@ -31,17 +31,17 @@ export const UserFilter: React.FC<UserFilterProps> = ({ onFilterChange, loading,
         onFilterChange(filters);
     };
 
-    const handleReset = () => {
+    const handleReset = useCallback(() => {
         form.resetFields();
         onFilterChange({});
-    };
+    }, [form, onFilterChange]);
 
     useEffect(() => {
         if (resetSignal === undefined) return;
         if (resetSignalRef.current === resetSignal) return;
         resetSignalRef.current = resetSignal;
         handleReset();
-    }, [resetSignal]);
+    }, [handleReset, resetSignal]);
 
     const activeFilters = useMemo(() => {
         const filters: string[] = [];

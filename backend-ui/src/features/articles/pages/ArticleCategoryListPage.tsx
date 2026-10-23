@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { App, Button, Form, Input, InputNumber, Modal, Select, Space, Tag, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { DataTable } from '@/shared/components/DataTable';
@@ -33,10 +33,10 @@ const ArticleCategoryListPage: React.FC = () => {
 
     const [orderSubmitting, setOrderSubmitting] = useState(false);
 
-    const notifyCategoryRefresh = () => {
+    const notifyCategoryRefresh = useCallback(() => {
         if (typeof window === 'undefined') return;
         window.dispatchEvent(new Event('article-categories-updated'));
-    };
+    }, []);
 
     const openCreateModal = () => {
         setEditingCategory(null);
@@ -44,7 +44,7 @@ const ArticleCategoryListPage: React.FC = () => {
         setModalOpen(true);
     };
 
-    const openEditModal = (record: ArticleCategoryOption) => {
+    const openEditModal = useCallback((record: ArticleCategoryOption) => {
         setEditingCategory(record);
         form.setFieldsValue({
             key: record.key,
@@ -52,7 +52,7 @@ const ArticleCategoryListPage: React.FC = () => {
             order: record.order,
         });
         setModalOpen(true);
-    };
+    }, [form]);
 
     const handleSubmit = async () => {
         try {
@@ -84,11 +84,11 @@ const ArticleCategoryListPage: React.FC = () => {
         }
     };
 
-    const openDeleteModal = (record: ArticleCategoryOption) => {
+    const openDeleteModal = useCallback((record: ArticleCategoryOption) => {
         setDeleteCategory(record);
         setDeleteTarget(undefined);
         setDeleteOpen(true);
-    };
+    }, []);
 
     const handleDeleteConfirm = async () => {
         if (!deleteCategory) return;
@@ -118,7 +118,7 @@ const ArticleCategoryListPage: React.FC = () => {
         }
     };
 
-    const handleMoveCategory = async (record: ArticleCategoryOption, direction: 'up' | 'down') => {
+    const handleMoveCategory = useCallback(async (record: ArticleCategoryOption, direction: 'up' | 'down') => {
         const currentIndex = categories.findIndex(item => item.key === record.key);
         if (currentIndex < 0) return;
         const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
@@ -139,7 +139,7 @@ const ArticleCategoryListPage: React.FC = () => {
         } finally {
             setOrderSubmitting(false);
         }
-    };
+    }, [categories, message, notifyCategoryRefresh, refresh]);
 
     const columns = useMemo(() => [
         {
@@ -211,7 +211,7 @@ const ArticleCategoryListPage: React.FC = () => {
                 </Space>
             ),
         },
-    ], [canManageCategories, categories, orderSubmitting]);
+    ], [canManageCategories, categories, handleMoveCategory, openDeleteModal, openEditModal, orderSubmitting]);
 
     const deleteTargetOptions = useMemo(
         () => categories.filter(item => item.key !== deleteCategory?.key),

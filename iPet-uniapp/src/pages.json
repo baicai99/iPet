@@ -8,6 +8,53 @@
 			}
 		},
 		{
+			"path": "pages/finddog/finddog",
+			"style": {
+				"navigationBarTitleText": "防走失狗牌",
+				"backgroundColor": "#f2f1f5"
+			}
+		},
+		{
+			"path": "pages/finddog/select-pet",
+			"style": {
+				"navigationBarTitleText": "选择宠物",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
+			}
+		},
+		{
+			"path": "pages/finddog/tags",
+			"style": {
+				"navigationBarTitleText": "狗牌管理",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
+			}
+		},
+		{
+			"path": "pages/finddog/tag-detail",
+			"style": {
+				"navigationBarTitleText": "狗牌详情",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
+			}
+		},
+		{
+			"path": "pages/finddog/clues",
+			"style": {
+				"navigationBarTitleText": "线索中心",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
+			}
+		},
+		{
+			"path": "pages/finddog/clue-detail",
+			"style": {
+				"navigationBarTitleText": "线索详情",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#f2f1f5"
+			}
+		},
+		{
 			"path": "pages/my/my",
 			"style": {
 				"navigationBarTitleText": "我的",
@@ -202,6 +249,12 @@
 				"text": "摘要",
 				"iconPath": "static/tabs/like.png",
 				"selectedIconPath": "static/tabs/likefill.png"
+			},
+			{
+				"pagePath": "pages/finddog/finddog",
+				"text": "寻狗",
+				"iconPath": "static/tabs/finddog.png",
+				"selectedIconPath": "static/tabs/finddogfill.png"
 			},
 			{
 				"pagePath": "pages/my/my",

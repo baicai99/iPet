@@ -8,7 +8,7 @@
             </view>
 
             <!-- Content -->
-            <scroll-view scroll-y class="content-scroll">
+            <u-pull-refresh class="content-refresh" :refreshing="isPullRefreshing" @refresh="handlePullRefresh">
                 <view class="content">
                     <!-- Actual Content -->
                     <view class="articles-list">
@@ -18,7 +18,7 @@
                     </view>
                     <u-empty v-if="!loading && filteredArticles.length === 0" mode="data" text="暂无相关文章"></u-empty>
                 </view>
-            </scroll-view>
+            </u-pull-refresh>
         </view>
     </view>
 </template>
@@ -34,6 +34,7 @@ const articleStore = useArticleStore()
 const { manifest, categories } = storeToRefs(articleStore)
 
 const loading = ref(true)
+const isPullRefreshing = ref(false)
 
 onLoad(() => {
     loadArticles()
@@ -79,6 +80,15 @@ const handleTabClick = (item) => {
     loadArticles()
 }
 
+const handlePullRefresh = async () => {
+    isPullRefreshing.value = true
+    try {
+        await loadArticles()
+    } finally {
+        isPullRefreshing.value = false
+    }
+}
+
 </script>
 
 <style scoped>
@@ -94,7 +104,7 @@ const handleTabClick = (item) => {
     border-bottom: 1rpx solid #eee;
 }
 
-.content-scroll {
+.content-refresh {
     flex: 1;
     height: 0;
 }

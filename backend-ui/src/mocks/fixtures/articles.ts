@@ -99,8 +99,9 @@ export const articleHandlers = [
                 error: { code: 'BAD_REQUEST', message: '分类已存在' },
             }, { status: 400 });
         }
+        const label = body.label;
         categories = [...categories, body.key as ArticleCategory];
-        categoryOptions = buildCategoryOptions().map(item => item.key === body.key ? { ...item, label: body.label } : item);
+        categoryOptions = buildCategoryOptions().map(item => item.key === body.key ? { ...item, label } : item);
         return HttpResponse.json({
             success: true,
             data: categoryOptions.find(item => item.key === body.key),

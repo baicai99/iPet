@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.0.28 (2026-01-17)
+
+### ✨ Features
+- **防走失狗牌功能 Phase 1-2 实现**（范围：iPet-uniapp；模块：finddog；行为变更：是）
+  - 新增类型定义 `types/dogtag.ts`：DogTag、ClueEvent 等接口
+  - 新增 API 服务 `services/dogtagService.ts`：支持 Mock 数据开发
+  - 新增 Pinia Store `stores/dogtagStore.ts`：狗牌与线索状态管理
+  - 重写功能入口页 `pages/finddog/finddog.vue`：功能介绍与统计展示
+  - 新增宠物选择页 `pages/finddog/select-pet.vue`
+  - 新增狗牌管理列表 `pages/finddog/tags.vue`：状态筛选
+  - 新增狗牌详情页 `pages/finddog/tag-detail.vue`：二维码生成与管理
+  - 新增线索列表页 `pages/finddog/clues.vue`：事件筛选与未读提示
+  - 新增线索详情页 `pages/finddog/clue-detail.vue`：位置地图、照片预览、举报功能
+  - 更新 `pages.json` 添加所有新页面路由
+
+## 0.0.27 (2026-01-17)
+
+### ✨ Features
+- 新增「寻狗」tabbar 选项与占位页面（范围：iPet-uniapp；模块：pages/finddog,tabBar；行为变更：是）
+
+## 0.0.26 (2026-01-17)
+
+### 🎨 Frontend
+- 摘要、健康数据、趋势分析、精选文章页面接入 uview-plus 下拉刷新（范围：iPet-uniapp；模块：summary,metrics,trends,articles；行为变更：是）
+- **完全重写记录数据页 UI/UX**（范围：iPet-uniapp；模块：metrics/add；行为变更：否）
+  - 现代化渐变页面背景与卡片阴影设计
+  - 头部区域重新设计，带根据指标类别动态渐变色图标
+  - 精致的模式切换开关（加入待办/直接完成）
+  - 统一的表单字段样式，带焦点状态视觉反馈
+  - 改进的芯片/标签选择交互，带按压动画效果
+  - 更美观的日期时间选择器组件
+  - 重新设计的底部弹窗样式
+  - 提交按钮带渐变和阴影效果
+  - 改进的通知 Toast 动画过渡
+
 ## 0.0.25 (2026-01-03)
 
 ### 🐛 Bug Fixes

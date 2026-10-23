@@ -80,7 +80,7 @@ const ArticleListPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [debouncedSearch, category, pinnedFilter]);
+    }, [debouncedSearch, category, message, pinnedFilter]);
 
     useEffect(() => {
         fetchData();

@@ -1,21 +1,23 @@
 <template>
     <view class="page-container">
-        <view class="content">
-            <view class="search-bar-container">
-                <u-search v-model="searchQuery" placeholder="搜索健康指标" :show-action="false" shape="round"
-                    bg-color="#ffffff"></u-search>
-            </view>
-            <template v-if="filteredSections.length > 0">
-                <view v-for="section in filteredSections" :key="section.title" class="section-container">
-                    <text class="section-title">{{ section.title }}</text>
-                    <view class="cards-grid">
-                        <MetricItemCard v-for="item in section.items" :key="item.key" :config="item"
-                            @select="handleSelect(item.key)" />
-                    </view>
+        <u-pull-refresh class="pull-refresh" :refreshing="isPullRefreshing" @refresh="handlePullRefresh">
+            <view class="content">
+                <view class="search-bar-container">
+                    <u-search v-model="searchQuery" placeholder="搜索健康指标" :show-action="false" shape="round"
+                        bg-color="#ffffff"></u-search>
                 </view>
-            </template>
-            <u-empty v-else mode="search" text="未找到相关指标" marginTop="100"></u-empty>
-        </view>
+                <template v-if="filteredSections.length > 0">
+                    <view v-for="section in filteredSections" :key="section.title" class="section-container">
+                        <text class="section-title">{{ section.title }}</text>
+                        <view class="cards-grid">
+                            <MetricItemCard v-for="item in section.items" :key="item.key" :config="item"
+                                @select="handleSelect(item.key)" />
+                        </view>
+                    </view>
+                </template>
+                <u-empty v-else mode="search" text="未找到相关指标" marginTop="100"></u-empty>
+            </view>
+        </u-pull-refresh>
     </view>
 </template>
 
@@ -25,9 +27,14 @@ import { onLoad } from '@dcloudio/uni-app'
 import MetricItemCard from '@/components/business/health/MetricItemCard.vue'
 import { useMetricList } from './composables/useMetricList'
 import PinyinMatch from 'pinyin-match'
+import { useHealthStore } from '@/stores/healthStore'
+import { usePetViewModel } from '@/composables/usePetViewModel'
 
 const { groupedSections, refresh } = useMetricList()
 const searchQuery = ref('')
+const isPullRefreshing = ref(false)
+const healthStore = useHealthStore()
+const { selectedPetId } = usePetViewModel()
 
 const filteredSections = computed(() => {
     if (!searchQuery.value) return groupedSections.value
@@ -51,7 +58,21 @@ const filteredSections = computed(() => {
 
 onLoad(() => {
     refresh()
+    if (selectedPetId.value) {
+        healthStore.ensureDataLoaded(selectedPetId.value)
+    }
 })
+
+const handlePullRefresh = async () => {
+    isPullRefreshing.value = true
+    try {
+        if (selectedPetId.value) {
+            await healthStore.ensureDataLoaded(selectedPetId.value)
+        }
+    } finally {
+        isPullRefreshing.value = false
+    }
+}
 
 const handleSelect = (metricKey) => {
     uni.navigateTo({ url: `/pages/metrics/detail?key=${metricKey}` })
@@ -59,6 +80,10 @@ const handleSelect = (metricKey) => {
 </script>
 
 <style scoped>
+.pull-refresh {
+    height: 100vh;
+}
+
 .content {
     padding: 24rpx;
     display: flex;
